@@ -1,0 +1,287 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700&display=swap');
+
+:root {
+  --primary-green: #28a745;
+  --primary-green-hover: #218838;
+  --primary-green-light: #d4edda;
+  --background-white: #ffffff;
+  --text-dark: #333333;
+  --text-light: #666666;
+  --border-light: #e0e0e0;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --sidebar-width: 235px;
+  --navbar-height: 70px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+  text-align: right;
+  scrollbar-width: none;
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+body {
+  font-family: 'Cairo', 'Tajawal', Arial, sans-serif;
+  background-color: #f8f9fa;
+  color: var(--text-dark);
+  line-height: 1.6;
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+/* Prevent horizontal scroll globally */
+* {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+/* Hide horizontal scrollbar completely */
+body::-webkit-scrollbar-x {
+  display: none;
+}
+
+/* For all elements */
+*::-webkit-scrollbar-x {
+  display: none;
+}
+
+/* Smooth Sidebar Animations */
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+
+
+#root {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+/* Utility Classes */
+.text-center {
+  text-align: center;
+}
+
+.text-primary {
+  color: var(--primary-green);
+}
+
+.bg-primary {
+  background-color: var(--primary-green);
+}
+
+.bg-white {
+  background-color: var(--background-white);
+}
+
+/* Sidebar Styles */
+.sidebar {
+  position: fixed;
+  top: var(--navbar-height);
+  right: 0;
+  width: var(--sidebar-width);
+  height: calc(100vh - var(--navbar-height));
+  background-color: var(--background-white);
+  box-shadow: var(--shadow);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 20px 0;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 25px;
+  color: var(--text-dark);
+  text-decoration: none;
+  transition: all 0.1s ease;
+  border-right: 3px solid transparent;
+  font-weight: 500;
+  margin-top: 5px;
+}
+
+.sidebar-item:hover {
+  background-color: var(--primary-green-light);
+  color: var(--primary-green);
+}
+
+.sidebar-item.active {
+  background-color: var(--primary-green);
+  color: white;
+  border-right-color: var(--primary-green-hover);
+}
+
+.sidebar-item svg {
+  margin-left: 15px;
+  font-size: 1.2rem;
+}
+
+.sidebar-footer {
+  padding: 20px;
+  border-top: 1px solid var(--border-light);
+}
+
+/* Form Styles */
+.form-container {
+  background-color: var(--background-white);
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid var(--border-light);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 1rem;
+  direction: rtl;
+  transition: border-color 0.3s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+}
+
+.search-input {
+  padding: 8px 15px;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  font-family: inherit;
+  direction: rtl;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
+}
+
+/* Material-UI RTL Overrides */
+.MuiDataGrid-root {
+  direction: rtl;
+}
+
+.MuiDataGrid-columnHeaders {
+  background-color: white !important;
+  color: black !important;
+}
+
+.MuiDataGrid-root .MuiDataGrid-columnHeaders .MuiDataGrid-columnHeader {
+  background-color: white !important;
+  color: black !important;
+}
+
+.MuiDataGrid-root .MuiDataGrid-columnHeaders .MuiDataGrid-columnHeader .MuiDataGrid-columnHeaderTitle {
+  font-weight: 600 !important;
+  color: black !important;
+  text-align: right !important;
+  font-family: 'Cairo', sans-serif !important;
+}
+
+.MuiDataGrid-root .MuiDataGrid-columnHeaders .MuiDataGrid-columnHeader .MuiDataGrid-columnHeaderTitleContainer {
+  color: black !important;
+  justify-content: flex-end !important;
+}
+
+.MuiDataGrid-root .MuiDataGrid-columnHeaders .MuiDataGrid-columnHeader .MuiDataGrid-columnHeaderTitleContainerContent {
+  color: black !important;
+}
+
+.table-container .MuiDataGrid-root .MuiDataGrid-columnHeaders * {
+  color: black !important;
+  background-color: white !important;
+}
+
+.table-container .MuiDataGrid-columnHeaderTitle {
+  color: black !important;
+  font-weight: 600 !important;
+  font-family: 'Cairo', sans-serif !important;
+}
+
+.MuiDataGrid-cell {
+  color: var(--text-dark) !important;
+  text-align: right !important;
+}
+
+.MuiButton-root {
+  font-family: 'Cairo', sans-serif !important;
+}
+
+.MuiTextField-root {
+  direction: rtl;
+}
+
+.MuiTextField-root .MuiInputBase-input {
+  text-align: right;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    transform: translateX(100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}
