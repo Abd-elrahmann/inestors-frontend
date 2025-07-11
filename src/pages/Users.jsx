@@ -10,7 +10,7 @@ import {
   // eslint-disable-next-line no-unused-vars
   columnWidths 
 } from '../styles/tableStyles';
-import { usersAPI, transformers, handleApiError } from '../utils/apiHelpers';
+import { usersAPI, transformers, handleApiError } from '../services/apiHelpers';
 import { showDeleteConfirmation, showSuccessAlert } from '../utils/sweetAlert';
 
 const Users = () => {
@@ -139,52 +139,6 @@ const Users = () => {
           {params.value}
         </span>
       )
-    },
-    {
-      field: 'lastLogin',
-      headerName: 'آخر تسجيل دخول',
-      flex: 1.3,
-      minWidth: 150,
-      headerAlign: 'center',
-      align: 'center',
-      sortable: true,
-      filterable: true,
-      type: 'date',
-      valueGetter: (params) => {
-        if (params.value) {
-          return new Date(params.value);
-        }
-        return null;
-      }
-    },
-    {
-      field: 'createdAt',
-      headerName: 'تاريخ الإنشاء',
-      flex: 1.3,
-      minWidth: 150,
-      headerAlign: 'center',
-      align: 'center',
-      sortable: true,
-      filterable: true,
-      type: 'date',
-      valueGetter: (params) => {
-        if (params.value) {
-          return new Date(params.value);
-        }
-        return null;
-      },
-      valueFormatter: (params) => {
-        // Convert to Gregorian date format
-        if (params && params.value) {
-          const date = new Date(params.value);
-          return date.toLocaleDateString('en-GB', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-          });
-        }
-        return '';
-      }
     }
   ];
 

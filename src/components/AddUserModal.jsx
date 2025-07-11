@@ -25,7 +25,7 @@ import BadgeIcon from '@mui/icons-material/Badge';
 import LockIcon from '@mui/icons-material/Lock';
 import { MdVisibility as Visibility, MdVisibilityOff as VisibilityOff } from 'react-icons/md';
 import { toast } from 'react-toastify';
-import { usersAPI } from '../utils/apiHelpers';
+import { usersAPI } from '../services/apiHelpers';
 
 const AddUserModal = ({ open, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -213,13 +213,14 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
     <Dialog 
       open={open} 
       onClose={handleClose}
-      maxWidth="md"
+      maxWidth="sm"
       fullWidth
       PaperProps={{
         sx: {
           borderRadius: 3,
           minHeight: '70vh',
-          width: '50%'
+          width: '50%',
+          scrollbarWidth: 'none'
         }
       }}
     >
@@ -235,7 +236,7 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <PersonAddIcon />
-          <span>إضافة مستخدم جديد</span>
+          <span >إضافة مستخدم جديد</span>
         </Box>
         <IconButton 
           onClick={handleClose}
@@ -248,7 +249,20 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
 
       <form onSubmit={handleSubmit}>
         <DialogContent sx={{ mt: 2, px: 3 }}>
-          <Grid container spacing={6} sx={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+          {/* قسم البيانات الأساسية */}
+          <Typography variant="h6" sx={{ 
+            fontFamily: 'Cairo', 
+            fontWeight: 600, 
+            mb: 3, 
+            color: '#28a745',
+            borderBottom: '2px solid #28a745',
+            pb: 1,
+            textAlign: 'center'
+          }}>
+            البيانات الأساسية
+          </Typography>
+          
+          <Grid container spacing={6} sx={{ mb: 4 }}>
             {/* العمود الأيمن */}
             <Grid item xs={12} md={6}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -304,45 +318,6 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
                     }
                   }}
                 />
-
-                {/* كلمة المرور */}
-                <TextField
-                  fullWidth
-                  label="كلمة المرور"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  error={!!errors.password}
-                  helperText={errors.password}
-                  disabled={loading}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LockIcon sx={{ color: '#28a745' }} />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          aria-label="toggle password visibility"
-                          onClick={handleTogglePassword}
-                          edge="end"
-                          disabled={loading}
-                        >
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      fontFamily: 'Cairo'
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontFamily: 'Cairo'
-                    }
-                  }}
-                />
               </Box>
             </Grid>
 
@@ -375,6 +350,8 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
                   }}
                 />
 
+                
+
                 {/* رقم الهوية */}
                 <TextField
                   fullWidth
@@ -401,68 +378,134 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
                     }
                   }}
                 />
-
-                {/* تأكيد كلمة المرور */}
-                <TextField
-                  fullWidth
-                  label="تأكيد كلمة المرور"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                  error={!!errors.confirmPassword}
-                  helperText={errors.confirmPassword}
-                  disabled={loading}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LockIcon sx={{ color: '#28a745' }} />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          aria-label="toggle confirm password visibility"
-                          onClick={handleToggleConfirmPassword}
-                          edge="end"
-                          disabled={loading}
-                        >
-                          {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      fontFamily: 'Cairo'
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontFamily: 'Cairo'
-                    }
-                  }}
-                />
-
-                {/* الدور */}
-                <FormControl fullWidth>
-                  <InputLabel sx={{ fontFamily: 'Cairo' }}>الدور</InputLabel>
-                  <Select
-                    value={formData.role}
-                    label="الدور"
-                    onChange={(e) => handleInputChange('role', e.target.value)}
-                    disabled={loading}
-                    sx={{
-                      fontFamily: 'Cairo'
-                    }}
-                  >
-                    {roles.map((role) => (
-                      <MenuItem key={role.value} value={role.value} sx={{ fontFamily: 'Cairo' }}>
-                        {role.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
               </Box>
             </Grid>
+            <Grid container spacing={6} justifyContent={'center'}>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel sx={{ fontFamily: 'Cairo' }}>الدور</InputLabel>
+                <Select
+                  value={formData.role}
+                  label="الدور"
+                  
+                  onChange={(e) => handleInputChange('role', e.target.value)}
+                  disabled={loading}
+                  sx={{
+                    fontFamily: 'Cairo',
+                    width: '220px'
+                  }}
+                >
+                  {roles.map((role) => (
+                    <MenuItem key={role.value} value={role.value} sx={{ fontFamily: 'Cairo' }}>
+                      {role.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
           </Grid>
+          </Grid>
+
+      
+
+          {/* قسم كلمة المرور */}
+          <Typography variant="h6" sx={{ 
+            fontFamily: 'Cairo', 
+            fontWeight: 600, 
+            mb: 3, 
+            mt: 2,
+            color: '#dc3545',
+            borderBottom: '2px solid #dc3545',
+            pb: 1,
+            textAlign: 'center'
+          }}>
+            إعدادات كلمة المرور
+          </Typography>
+          
+          <Grid container spacing={6} sx={{ mb: 4, justifyContent: 'center' }}>
+            {/* كلمة المرور */}
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="كلمة المرور"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                error={!!errors.password}
+                helperText={errors.password}
+                disabled={loading}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockIcon sx={{ color: '#dc3545' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={handleTogglePassword}
+                        edge="end"
+                        disabled={loading}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    fontFamily: 'Cairo'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontFamily: 'Cairo'
+                  }
+                }}
+              />
+            </Grid>
+
+            {/* تأكيد كلمة المرور */}
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="تأكيد كلمة المرور"
+                type={showConfirmPassword ? "text" : "password"}
+                value={formData.confirmPassword}
+                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                error={!!errors.confirmPassword}
+                helperText={errors.confirmPassword}
+                disabled={loading}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockIcon sx={{ color: '#dc3545' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle confirm password visibility"
+                        onClick={handleToggleConfirmPassword}
+                        edge="end"
+                        disabled={loading}
+                      >
+                        {showConfirmPassword ? <VisibilityOff  /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    fontFamily: 'Cairo'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontFamily: 'Cairo'
+                  }
+                }}
+              />
+            </Grid>
+          </Grid>
+
         </DialogContent>
 
         <DialogActions sx={{ 
@@ -470,7 +513,8 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
           gap: 3,
           justifyContent: 'center',
           display: 'flex',
-          alignItems: 'center'
+          alignItems: 'center',
+          direction:'ltr'
         }}>
           <Button
             onClick={handleClose}

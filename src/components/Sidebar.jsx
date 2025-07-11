@@ -11,7 +11,7 @@ import {
   MdExitToApp as ExitToApp,
   MdSettings as Settings
 } from 'react-icons/md';
-import { authAPI } from '../utils/api';
+import { authAPI } from '../services/api';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();

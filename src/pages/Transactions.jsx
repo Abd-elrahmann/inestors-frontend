@@ -10,7 +10,7 @@ import {
   getStatusCell,
   columnWidths
 } from '../styles/tableStyles';
-import { transactionsAPI, transformers, handleApiError } from '../utils/apiHelpers';
+import { transactionsAPI, transformers, handleApiError } from '../services/apiHelpers';
 import { showDeleteConfirmation, showSuccessAlert } from '../utils/sweetAlert';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
 
@@ -77,7 +77,6 @@ const Transactions = () => {
       sortable: true,
       filterable: true,
       type: 'number',
-      // 💰 استخدام مدير العملة المركزي
       renderCell: (params) => (
         <span style={getCurrencyCell()}>
           {formatAmount(params.value, params.row.originalCurrency || 'IQD')}
@@ -87,35 +86,35 @@ const Transactions = () => {
     {
       field: 'date',
       headerName: 'التاريخ',
-      flex: 1,
-      minWidth: 120,
+      width: columnWidths.medium,
       headerAlign: 'center',
       align: 'center',
       sortable: true,
       filterable: true,
-      type: 'date',
-      valueGetter: (params) => {
-        if (params.value) {
-          return new Date(params.value);
-        }
-        return null;
-      }
+      renderCell: (params) => (
+        <span>
+          {params.value ? new Date(params.value).toLocaleDateString('en-US') : ''}
+        </span>
+      )
     },
     {
-      field: 'description',
-      headerName: 'الوصف',
-      flex: 1.8,
-      minWidth: 200,
+      field: 'financialYear',
+      headerName: 'السنة المالية',
+      width: columnWidths.medium,
       headerAlign: 'center',
       align: 'center',
       sortable: true,
-      filterable: true
+      filterable: true,
+      renderCell: (params) => (
+        <span>
+          {params.row.profitYear || 'غير محدد'}
+        </span>
+      )
     },
     {
       field: 'status',
       headerName: 'الحالة',
-      flex: 1,
-      minWidth: 120,
+      width: columnWidths.medium,
       headerAlign: 'center',
       align: 'center',
       sortable: true,
@@ -139,7 +138,7 @@ const Transactions = () => {
 
   const handleDeleteTransaction = async (transaction) => {
     const confirmed = await showDeleteConfirmation(
-      `${transaction.type} - ${transaction.amount} ريال`, 
+      `${transaction.type} - ${transaction.amount.toFixed(2)} ريال`, 
       'العملية المالية'
     );
     

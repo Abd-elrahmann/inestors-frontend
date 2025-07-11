@@ -163,7 +163,7 @@ const Dashboard = () => {
   });
   
   // 💰 استخدام مدير العملة المركزي
-  const { formatAmount, currentCurrency } = useCurrencyManager();
+  const { formatAmount, convertAmount, currentCurrency } = useCurrencyManager();
 
   // إضافة state للرسوم البيانية
   const [companyFinancialsData, setCompanyFinancialsData] = useState({
@@ -219,7 +219,7 @@ const Dashboard = () => {
     const interval = setInterval(fetchDashboardData, 15 * 60 * 1000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentCurrency]); // Add currentCurrency as dependency to refresh when currency changes
 
   const fetchDashboardData = async () => {
     try {
@@ -253,12 +253,20 @@ const Dashboard = () => {
         financialYearsResponse.json()
       ]);
 
-      // تحديث البيانات الإحصائية كما هو موجود سابقاً
-      const totalCapital = investorsData.data?.investors?.reduce((sum, investor) => 
-        sum + (investor.amountContributed || 0), 0) || 0;
+      // تحديث البيانات الإحصائية مع تحويل العملة
+      const totalCapital = await Promise.all(
+        investorsData.data?.investors?.map(async investor => {
+          const amount = investor.amountContributed || 0;
+          return convertAmount(amount, investor.currency || 'IQD', currentCurrency);
+        }) || []
+      ).then(amounts => amounts.reduce((sum, amount) => sum + amount, 0));
       
-      const totalProfits = financialYearsData.data?.financialYears?.reduce((sum, year) => 
-        sum + (year.totalProfit || 0), 0) || 0;
+      const totalProfits = await Promise.all(
+        financialYearsData.data?.financialYears?.map(async year => {
+          const profit = year.totalProfit || 0;
+          return convertAmount(profit, year.currency || 'IQD', currentCurrency);
+        }) || []
+      ).then(profits => profits.reduce((sum, profit) => sum + profit, 0));
       
       // حساب عدد العمليات الشهرية
       const currentDate = new Date();
@@ -279,14 +287,14 @@ const Dashboard = () => {
         totalCapital,
         totalProfits,
         monthlyOperations,
-        investorGrowth: 0, // يمكن حسابها لاحقاً
-        capitalGrowth: 0, // يمكن حسابها لاحقاً
-        profitGrowth: 0, // يمكن حسابها لاحقاً
+        investorGrowth: 0,
+        capitalGrowth: 0,
+        profitGrowth: 0,
         operationsGrowth
       });
       
       // تحديث بيانات الرسوم البيانية
-      updateChartData(investorsData.data?.investors || [], 
+      await updateChartData(investorsData.data?.investors || [], 
                      transactionsData.data?.transactions || [], 
                      financialYearsData.data?.financialYears || []);
       
@@ -298,25 +306,40 @@ const Dashboard = () => {
   };
 
   // دالة لتحديث بيانات الرسوم البيانية
-  const updateChartData = (investors, transactions, financialYears) => {
+  const updateChartData = async (investors, transactions, financialYears) => {
     // 1. تحديث بيانات الأداء المالي
     const sortedYears = [...financialYears].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+    
+    // حساب البيانات مع تحويل العملة
+    const yearlyData = await Promise.all(sortedYears.map(async year => {
+      const yearStart = new Date(year.startDate);
+      
+      // حساب إجمالي رأس المال للسنة مع تحويل العملة
+      const totalInvestments = await Promise.all(
+        investors.map(async investor => {
+          const investorJoinDate = new Date(investor.createdAt);
+          if (investorJoinDate <= yearStart) {
+            return convertAmount(investor.amountContributed || 0, investor.currency || 'IQD', currentCurrency);
+          }
+          return 0;
+        })
+      ).then(amounts => amounts.reduce((sum, amount) => sum + amount, 0));
+
+      // تحويل الأرباح إلى العملة المطلوبة
+      const convertedProfit = await convertAmount(year.totalProfit || 0, year.currency || 'IQD', currentCurrency);
+
+      return {
+        totalInvestments,
+        convertedProfit
+      };
+    }));
+
     setCompanyFinancialsData({
       labels: sortedYears.map(year => year.periodName || `${year.year}`),
       datasets: [
         {
-          label: 'إجمالي رأس المال (ريال)',
-          data: sortedYears.map(year => {
-            const yearStart = new Date(year.startDate);
-            const totalInvestments = investors.reduce((sum, investor) => {
-              const investorJoinDate = new Date(investor.createdAt);
-              if (investorJoinDate <= yearStart) {
-                return sum + (investor.amountContributed || 0);
-              }
-              return sum;
-            }, 0);
-            return totalInvestments;
-          }),
+          label: `إجمالي رأس المال (${currentCurrency})`,
+          data: yearlyData.map(data => data.totalInvestments),
           backgroundColor: '#3B82F6',
           borderColor: '#3B82F6',
           borderWidth: 1,
@@ -325,8 +348,8 @@ const Dashboard = () => {
           barPercentage: 0.9
         },
         {
-          label: 'إجمالي الأرباح (ريال)',
-          data: sortedYears.map(year => year.totalProfit || 0),
+          label: `إجمالي الأرباح (${currentCurrency})`,
+          data: yearlyData.map(data => data.convertedProfit),
           backgroundColor: '#F59E0B',
           borderColor: '#F59E0B',
           borderWidth: 1,
@@ -344,15 +367,20 @@ const Dashboard = () => {
       return date;
     });
 
-    // حساب مبسط - رأس المال الإجمالي لكل يوم
-    const totalCapital = investors.reduce((sum, inv) => sum + (inv.amountContributed || 0), 0);
-    const dailyCapital = last7Days.map(() => totalCapital); // نفس القيمة لكل يوم لتبسيط الحساب
+    // حساب مبسط - رأس المال الإجمالي لكل يوم مع تحويل العملة
+    const totalCapital = await Promise.all(
+      investors.map(async investor => 
+        convertAmount(investor.amountContributed || 0, investor.currency || 'IQD', currentCurrency)
+      )
+    ).then(amounts => amounts.reduce((sum, amount) => sum + amount, 0));
+    
+    const dailyCapital = last7Days.map(() => totalCapital);
 
     setPriceHistoryData({
       labels: last7Days.map(date => date.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })),
       datasets: [
         {
-          label: 'رأس المال (ريال)',
+          label: `رأس المال (${currentCurrency})`,
           data: dailyCapital,
           borderColor: '#10B981',
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -367,25 +395,32 @@ const Dashboard = () => {
       ]
     });
 
-    // 3. تحديث بيانات توزيع المحفظة
-    const totalInvestment = investors.reduce((sum, inv) => sum + (inv.amountContributed || 0), 0);
-    const topInvestors = [...investors]
-      .sort((a, b) => (b.amountContributed || 0) - (a.amountContributed || 0))
+    // 3. تحديث بيانات توزيع المحفظة مع تحويل العملة
+    const investorAmounts = await Promise.all(
+      investors.map(async inv => ({
+        ...inv,
+        convertedAmount: await convertAmount(inv.amountContributed || 0, inv.currency || 'IQD', currentCurrency)
+      }))
+    );
+
+    const totalInvestment = investorAmounts.reduce((sum, inv) => sum + inv.convertedAmount, 0);
+    const topInvestors = [...investorAmounts]
+      .sort((a, b) => b.convertedAmount - a.convertedAmount)
       .slice(0, 5);
     
-    const otherInvestors = investors.length > 5 ? 
-      investors.slice(5).reduce((sum, inv) => sum + (inv.amountContributed || 0), 0) : 0;
+    const otherInvestors = investorAmounts.length > 5 ? 
+      investorAmounts.slice(5).reduce((sum, inv) => sum + inv.convertedAmount, 0) : 0;
 
     setPortfolioData({
       labels: [
         ...topInvestors.map(inv => inv.fullName || 'مستثمر'),
-        investors.length > 5 ? 'مستثمرون آخرون' : null
+        investorAmounts.length > 5 ? 'مستثمرون آخرون' : null
       ].filter(Boolean),
       datasets: [
         {
           data: [
-            ...topInvestors.map(inv => ((inv.amountContributed || 0) / totalInvestment * 100).toFixed(1)),
-            investors.length > 5 ? ((otherInvestors / totalInvestment) * 100).toFixed(1) : null
+            ...topInvestors.map(inv => ((inv.convertedAmount / totalInvestment) * 100).toFixed(1)),
+            investorAmounts.length > 5 ? ((otherInvestors / totalInvestment) * 100).toFixed(1) : null
           ].filter(Boolean),
           backgroundColor: [
             '#3B82F6',
@@ -397,8 +432,7 @@ const Dashboard = () => {
           ],
           borderColor: '#ffffff',
           borderWidth: 2,
-          hoverBorderWidth: 3,
-          hoverOffset: 8
+          hoverBorderWidth: 3
         }
       ]
     });
@@ -457,14 +491,14 @@ const Dashboard = () => {
     },
     {
       title: `إجمالي رأس المال (${currentCurrency})`,
-      value: formatAmount(dashboardData.totalCapital, 'IQD'),
+      value: formatAmount(dashboardData.totalCapital, currentCurrency),
       icon: <AccountBalance sx={{ fontSize: 40, color: '#007bff' }} />,
       trend: `${dashboardData.capitalGrowth >= 0 ? '+' : ''}${dashboardData.capitalGrowth.toFixed(1)}% عن الشهر الماضي`,
       color: '#007bff'
     },
     {
       title: `الأرباح المحققة (${currentCurrency})`,
-      value: formatAmount(dashboardData.totalProfits, 'IQD'),
+      value: formatAmount(dashboardData.totalProfits, currentCurrency),
       icon: <TrendingUp sx={{ fontSize: 40, color: '#ffc107' }} />,
       trend: `${dashboardData.profitGrowth >= 0 ? '+' : ''}${dashboardData.profitGrowth.toFixed(1)}% عن الشهر الماضي`,
       color: '#ffc107'

@@ -30,7 +30,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { toast } from 'react-toastify';
-import { transactionsAPI, investorsAPI } from '../utils/apiHelpers';
+import { transactionsAPI, investorsAPI } from '../services/apiHelpers';
 import { showErrorAlert } from '../utils/sweetAlert';
 
 const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
@@ -49,7 +49,8 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
 
   const transactionTypes = [
     { value: 'deposit', label: 'إيداع' },
-    { value: 'withdrawal', label: 'سحب' }
+    { value: 'withdrawal', label: 'سحب' },
+    { value: 'profit', label: 'أرباح' }
   ];
 
   const currencies = [
@@ -62,11 +63,13 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
     if (open) {
       fetchInvestors();
       if (transaction) {
+        console.log('Loading transaction data:', transaction);
         setFormData({
           investorId: transaction.investorId || null,
           type: transaction.type === 'إيداع' ? 'deposit' : 
-                transaction.type === 'سحب' ? 'withdrawal' : transaction.type,
-          amount: transaction.amount ? transaction.amount.replace(/[^0-9.]/g, '') : '',
+                transaction.type === 'سحب' ? 'withdrawal' : 
+                transaction.type === 'أرباح' ? 'profit' : transaction.type,
+          amount: transaction.amount ? String(transaction.amount).replace(/[^0-9.]/g, '') : '',
           currency: transaction.currency || 'IQD',
           description: transaction.description || '',
           transactionDate: transaction.date ? new Date(transaction.date) : new Date()
@@ -74,6 +77,7 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
         setErrors({});
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, transaction]);
 
   const fetchInvestors = async () => {
@@ -81,11 +85,22 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
       setInvestorsLoading(true);
       const response = await investorsAPI.getAll();
       if (response.data && response.data.investors) {
-        setInvestors(response.data.investors.map(investor => ({
+        const investorsList = response.data.investors.map(investor => ({
           id: investor._id,
           name: investor.fullName,
           label: `${investor.fullName} - ${investor.nationalId}`
-        })));
+        }));
+        setInvestors(investorsList);
+        
+        // إذا كان هناك معاملة محددة، تأكد من تحديد المساهم الصحيح
+        if (transaction && transaction.investorId) {
+          const selectedInvestor = investorsList.find(inv => inv.id === transaction.investorId);
+          if (selectedInvestor) {
+            console.log('Selected investor found:', selectedInvestor);
+          } else {
+            console.warn('Investor not found for transaction:', transaction.investorId);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching investors:', error);
@@ -257,45 +272,33 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
               <Grid item xs={12} md={6}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   {/* اختيار المساهم */}
-                  <Autocomplete
-                    options={investors}
-                    getOptionLabel={(option) => option.label || ''}
-                    value={investors.find(inv => inv.id === formData.investorId) || null}
-                    onChange={(event, newValue) => {
-                      handleInputChange('investorId', newValue ? newValue.id : null);
+                  <TextField
+                    fullWidth
+                    label="اختر المساهم"
+                    value={investors.find(inv => inv.id === formData.investorId)?.name || ''}
+                    disabled={true}
+                    error={!!errors.investorId}
+                    helperText={errors.investorId}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PersonIcon sx={{ color: '#28a745' }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <>
+                          {investorsLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                        </>
+                      ),
                     }}
-                    loading={investorsLoading}
-                    disabled={loading || investorsLoading}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="اختر المساهم"
-                        error={!!errors.investorId}
-                        helperText={errors.investorId}
-                        InputProps={{
-                          ...params.InputProps,
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <PersonIcon sx={{ color: '#28a745' }} />
-                            </InputAdornment>
-                          ),
-                          endAdornment: (
-                            <>
-                              {investorsLoading ? <CircularProgress color="inherit" size={20} /> : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
-                        }}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            fontFamily: 'Cairo'
-                          },
-                          '& .MuiInputLabel-root': {
-                            fontFamily: 'Cairo'
-                          }
-                        }}
-                      />
-                    )}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        fontFamily: 'Cairo'
+                      },
+                      '& .MuiInputLabel-root': {
+                        fontFamily: 'Cairo'
+                      }
+                    }}
                   />
 
                   {/* المبلغ */}
@@ -410,35 +413,7 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
                 </Box>
               </Grid>
 
-              {/* وصف العملية - عمود كامل */}
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="وصف العملية"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  error={!!errors.description}
-                  helperText={errors.description}
-                  disabled={loading}
-                  multiline
-                  rows={3}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <DescriptionIcon sx={{ color: '#28a745' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      fontFamily: 'Cairo'
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontFamily: 'Cairo'
-                    }
-                  }}
-                />
-              </Grid>
+             
             </Grid>
           </Box>
         </DialogContent>

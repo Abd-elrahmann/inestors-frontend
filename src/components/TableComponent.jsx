@@ -24,7 +24,6 @@ const TableComponent = ({
 }) => {
   const [searchText, setSearchText] = useState('');
 
-  // 🚀 تحسين حساب دور المستخدم مع التخزين المؤقت
   const userRole = useMemo(() => {
     try {
       const userData = localStorage.getItem('user');
@@ -40,15 +39,12 @@ const TableComponent = ({
 
   const isAdmin = userRole === 'admin';
 
-  // ⚡ تحسين البحث مع debounce
   const debouncedSearch = useMemo(
     () => createDebouncedSearch(() => {
-      // البحث يتم في الذاكرة فقط، لا حاجة للتحديث
     }, 300),
     []
   );
 
-  // 🎯 تحسين فلترة البيانات
   const filteredData = useMemo(() => {
     if (!searchText) return data;
     
@@ -61,7 +57,6 @@ const TableComponent = ({
     });
   }, [data, searchText]);
 
-  // 📱 تحسين معالج البحث
   const handleSearchChange = useCallback((event) => {
     const value = event.target.value;
     setSearchText(value);
@@ -237,7 +232,7 @@ const TableComponent = ({
         height: 'calc(100% - 64px)', 
         width: '100%',
         flex: 1,
-        overflow: 'auto', // Enable scrolling
+        overflow: 'auto', 
         position: 'relative',
         backgroundColor: 'white'
       }}>
@@ -246,31 +241,58 @@ const TableComponent = ({
           columns={columnsWithActions}
           initialState={{
             pagination: {
-              paginationModel: { pageSize: 20 } // ✅ صفحات أصغر لسرعة أكبر
+              paginationModel: { pageSize: 20 } 
             }
           }}
-          pageSizeOptions={[10, 20, 50]} // ✅ تقليل الخيارات
+          pageSizeOptions={[10, 20, 50]} 
           disableSelectionOnClick
-          rowHeight={60} // ✅ صفوف أصغر
-          headerHeight={50} // ✅ رأس أصغر
+          rowHeight={60} 
+          headerHeight={50} 
           disableColumnResize={true}
           autoHeight={false}
           checkboxSelection={false}
           disableRowSelectionOnClick
           hideFooterSelectedRowCount
-          disableColumnMenu={false}
-          disableColumnFilter={false}
-          disableColumnSelector={false}
-          disableDensitySelector={false}
+          disableColumnMenu={true}
+          disableColumnFilter={true}
+          disableColumnSelector={true}
+          disableDensitySelector={true}
           sortingOrder={['asc', 'desc']}
-          disableMultipleColumnsSorting={false}
-          disableVirtualization={false} // ✅ تفعيل الافتراضية لسرعة أكبر
+          disableMultipleColumnsSorting={true}
+          disableVirtualization={false} 
           getRowClassName={getRowClassName}
+          slots={{
+            noRowsOverlay: () => (
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center',
+                width: '500px',
+                position: 'absolute',
+                top:55,
+                left: 0,
+                right: 500,
+                bottom: 0,
+                margin: 'auto'
+              }}>
+                <Typography sx={{ 
+                  fontFamily: 'Cairo', 
+                  fontSize: '0.8rem',
+                  textAlign: 'center',
+                  width: '500px',
+                  direction: 'rtl'
+                }}>
+                  لا توجد بيانات
+                </Typography>
+              </Box>
+            )
+          }}
           sx={{
             ...getDataGridStyles(),
             border: 'none',
             '& .MuiDataGrid-main': {
-              border: 'none'
+              border: 'none',
+              direction: 'rtl'
             },
             '& .MuiDataGrid-cell': {
               borderRight: '1px solid #e0e0e0',
@@ -299,6 +321,23 @@ const TableComponent = ({
                 textAlign: 'center',
                 width: '100%'
               }
+            },
+            '& .MuiDataGrid-overlay': {
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              zIndex: 1,
+              '& .MuiDataGrid-overlayWrapper': {
+                textAlign: 'center'
+              },
+              '& .MuiDataGrid-overlayWrapperInner': {
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center'
+              }
             }
           }}
           localeText={{
@@ -326,7 +365,7 @@ const TableComponent = ({
               labelRowsPerPage: 'الصفوف في الصفحة:',
               labelDisplayedRows: ({ from, to, count }) =>
                 `${from}–${to} من ${count !== -1 ? count : `أكثر من ${to}`}`,
-            }
+            },
           }}
         />
       </Box>

@@ -3,7 +3,7 @@ import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
-// تصدير تقرير المساهمين إلى PDF
+
 export const exportInvestorsSummaryToPDF = (data, dateRange) => {
   const doc = new jsPDF();
   
@@ -179,7 +179,7 @@ export const exportIndividualInvestorToPDF = (reportData) => {
 };
 
 // تصدير إلى Excel
-export const exportToExcel = (data, reportType, dateRange) => {
+export const exportToExcel = (data, reportType) => {
   let worksheetData = [];
   let filename = '';
   

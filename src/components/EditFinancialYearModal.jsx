@@ -23,7 +23,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 // eslint-disable-next-line no-unused-vars
 import { toast } from 'react-toastify';
-import { financialYearsAPI } from '../utils/apiHelpers';
+import { financialYearsAPI } from '../services/apiHelpers';
 import { showErrorAlert, showSuccessAlert } from '../utils/sweetAlert';
 
 const EditFinancialYearModal = ({ open, onClose, onSuccess, financialYear }) => {

@@ -7,10 +7,9 @@ import { PageLoadingSpinner, ErrorAlert, PageLoader } from '../components/shared
 import { 
   getCurrencyCell, 
   getPercentageCell, 
-  getStatusCell,
   columnWidths 
 } from '../styles/tableStyles';
-import { investorsAPI, transformers, handleApiError } from '../utils/apiHelpers';
+import { investorsAPI, transformers, handleApiError } from '../services/apiHelpers';
 import { showDeleteConfirmation, showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
 
@@ -105,17 +104,6 @@ const Investors = () => {
       headerName: 'تاريخ الانضمام',
       width: columnWidths.medium,
       sortable: false,
-    },
-    {
-      field: 'status',
-      headerName: 'الحالة',
-      width: columnWidths.status,
-      sortable: false,
-      renderCell: (params) => (
-        <span style={getStatusCell(params.value)}>
-          {params.value}
-        </span>
-      )
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], []);

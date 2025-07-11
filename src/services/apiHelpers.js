@@ -1,5 +1,5 @@
 // API Helper utilities
-import { performanceMonitor } from './performanceOptimization';
+import { performanceMonitor } from '../utils/performanceOptimization';
 
 // Shared API utilities
 export const apiConfig = {
@@ -366,6 +366,7 @@ export const transformers = {
   transaction: (transaction) => {
     return {
       id: transaction._id,
+      investorId: transaction.investorId?._id || transaction.investorId,
       investorName: transaction.investorId?.fullName || 'غير محدد',
       type: transaction.type === 'deposit' ? 'إيداع' : 
             transaction.type === 'withdrawal' ? 'سحب' : 
@@ -399,13 +400,19 @@ export const transformers = {
 
     return {
       id: financialYear._id,
+      _id: financialYear._id,
       year: financialYear.year,
       totalProfit: financialYear.totalProfit,
       currency: financialYear.currency || 'IQD',
       dailyProfitRate: financialYear.dailyProfitRate ? financialYear.dailyProfitRate.toFixed(6) : '0',
       totalDays: financialYear.totalDays || 0,
-      status: getStatusText(financialYear.status),
-      autoRollover: financialYear.rolloverSettings?.autoRollover ? 'مفعل' : 'غير مفعل'
+      status: financialYear.status,
+      startDate: financialYear.startDate,
+      endDate: financialYear.endDate,
+      rolloverSettings: financialYear.rolloverSettings,
+      distributions: financialYear.distributions || [],
+      autoRollover: financialYear.rolloverSettings?.autoRollover ? 'مفعل' : 'غير مفعل',
+      displayStatus: getStatusText(financialYear.status)
     };
   },
 

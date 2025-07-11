@@ -4,7 +4,7 @@ import { MdAccountBalance as AccountBalance, MdMenu as MenuIcon, MdMenuOpen as M
 import { useNavigate, useLocation } from 'react-router-dom';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
-import { authAPI } from '../utils/api';
+import { authAPI } from '../services/api';
 
 const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
   const navigate = useNavigate();

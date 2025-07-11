@@ -1,7 +1,7 @@
 // 💰 مدير العملة المركزي للنظام
 
 import React from 'react';
-import { settingsAPI } from './apiHelpers';
+import { settingsAPI } from '../services/apiHelpers';
 
 // 🎯 مدير العملة المركزي
 class GlobalCurrencyManager {
@@ -11,8 +11,8 @@ class GlobalCurrencyManager {
       displayCurrency: 'IQD',
       autoConvertCurrency: false,
       exchangeRates: {
-        USD_TO_IQD: 1308.05,
-        IQD_TO_USD: 0.00076
+        USD_TO_IQD: 1310.32,
+        IQD_TO_USD: 0.0007634
       }
     };
     this.listeners = new Set();
@@ -49,11 +49,11 @@ class GlobalCurrencyManager {
     const rates = this.currentSettings.exchangeRates;
     
     if (fromCurrency === 'USD' && toCurrency === 'IQD') {
-      return rates.USD_TO_IQD || 1310;
+      return rates.USD_TO_IQD || 1310.32;
     }
     
     if (fromCurrency === 'IQD' && toCurrency === 'USD') {
-      return rates.IQD_TO_USD || 0.000763;
+      return rates.IQD_TO_USD || 0.0007634;
     }
 
     return 1;

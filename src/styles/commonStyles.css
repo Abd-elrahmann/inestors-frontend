@@ -12,7 +12,6 @@ html, body {
 /* Common page styles */
 .content-area {
   padding: 20px;
-  background-color: #f8f9fa;
   min-height: calc(100vh - 64px);
   overflow-x: hidden;
   width: 100%;
@@ -25,7 +24,6 @@ html, body {
   padding: 24px;
   border-radius: 12px;
   color: black;
-  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.15);
   width: 70%;
   margin: 0 auto;
 }

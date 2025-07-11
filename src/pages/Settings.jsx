@@ -30,7 +30,7 @@ import {
   RestartAlt as ResetIcon
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
-import { settingsAPI } from '../utils/apiHelpers';
+import { settingsAPI } from '../services/apiHelpers';
 import { PageLoadingSpinner, ErrorAlert } from '../components/shared/LoadingComponents';
 import { showSuccessAlert, showDeleteConfirmation } from '../utils/sweetAlert';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
@@ -39,6 +39,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(true);
   const [lastAutoUpdate, setLastAutoUpdate] = useState(null);
   
@@ -81,7 +82,6 @@ const Settings = () => {
           if (newRate !== settings.exchangeRates.USD_TO_IQD) {
             await handleUpdateExchangeRate(newRate.toString());
             setLastAutoUpdate(new Date());
-            toast.success('تم تحديث سعر الصرف تلقائياً');
           }
         }
       } catch (error) {
@@ -101,6 +101,7 @@ const Settings = () => {
         clearInterval(intervalId);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoUpdateEnabled, settings.exchangeRates.USD_TO_IQD]);
 
   const fetchSettings = async () => {
@@ -196,7 +197,6 @@ const Settings = () => {
       });
       
       if (response.success) {
-        await showSuccessAlert('تم تحديث أسعار الصرف بنجاح');
         fetchSettings();
       } else {
         throw new Error(response.message || 'فشل في تحديث أسعار الصرف');
@@ -398,9 +398,6 @@ const Settings = () => {
                     />
                   </Box>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <Typography variant="caption" sx={{ fontFamily: 'Cairo', color: 'text.secondary' }}>
-                      آخر تحديث يدوي: {formatLastUpdate(settings.lastRateUpdate)}
-                    </Typography>
                     {lastAutoUpdate && (
                       <Typography variant="caption" sx={{ fontFamily: 'Cairo', color: 'text.secondary' }}>
                         آخر تحديث تلقائي: {formatLastUpdate(lastAutoUpdate)}
@@ -409,32 +406,13 @@ const Settings = () => {
                   </Box>
                 </Box>
 
-                {/* Auto Update Exchange Rate */}
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={autoUpdateEnabled}
-                      onChange={(e) => setAutoUpdateEnabled(e.target.checked)}
-                      color="success"
-                    />
-                  }
-                  label={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography sx={{ fontFamily: 'Cairo' }}>
-                        تحديث سعر الصرف تلقائياً
-                      </Typography>
-                      <Tooltip title="عند التفعيل، سيتم تحديث سعر الصرف تلقائياً كل 5 دقائق">
-                        <InfoIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                      </Tooltip>
-                    </Box>
-                  }
-                />
-
+               
                 {/* Update Rate */}
                 <TextField
                   fullWidth
                   label="سعر الدولار بالدينار العراقي"
                   value={tempExchangeRate}
+                  disabled={true}
                   onChange={(e) => setTempExchangeRate(e.target.value)}
                   type="number"
                   InputProps={{
@@ -442,8 +420,8 @@ const Settings = () => {
                       <InputAdornment position="end">
                         <Button
                           onClick={() => handleUpdateExchangeRate(tempExchangeRate)}
-                          disabled={saving || !tempExchangeRate || parseFloat(tempExchangeRate) <= 0}
                           size="small"
+                          disabled={true}
                           sx={{ fontFamily: 'Cairo' }}
                         >
                           تحديث يدوي

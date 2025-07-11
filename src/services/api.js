@@ -1,5 +1,5 @@
 // 🚀 API محسّن للأداء العالي
-import { optimizedApiCall } from './performanceOptimization';
+import { optimizedApiCall } from '../utils/performanceOptimization';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 

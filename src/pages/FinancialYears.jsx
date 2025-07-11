@@ -37,7 +37,7 @@ import {
   Delete as DeleteIcon
 } from '@mui/icons-material';
 // eslint-disable-next-line no-unused-vars
-import { financialYearsAPI, transformers } from '../utils/apiHelpers';
+import { financialYearsAPI, transformers } from '../services/apiHelpers';
 import { showConfirmAlert, showErrorAlert, showSuccessAlert } from '../utils/sweetAlert';
 import Swal from 'sweetalert2';
 import AddFinancialYearModal from '../components/AddFinancialYearModal';
@@ -64,6 +64,11 @@ const FinancialYears = () => {
     autoRollover: false,
     autoRolloverDate: ''
   });
+  const [rolloverAmounts, setRolloverAmounts] = useState({
+    totalProfit: 0,
+    rolloverAmount: 0,
+    remainingAmount: 0
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [calculatingDistributions, setCalculatingDistributions] = useState(new Set());
   
@@ -78,10 +83,21 @@ const FinancialYears = () => {
     const getUserRole = () => {
       try {
         const userData = localStorage.getItem('user');
+        console.log('User Data from localStorage:', userData); // للتصحيح
+
         if (userData) {
           const user = JSON.parse(userData);
+          console.log('Parsed User Data:', user); // للتصحيح
+          console.log('User Role:', user.role); // للتصحيح
+
           const role = user.role || 'user';
-          setIsAdmin(role === 'admin');
+          const adminStatus = role === 'admin';
+          console.log('Is Admin?', adminStatus); // للتصحيح
+          
+          setIsAdmin(adminStatus);
+        } else {
+          console.log('No user data found in localStorage'); // للتصحيح
+          setIsAdmin(false);
         }
       } catch (error) {
         console.error('Error parsing user data:', error);
@@ -93,6 +109,11 @@ const FinancialYears = () => {
     window.addEventListener('storage', getUserRole);
     return () => window.removeEventListener('storage', getUserRole);
   }, []);
+
+  // إضافة useEffect جديد للتحقق من تغيير isAdmin
+  useEffect(() => {
+    console.log('isAdmin value changed:', isAdmin); // للتصحيح
+  }, [isAdmin]);
 
   // مراقبة حالة الـ Sidebar
   useEffect(() => {
@@ -438,53 +459,108 @@ const FinancialYears = () => {
   const handleRolloverProfits = async (yearId, settings) => {
     try {
       const response = await financialYearsAPI.rolloverProfits(yearId, settings);
+      
       if (response.success) {
         showSuccessAlert('تم تدوير الأرباح بنجاح');
-        fetchFinancialYears();
-        setRolloverDialogOpen(false);
-        setRolloverSettings({
-          percentage: 100,
-          autoRollover: false,
-          autoRolloverDate: ''
-        });
+        await fetchFinancialYears();
+      } else {
+        // عرض رسالة الخطأ المناسبة
+        showErrorAlert(response.message || 'حدث خطأ أثناء تدوير الأرباح');
       }
     } catch (error) {
-      console.error('Error rolling over profits:', error);
-      showErrorAlert('حدث خطأ أثناء تدوير الأرباح');
+      // التحقق من نوع الخطأ وعرض الرسالة المناسبة
+      if (error.response?.data?.message === 'لا توجد توزيعات أرباح موافق عليها للترحيل') {
+        showErrorAlert('لا توجد توزيعات أرباح موافق عليها للترحيل');
+      } else {
+        showErrorAlert(error.message || 'حدث خطأ أثناء تدوير الأرباح');
+      }
     }
   };
 
-  // دالة للتعامل مع التدوير اليدوي
-  const handleManualRollover = (year) => {
-    // فقط للتدوير اليدوي (نسبة 0%)
-    if (year.rolloverSettings?.rolloverPercentage === 0) {
-      setSelectedYear(year);
-      setRolloverSettings({
-        percentage: 100,
-        autoRollover: false,
-        autoRolloverDate: ''
-      });
-      setRolloverDialogOpen(true);
+  const handleManualRollover = async (year) => {
+    if (!year) return;
+
+    // التحقق من وجود توزيعات موافق عليها
+    if (year.status !== 'approved' && year.status !== 'distributed') {
+      showErrorAlert('لا توجد توزيعات أرباح موافق عليها للترحيل');
+      return;
+    }
+
+    try {
+      // جلب تفاصيل التوزيعات
+      const response = await financialYearsAPI.getDistributions(year._id);
+      if (response.success) {
+        const distributions = response.data.distributions || [];
+        // حساب إجمالي الأرباح المحسوبة
+        const totalProfit = distributions.reduce((sum, dist) => sum + (dist.calculation?.calculatedProfit || 0), 0);
+        
+        setSelectedYear(year);
+        setRolloverDialogOpen(true);
+        // تحديث مبالغ التدوير
+        setRolloverAmounts({
+          totalProfit,
+          rolloverAmount: (totalProfit * rolloverSettings.percentage) / 100,
+          remainingAmount: (totalProfit * (100 - rolloverSettings.percentage)) / 100
+        });
+      } else {
+        showErrorAlert('حدث خطأ أثناء جلب تفاصيل التوزيعات');
+      }
+    } catch (error) {
+      console.error('Error fetching distributions:', error);
+      showErrorAlert('حدث خطأ أثناء جلب تفاصيل التوزيعات');
     }
   };
+
+  // تحديث مبالغ التدوير عند تغيير النسبة
+  useEffect(() => {
+    if (rolloverAmounts.totalProfit > 0) {
+      setRolloverAmounts(prev => ({
+        ...prev,
+        rolloverAmount: (prev.totalProfit * rolloverSettings.percentage) / 100,
+        remainingAmount: (prev.totalProfit * (100 - rolloverSettings.percentage)) / 100
+      }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rolloverSettings.percentage]);
 
   const handleDeleteFinancialYear = async (yearId) => {
     try {
+      // البحث عن السنة المالية المحددة
+      const year = financialYears.find(y => y._id === yearId);
+      
+      if (!year) {
+        showErrorAlert('لم يتم العثور على السنة المالية');
+        return;
+      }
+
+      // التحقق من حالة التوزيعات
+      if (year.status === 'distributed' || year.status === 'closed') {
+        showErrorAlert('لا يمكن حذف السنة المالية لوجود توزيعات أرباح مرتبطة بها');
+        return;
+      }
+
+      // طلب تأكيد الحذف
       const confirmed = await showConfirmAlert(
         'حذف السنة المالية',
-        'هل أنت متأكد من حذف هذه السنة المالية؟ سيتم حذف جميع البيانات المرتبطة بها نهائياً ولن يمكن التراجع عن هذا الإجراء.',
+        'هل أنت متأكد من حذف هذه السنة المالية؟ لا يمكن التراجع عن هذا الإجراء.'
       );
+
+      if (!confirmed) return;
+
+      const response = await financialYearsAPI.delete(yearId);
       
-      if (confirmed) {
-        const response = await financialYearsAPI.delete(yearId);
-        if (response.success) {
-          showSuccessAlert('تم حذف السنة المالية بنجاح');
-          fetchFinancialYears();
-        }
+      if (response.success) {
+        showSuccessAlert('تم حذف السنة المالية بنجاح');
+        await fetchFinancialYears();
+      } else {
+        showErrorAlert(response.message || 'حدث خطأ أثناء حذف السنة المالية');
       }
     } catch (error) {
-      console.error('Error deleting financial year:', error);
-      showErrorAlert('حدث خطأ أثناء حذف السنة المالية');
+      if (error.response?.data?.message === 'لا يمكن حذف السنة المالية لوجود توزيعات أرباح مرتبطة بها') {
+        showErrorAlert('لا يمكن حذف السنة المالية لوجود توزيعات أرباح مرتبطة بها');
+      } else {
+        showErrorAlert(error.message || 'حدث خطأ أثناء حذف السنة المالية');
+      }
     }
   };
 
@@ -569,30 +645,6 @@ const FinancialYears = () => {
     return iconMap[realStatus] || iconMap[status] || null;
   };
 
-  const canCalculate = (year) => {
-    return year && (
-      (year.status === 'draft' && year.isActive) || // سنة جديدة نشطة
-      year.status === 'calculated' || // إعادة حساب
-      year.status === 'approved' || // إعادة حساب بعد الموافقة
-      year.status === 'distributed' // إعادة حساب بعد التوزيع
-    );
-  };
-
-  const canApprove = (year) => {
-    return year && year.status === 'calculated';
-  };
-
-  const canRollover = (year) => {
-    if (!year) {
-      return false;
-    }
-    
-    // يظهر زر التدوير اليدوي فقط في هذه الحالة:
-    // إذا كانت نسبة التدوير 0% (تدوير يدوي) والحالة موافق عليها أو موزعة
-    
-    return year.rolloverSettings?.rolloverPercentage === 0 && 
-           ['approved', 'distributed'].includes(year.status);
-  };
   const canExport = (year) => year && ['calculated', 'approved', 'distributed', 'closed'].includes(year.status);
 
   // تعريف أعمدة الجدول
@@ -681,7 +733,7 @@ const FinancialYears = () => {
               {params.row?.elapsedDays || 0} يوم مضى
             </Typography>
             <Typography variant="caption" fontWeight="bold" color={(params.row?.remainingDays || 0) > 0 ? 'primary' : 'error'}>
-              {(params.row?.remainingDays || 0) > 0 ? `${params.row.remainingDays} متبقي` : 'انتهت'}
+              {(params.row?.remainingDays || 0) > 0 ? `${params.row.remainingDays-1} متبقي` : 'انتهت'}
             </Typography>
           </Box>
           <LinearProgress
@@ -753,7 +805,6 @@ const FinancialYears = () => {
         );
       }
     },
-    // عمود الإجراءات - يظهر للمدراء فقط أو مع قيود للمستخدمين
     {
       field: 'actions',
       headerName: isAdmin ? 'الإجراءات' : 'عرض',
@@ -763,67 +814,67 @@ const FinancialYears = () => {
       sortable: false,
       filterable: false,
       renderCell: (params) => (
-        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 0.5, 
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
           {/* إجراءات المدراء فقط */}
-          {isAdmin && canCalculate(params.row) && (
-            <Tooltip title="توزيع الأرباح">
-              <IconButton
-                size="small"
-                color="success"
-                disabled={calculatingDistributions.has(params.row._id)}
-                onClick={() => handleCalculateDistributions(params.row._id)}
-                sx={{
-                  animation: calculatingDistributions.has(params.row._id) ? 'spin 1s linear infinite' : 'bounce 2s infinite',
-                  '@keyframes bounce': {
-                    '0%, 20%, 50%, 80%, 100%': { transform: 'translateY(0)' },
-                    '40%': { transform: 'translateY(-3px)' },
-                    '60%': { transform: 'translateY(-1px)' }
-                  },
-                  '@keyframes spin': {
-                    '0%': { transform: 'rotate(0deg)' },
-                    '100%': { transform: 'rotate(360deg)' }
-                  }
-                }}
-              >
-                <DistributeIcon />
-              </IconButton>
-            </Tooltip>
+          {isAdmin && (
+            <>
+              {/* زر توزيع الأرباح */}
+              <Tooltip title="توزيع الأرباح">
+                <IconButton
+                  size="small"
+                  color="success"
+                  disabled={calculatingDistributions.has(params.row._id)}
+                  onClick={() => handleCalculateDistributions(params.row._id)}
+                  sx={{
+                    animation: calculatingDistributions.has(params.row._id) ? 'spin 1s linear infinite' : 'bounce 2s infinite',
+                    '@keyframes bounce': {
+                      '0%, 20%, 50%, 80%, 100%': { transform: 'translateY(0)' },
+                      '40%': { transform: 'translateY(-3px)' },
+                      '60%': { transform: 'translateY(-1px)' }
+                    },
+                    '@keyframes spin': {
+                      '0%': { transform: 'rotate(0deg)' },
+                      '100%': { transform: 'rotate(360deg)' }
+                    }
+                  }}
+                >
+                  <DistributeIcon />
+                </IconButton>
+              </Tooltip>
+
+              {/* زر الموافقة على التوزيعات */}
+              <Tooltip title="الموافقة على التوزيعات">
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={() => handleApproveDistributions(params.row._id)}
+                >
+                  <ApproveIcon />
+                </IconButton>
+              </Tooltip>
+
+              {/* زر التدوير - يظهر فقط عندما تكون الحالة موافق عليه أو موزع */}
+              {(params.row.status === 'approved' || params.row.status === 'distributed') && (
+                <Tooltip title="تدوير الأرباح">
+                  <IconButton
+                    size="small"
+                    color="warning"
+                    onClick={() => handleManualRollover(params.row)}
+                  >
+                    <RolloverIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </>
           )}
 
-          {isAdmin && canApprove(params.row) && (
-            <Tooltip title="الموافقة على التوزيعات">
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={() => handleApproveDistributions(params.row._id)}
-                sx={{
-                  animation: 'pulse 2s infinite',
-                  '@keyframes pulse': {
-                    '0%': { transform: 'scale(1)' },
-                    '50%': { transform: 'scale(1.1)' },
-                    '100%': { transform: 'scale(1)' }
-                  }
-                }}
-              >
-                <ApproveIcon />
-              </IconButton>
-            </Tooltip>
-          )}
-
-          {isAdmin && canRollover(params.row) && (
-            <Tooltip title="تدوير يدوي - حدد النسبة">
-              <IconButton
-                size="small"
-                color="warning"
-                onClick={() => handleManualRollover(params.row)}
-              >
-                <RolloverIcon />
-              </IconButton>
-            </Tooltip>
-          )}
-
-          {/* عرض التوزيعات - متاح للجميع */}
-          <Tooltip title="عرض التوزيعات">
+          {/* عرض التنبيهات - متاح للجميع */}
+          <Tooltip title="عرض التنبيهات">
             <IconButton
               size="small"
               color="info"
@@ -836,25 +887,23 @@ const FinancialYears = () => {
             </IconButton>
           </Tooltip>
 
-          {/* المزيد - للمدراء فقط */}
-          {isAdmin && (
-            <Tooltip title="المزيد">
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  setMenuAnchor(e.currentTarget);
-                  setSelectedYear(params.row);
-                }}
-              >
-                <MoreVertIcon />
-              </IconButton>
-            </Tooltip>
-          )}
+           {/* زر المزيد */}
+           <Tooltip title="المزيد">
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    setMenuAnchor(e.currentTarget);
+                    setSelectedYear(params.row);
+                  }}
+                >
+                  <MoreVertIcon />
+                </IconButton>
+              </Tooltip>
         </Box>
       )
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [calculatingDistributions]);
+  ], [calculatingDistributions, isAdmin, currentCurrency]);
 
   if (loading) {
     return (
@@ -1044,7 +1093,7 @@ const FinancialYears = () => {
         <DialogContent>
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              إجمالي الربح المتاح للتدوير: {new Intl.NumberFormat('ar-EG').format(selectedYear?.totalProfit || 0)} {selectedYear?.currency}
+              إجمالي الأرباح المحسوبة: {new Intl.NumberFormat('ar-EG').format(rolloverAmounts.totalProfit)} {selectedYear?.currency}
             </Typography>
             <Alert severity="info" sx={{ mt: 1, mb: 2 }}>
               <Typography variant="body2">
@@ -1070,11 +1119,11 @@ const FinancialYears = () => {
             helperText="أدخل النسبة المطلوبة للتدوير (0-100%)"
           />
           <Alert severity="info" sx={{ mb: 2 }}>
-            سيتم تدوير {rolloverSettings.percentage}% من الأرباح ({new Intl.NumberFormat('ar-EG').format((selectedYear?.totalProfit || 0) * rolloverSettings.percentage / 100)} {selectedYear?.currency}) إلى رأس المال كإيداعات جديدة
+            سيتم تدوير {rolloverSettings.percentage}% من الأرباح ({new Intl.NumberFormat('ar-EG').format(rolloverAmounts.rolloverAmount)} {selectedYear?.currency}) إلى رأس المال كإيداعات جديدة
           </Alert>
           {rolloverSettings.percentage < 100 && (
             <Alert severity="warning">
-              المبلغ المتبقي ({new Intl.NumberFormat('ar-EG').format((selectedYear?.totalProfit || 0) * (100 - rolloverSettings.percentage) / 100)} {selectedYear?.currency}) سيتم توزيعه على المساهمين
+              المبلغ المتبقي ({new Intl.NumberFormat('ar-EG').format(rolloverAmounts.remainingAmount)} {selectedYear?.currency}) سيتم توزيعه على المساهمين
             </Alert>
           )}
         </DialogContent>

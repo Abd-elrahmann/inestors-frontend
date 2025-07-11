@@ -23,7 +23,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import PhoneIcon from '@mui/icons-material/Phone';
 import MoneyIcon from '@mui/icons-material/AccountBalance';
 import { toast } from 'react-toastify';
-import { investorsAPI } from '../utils/apiHelpers';
+import { investorsAPI } from '../services/apiHelpers';
 
 const AddInvestorModal = ({ open, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
@@ -175,16 +175,17 @@ const AddInvestorModal = ({ open, onClose, onSuccess }) => {
     <Dialog 
       open={open} 
       onClose={handleClose}
-      maxWidth="md"
+      maxWidth="sm"
       fullWidth
       TransitionProps={{
-        timeout: { enter: 200, exit: 150 } // ✅ انتقالات أسرع
+        timeout: { enter: 200, exit: 150 } 
       }}
       PaperProps={{
         sx: {
           borderRadius: 3,
-          minHeight: '60vh', // ✅ ارتفاع أقل
-          width: '50%'
+          minHeight: '60vh', 
+          width: '50%',
+          scrollbarWidth: 'none'
         }
       }}
     >
@@ -196,7 +197,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess }) => {
         color: 'white',
         fontFamily: 'Cairo',
         fontSize: '1.2rem',
-        fontWeight: 600
+        fontWeight: 600,
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <PersonIcon />
@@ -213,203 +214,189 @@ const AddInvestorModal = ({ open, onClose, onSuccess }) => {
 
       <form onSubmit={handleSubmit}>
         <DialogContent sx={{ mt: 2, px: 3 }}>
-          <Grid container spacing={6} sx={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-            {/* العمود الأيمن */}
-            <Grid item xs={12} md={6}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {/* الاسم الكامل */}
-                <TextField
-                  fullWidth
-                  label="اسم المساهم"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  error={!!errors.name}
-                  helperText={errors.name}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, width: '60%', mx: 'auto' }}>
+            {/* الاسم الكامل */}
+            <TextField
+              fullWidth
+              label="اسم المساهم"
+              value={formData.name}
+              onChange={(e) => handleInputChange('name', e.target.value)}
+              error={!!errors.name}
+              helperText={errors.name}
+              disabled={loading}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PersonIcon sx={{ color: '#28a745' }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  fontFamily: 'Cairo'
+                },
+                '& .MuiInputLabel-root': {
+                  fontFamily: 'Cairo'
+                }
+              }}
+            />
+
+            {/* رقم الهوية */}
+            <TextField
+              fullWidth
+              label="رقم الهوية"
+              value={formData.nationalId}
+              onChange={(e) => handleInputChange('nationalId', e.target.value)}
+              error={!!errors.nationalId}
+              helperText={errors.nationalId}
+              disabled={loading}
+              inputProps={{ maxLength: 14 }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  fontFamily: 'Cairo'
+                },
+                '& .MuiInputLabel-root': {
+                  fontFamily: 'Cairo'
+                }
+              }}
+            />
+
+            {/* رقم الهاتف */}
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <FormControl sx={{ width: '30%' }}>
+                <InputLabel sx={{ fontFamily: 'Cairo', fontSize: '0.9rem' }}>كود الدولة</InputLabel>
+                <Select
+                  value={formData.phoneCountryCode}
+                  label="كود الدولة"
+                  onChange={(e) => handleInputChange('phoneCountryCode', e.target.value)}
                   disabled={loading}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PersonIcon sx={{ color: '#28a745' }} />
-                      </InputAdornment>
-                    ),
-                  }}
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      fontFamily: 'Cairo'
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontFamily: 'Cairo'
-                    }
+                    fontFamily: 'Cairo',
+                    fontSize: '0.9rem'
                   }}
-                />
-
-
-
-                {/* مبلغ المساهمة */}
-                <TextField
-                  fullWidth
-                  type="number"
-                  label="مبلغ المساهمة"
-                  value={formData.contribution}
-                  onChange={(e) => handleInputChange('contribution', e.target.value)}
-                  error={!!errors.contribution}
-                  helperText={errors.contribution}
-                  disabled={loading}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <MoneyIcon sx={{ color: '#28a745' }} />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Typography variant="body2" sx={{ color: '#28a745', fontWeight: 600 }}>
-                          {getCurrencySymbol(formData.currency)}
+                >
+                  {countryCodes.map((country) => (
+                    <MenuItem key={country.code} value={country.code} sx={{ fontFamily: 'Cairo' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <span>{country.flag}</span>
+                        <Typography variant="body2" sx={{ fontFamily: 'Cairo' }}>
+                          {country.code}
                         </Typography>
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      fontFamily: 'Cairo'
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontFamily: 'Cairo'
-                    }
-                  }}
-                />
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              
+              <TextField
+                sx={{
+                  width: '70%',
+                  '& .MuiOutlinedInput-root': {
+                    fontFamily: 'Cairo'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontFamily: 'Cairo'
+                  }
+                }}
+                label="رقم الهاتف (اختياري)"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                error={!!errors.phone}
+                helperText={errors.phone}
+                disabled={loading}
+                placeholder="123456789"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PhoneIcon sx={{ color: '#28a745' }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
 
-              </Box>
-            </Grid>
+            {/* مبلغ المساهمة */}
+            <TextField
+              fullWidth
+              type="number"
+              label="مبلغ المساهمة"
+              value={formData.contribution}
+              onChange={(e) => handleInputChange('contribution', e.target.value)}
+              error={!!errors.contribution}
+              helperText={errors.contribution}
+              disabled={loading}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <MoneyIcon sx={{ color: '#28a745' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Typography variant="body2" sx={{ color: '#28a745', fontWeight: 600 }}>
+                      {getCurrencySymbol(formData.currency)}
+                    </Typography>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  fontFamily: 'Cairo'
+                },
+                '& .MuiInputLabel-root': {
+                  fontFamily: 'Cairo'
+                }
+              }}
+            />
 
-            {/* العمود الأيسر */}
-            <Grid item xs={12} md={6}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {/* رقم الهوية */}
-                <TextField
-                  fullWidth
-                  label="رقم الهوية"
-                  value={formData.nationalId}
-                  onChange={(e) => handleInputChange('nationalId', e.target.value)}
-                  error={!!errors.nationalId}
-                  helperText={errors.nationalId}
-                  disabled={loading}
-                  inputProps={{ maxLength: 14 }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      fontFamily: 'Cairo'
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontFamily: 'Cairo'
-                    }
-                  }}
-                />
+            {/* العملة */}
+            <FormControl fullWidth>
+              <InputLabel sx={{ fontFamily: 'Cairo' }}>العملة</InputLabel>
+              <Select
+                value={formData.currency}
+                label="العملة"
+                onChange={(e) => handleInputChange('currency', e.target.value)}
+                disabled={loading}
+                sx={{
+                  fontFamily: 'Cairo'
+                }}
+              >
+                {currencies.map((currency) => (
+                  <MenuItem key={currency.code} value={currency.code} sx={{ fontFamily: 'Cairo' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body1" sx={{ fontFamily: 'Cairo' }}>
+                        {currency.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'Cairo' }}>
+                        ({currency.code})
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-                {/* رقم الهاتف */}
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <FormControl sx={{ minWidth: 120 }}>
-                    <InputLabel sx={{ fontFamily: 'Cairo', fontSize: '0.9rem' }}>كود الدولة</InputLabel>
-                    <Select
-                      value={formData.phoneCountryCode}
-                      label="كود الدولة"
-                      onChange={(e) => handleInputChange('phoneCountryCode', e.target.value)}
-                      disabled={loading}
-                      sx={{
-                        fontFamily: 'Cairo',
-                        fontSize: '0.9rem'
-                      }}
-                    >
-                      {countryCodes.map((country) => (
-                        <MenuItem key={country.code} value={country.code} sx={{ fontFamily: 'Cairo' }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <span>{country.flag}</span>
-                            <Typography variant="body2" sx={{ fontFamily: 'Cairo' }}>
-                              {country.code}
-                            </Typography>
-                          </Box>
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  
-                  <TextField
-                    fullWidth
-                    label="رقم الهاتف (اختياري)"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    error={!!errors.phone}
-                    helperText={errors.phone}
-                    disabled={loading}
-                    placeholder="123456789"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PhoneIcon sx={{ color: '#28a745' }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        fontFamily: 'Cairo'
-                      },
-                      '& .MuiInputLabel-root': {
-                        fontFamily: 'Cairo'
-                      }
-                    }}
-                  />
-                </Box>
+            {/* تاريخ الانضمام */}
+            <FormControl fullWidth>
+              <TextField
+                type="date"
+                label="تاريخ الانضمام"
+                value={formData.startDate}
+                onChange={(e) => handleInputChange('startDate', e.target.value)}
+                disabled={loading}
+                error={!!errors.startDate}
+                helperText={errors.startDate}
+                InputLabelProps={{
+                  shrink: true,
+                  sx: { fontFamily: 'Cairo' }
+                }}
+                sx={{
+                  fontFamily: 'Cairo'
+                }}
+              />
+            </FormControl>
 
-                {/* العملة */}
-                <FormControl fullWidth>
-                  <InputLabel sx={{ fontFamily: 'Cairo' }}>العملة</InputLabel>
-                  <Select
-                    value={formData.currency}
-                    label="العملة"
-                    onChange={(e) => handleInputChange('currency', e.target.value)}
-                    disabled={loading}
-                    sx={{
-                      fontFamily: 'Cairo'
-                    }}
-                  >
-                    {currencies.map((currency) => (
-                      <MenuItem key={currency.code} value={currency.code} sx={{ fontFamily: 'Cairo' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="body1" sx={{ fontFamily: 'Cairo' }}>
-                            {currency.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'Cairo' }}>
-                            ({currency.code})
-                          </Typography>
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                {/* تاريخ الانضمام */}
-                <FormControl fullWidth>
-                  <TextField
-                    type="date"
-                    label="تاريخ الانضمام"
-                    value={formData.startDate}
-                    onChange={(e) => handleInputChange('startDate', e.target.value)}
-                    disabled={loading}
-                    error={!!errors.startDate}
-                    helperText={errors.startDate}
-                    InputLabelProps={{
-                      shrink: true,
-                      sx: { fontFamily: 'Cairo' }
-                    }}
-                    sx={{
-                      fontFamily: 'Cairo'
-                    }}
-                  />
-                </FormControl>
-
-
-              </Box>
-            </Grid>
-          </Grid>
+          </Box>
         </DialogContent>
 
         <DialogActions sx={{ 
@@ -417,7 +404,8 @@ const AddInvestorModal = ({ open, onClose, onSuccess }) => {
           gap: 3,
           justifyContent: 'center',
           display: 'flex',
-          alignItems: 'center'
+          alignItems: 'center',
+          direction:'ltr'
         }}>
           <Button
             onClick={handleClose}

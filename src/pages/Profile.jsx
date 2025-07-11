@@ -22,7 +22,7 @@ import {
   MdBadge as Badge,
   MdAccountCircle as AccountCircle
 } from 'react-icons/md';
-import { authAPI } from '../utils/api';
+import { authAPI } from '../services/api';
 
 const Profile = () => {
   const [user, setUser] = useState(null);

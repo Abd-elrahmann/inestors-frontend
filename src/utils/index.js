@@ -211,6 +211,7 @@ export const getTransactionTypeColor = (type) => {
   const typeColors = {
     'إيداع': { bg: '#d1ecf1', color: '#0c5460' },
     'سحب': { bg: '#f8d7da', color: '#721c24' },
+    'أرباح': { bg: '#d4edda', color: '#155724' },
     'توزيع أرباح': { bg: '#d4edda', color: '#155724' },
     'رسوم': { bg: '#fff3cd', color: '#856404' }
   };

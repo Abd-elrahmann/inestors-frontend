@@ -27,54 +27,30 @@ export const getSettings = async () => {
   return currentSettings;
 };
 
-// تنسيق المبلغ حسب إعدادات النظام
-export const formatAmount = async (amount, originalCurrency = 'IQD') => {
-  try {
-    const settings = await getSettings();
-    if (!settings) {
-      return formatAmountSync(amount, originalCurrency);
-    }
-
-    const response = await settingsAPI.getDisplayAmount({
-      amount,
-      currency: originalCurrency
-    });
-
-    if (response.success) {
-      return response.data;
-    }
-
-    return formatAmountSync(amount, originalCurrency);
-  } catch (error) {
-    console.error('Error formatting amount:', error);
-    return formatAmountSync(amount, originalCurrency);
+// تنسيق المبلغ حسب العملة
+export const formatAmount = (amount, currency) => {
+  if (typeof amount !== 'number') {
+    amount = parseFloat(amount) || 0;
   }
-};
 
-// تنسيق المبلغ بدون انتظار الخادم
-export const formatAmountSync = (amount, currency = 'IQD') => {
-  if (amount === null || amount === undefined) return '-';
-  
-  const symbols = {
-    'IQD': 'د.ع',
-    'USD': '$'
-  };
-
-  const formattedAmount = new Intl.NumberFormat('en-US', {
+  const formatter = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: currency === 'USD' ? 2 : 0,
     maximumFractionDigits: currency === 'USD' ? 2 : 0
-  }).format(amount);
+  });
 
-  return {
-    amount,
-    currency,
-    displayText: `${formattedAmount} ${symbols[currency] || currency}`
-  };
+  const formattedAmount = formatter.format(amount);
+  const symbol = currency === 'USD' ? '$' : 'د.ع';
+  
+  return `${formattedAmount} ${symbol}`;
 };
 
 // تحويل المبلغ من عملة إلى أخرى
 export const convertAmount = async (amount, fromCurrency, toCurrency) => {
   try {
+    if (fromCurrency === toCurrency) {
+      return amount;
+    }
+
     const response = await settingsAPI.convertCurrency({
       amount,
       fromCurrency,
@@ -89,6 +65,23 @@ export const convertAmount = async (amount, fromCurrency, toCurrency) => {
   } catch (error) {
     console.error('Error converting amount:', error);
     return amount;
+  }
+};
+
+// تحديث سعر الصرف تلقائياً
+export const updateExchangeRate = async () => {
+  try {
+    const response = await settingsAPI.getLatestExchangeRate();
+    if (response.success && response.data?.rate) {
+      await settingsAPI.updateExchangeRates({
+        USD_TO_IQD: response.data.rate
+      });
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error updating exchange rate:', error);
+    return false;
   }
 };
 

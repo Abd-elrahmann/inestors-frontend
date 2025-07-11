@@ -28,7 +28,7 @@ import {
   Edit as EditIcon
 } from '@mui/icons-material';
 import { MdVisibility as Visibility, MdVisibilityOff as VisibilityOff } from 'react-icons/md';
-import { usersAPI } from '../utils/apiHelpers';
+import { usersAPI } from '../services/apiHelpers';
 import {  showErrorAlert } from '../utils/sweetAlert';
 
 const EditUserModal = ({ open, onClose, onSuccess, user }) => {
@@ -243,7 +243,7 @@ const EditUserModal = ({ open, onClose, onSuccess, user }) => {
     <Dialog
       open={open}
       onClose={handleClose}
-      maxWidth="lg"
+      maxWidth="sm"
       fullWidth
       PaperProps={{
         sx: {
@@ -255,13 +255,6 @@ const EditUserModal = ({ open, onClose, onSuccess, user }) => {
     >
       {/* Header */}
       <DialogTitle
-        sx={{
-          background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
-          color: 'white',
-          position: 'relative',
-          textAlign: 'center',
-          py: 3
-        }}
       >
         <IconButton
           onClick={handleClose}
@@ -270,7 +263,7 @@ const EditUserModal = ({ open, onClose, onSuccess, user }) => {
             position: 'absolute',
             left: 8,
             top: 8,
-            color: 'white',
+            color: 'green',
             backgroundColor: 'rgba(255, 255, 255, 0.1)',
             backdropFilter: 'blur(10px)',
             '&:hover': {
@@ -281,22 +274,25 @@ const EditUserModal = ({ open, onClose, onSuccess, user }) => {
         >
           <CloseIcon />
         </IconButton>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-          <EditIcon sx={{ fontSize: 40 }} />
-          <Typography variant="h5" sx={{ fontFamily: 'Cairo', fontWeight: 700 }}>
-            تعديل بيانات المستخدم
-          </Typography>
-          <Typography variant="body2" sx={{ fontFamily: 'Cairo', opacity: 0.9 }}>
-            تعديل معلومات المستخدم في النظام
-          </Typography>
-        </Box>
       </DialogTitle>
 
       {/* Content */}
-      <DialogContent sx={{ p: 4,mt: 4 }}>
-        <Box component="form" onSubmit={handleSubmit}>
-          <Grid container spacing={6}>
+      <DialogContent sx={{ p: 4, mt: 4 }}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ textAlign: 'center' }}>
+          {/* قسم البيانات الأساسية */}
+          <Typography variant="h6" sx={{ 
+            fontFamily: 'Cairo', 
+            fontWeight: 600, 
+            mb: 3, 
+            color: '#28a745',
+            borderBottom: '2px solid #28a745',
+            pb: 1,
+            textAlign: 'center'
+          }}>
+            البيانات الأساسية
+          </Typography>
+          
+          <Grid container spacing={6} sx={{ mb: 4, justifyContent: 'center' }}>
             {/* العمود الأيمن */}
             <Grid item xs={12} md={6}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -372,23 +368,6 @@ const EditUserModal = ({ open, onClose, onSuccess, user }) => {
                     ))}
                   </Select>
                 </FormControl>
-
-                {/* تغيير كلمة المرور */}
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={changePassword}
-                      onChange={handleChangePasswordToggle}
-                      disabled={loading}
-                      color="primary"
-                    />
-                  }
-                  label={
-                    <Typography sx={{ fontFamily: 'Cairo' }}>
-                      تغيير كلمة المرور
-                    </Typography>
-                  }
-                />
               </Box>
             </Grid>
 
@@ -448,89 +427,128 @@ const EditUserModal = ({ open, onClose, onSuccess, user }) => {
                   }}
                 />
 
-                {/* كلمة المرور الجديدة */}
-                {changePassword && (
-                  <>
-                    <TextField
-                      fullWidth
-                      label="كلمة المرور الجديدة"
-                      type={showPassword ? "text" : "password"}
-                      value={formData.password}
-                      onChange={(e) => handleInputChange('password', e.target.value)}
-                      error={!!errors.password}
-                      helperText={errors.password}
+                {/* تغيير كلمة المرور */}
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={changePassword}
+                      onChange={handleChangePasswordToggle}
                       disabled={loading}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <LockIcon sx={{ color: '#28a745' }} />
-                          </InputAdornment>
-                        ),
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              aria-label="toggle password visibility"
-                              onClick={handleTogglePassword}
-                              edge="end"
-                              disabled={loading}
-                            >
-                              {showPassword ? <VisibilityOff /> : <Visibility />}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          fontFamily: 'Cairo'
-                        },
-                        '& .MuiInputLabel-root': {
-                          fontFamily: 'Cairo'
-                        }
-                      }}
+                      color="primary"
                     />
-
-                    <TextField
-                      fullWidth
-                      label="تأكيد كلمة المرور الجديدة"
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={formData.confirmPassword}
-                      onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                      error={!!errors.confirmPassword}
-                      helperText={errors.confirmPassword}
-                      disabled={loading}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <LockIcon sx={{ color: '#28a745' }} />
-                          </InputAdornment>
-                        ),
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              aria-label="toggle confirm password visibility"
-                              onClick={handleToggleConfirmPassword}
-                              edge="end"
-                              disabled={loading}
-                            >
-                              {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          fontFamily: 'Cairo'
-                        },
-                        '& .MuiInputLabel-root': {
-                          fontFamily: 'Cairo'
-                        }
-                      }}
-                    />
-                  </>
-                )}
+                  }
+                  label={
+                    <Typography sx={{ fontFamily: 'Cairo', fontWeight: 500 }}>
+                      تغيير كلمة المرور
+                    </Typography>
+                  }
+                  sx={{ justifyContent: 'center' }}
+                />
               </Box>
             </Grid>
           </Grid>
+
+          {/* قسم كلمة المرور - يظهر فقط عند الحاجة */}
+          {changePassword && (
+            <>
+              <Typography variant="h6" sx={{ 
+                fontFamily: 'Cairo', 
+                fontWeight: 600, 
+                mb: 3, 
+                mt: 2,
+                color: '#dc3545',
+                borderBottom: '2px solid #dc3545',
+                pb: 1,
+                textAlign: 'center'
+              }}>
+                إعدادات كلمة المرور الجديدة
+              </Typography>
+              
+              <Grid container spacing={6} sx={{ justifyContent: 'center' }}>
+                {/* كلمة المرور الجديدة */}
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="كلمة المرور الجديدة"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    error={!!errors.password}
+                    helperText={errors.password}
+                    disabled={loading}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockIcon sx={{ color: '#dc3545' }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label="toggle password visibility"
+                            onClick={handleTogglePassword}
+                            edge="end"
+                            disabled={loading}
+                          >
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        fontFamily: 'Cairo'
+                      },
+                      '& .MuiInputLabel-root': {
+                        fontFamily: 'Cairo'
+                      }
+                    }}
+                  />
+                </Grid>
+
+                {/* تأكيد كلمة المرور الجديدة */}
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="تأكيد كلمة المرور الجديدة"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                    error={!!errors.confirmPassword}
+                    helperText={errors.confirmPassword}
+                    disabled={loading}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockIcon sx={{ color: '#dc3545' }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label="toggle confirm password visibility"
+                            onClick={handleToggleConfirmPassword}
+                            edge="end"
+                            disabled={loading}
+                          >
+                            {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        fontFamily: 'Cairo'
+                      },
+                      '& .MuiInputLabel-root': {
+                        fontFamily: 'Cairo'
+                      }
+                    }}
+                  />
+                </Grid>
+              </Grid>
+            </>
+          )}
         </Box>
       </DialogContent>
 

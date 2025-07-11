@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { MdVisibility as Visibility, MdVisibilityOff as VisibilityOff, MdAccountBalance as AccountBalance, MdLogin as LoginIcon } from 'react-icons/md';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { authAPI } from '../utils/api';
+import { authAPI } from '../services/api';
 
 const Login = () => {
   const navigate = useNavigate();
