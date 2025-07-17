@@ -69,8 +69,11 @@ class ApiService {
   async login(credentials) {
     return this.request('/auth/login', {
       method: 'POST',
-      body: JSON.stringify(credentials),
-      includeAuth: false,
+      body: credentials,
+      skipAuth: true,
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
   }
 

@@ -51,6 +51,12 @@ export const convertAmount = async (amount, fromCurrency, toCurrency) => {
       return amount;
     }
 
+    // تحويل المبلغ إلى رقم
+    amount = parseFloat(amount);
+    if (isNaN(amount)) {
+      throw new Error('المبلغ غير صالح');
+    }
+
     const response = await settingsAPI.convertCurrency({
       amount,
       fromCurrency,
@@ -58,13 +64,15 @@ export const convertAmount = async (amount, fromCurrency, toCurrency) => {
     });
 
     if (response.success) {
-      return response.data.convertedAmount;
+      const convertedAmount = response.data.convertedAmount || response.data;
+      // التأكد من أن النتيجة رقم
+      return typeof convertedAmount === 'number' ? convertedAmount : parseFloat(convertedAmount);
     }
 
-    return amount;
+    throw new Error('فشل في تحويل العملة');
   } catch (error) {
     console.error('Error converting amount:', error);
-    return amount;
+    throw error;
   }
 };
 

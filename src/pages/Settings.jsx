@@ -35,6 +35,11 @@ import { PageLoadingSpinner, ErrorAlert } from '../components/shared/LoadingComp
 import { showSuccessAlert, showDeleteConfirmation } from '../utils/sweetAlert';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
 
+// تنسيق رمز العملة
+const formatCurrencySymbol = (currency) => {
+  return currency === 'USD' ? '$' : 'د.ع';
+};
+
 const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,8 +55,8 @@ const Settings = () => {
     autoConvertCurrency: false,
     displayCurrency: 'IQD',
     exchangeRates: {
-      USD_TO_IQD: 1308.05,
-      IQD_TO_USD:0.00076,
+      USD_TO_IQD: 0,
+      IQD_TO_USD: 0,
     },
     systemName: 'نظام إدارة المساهمين',
     lastRateUpdate: new Date()
@@ -80,21 +85,28 @@ const Settings = () => {
           const newRate = response.data.rate;
           // تحديث فقط إذا كان السعر مختلف
           if (newRate !== settings.exchangeRates.USD_TO_IQD) {
-            await handleUpdateExchangeRate(newRate.toString());
+            setSettings(prev => ({
+              ...prev,
+              exchangeRates: {
+                USD_TO_IQD: newRate,
+                IQD_TO_USD: 1 / newRate
+              },
+              lastRateUpdate: new Date()
+            }));
             setLastAutoUpdate(new Date());
           }
         }
       } catch (error) {
         console.error('Error fetching latest exchange rate:', error);
+        toast.error('فشل في تحديث سعر الصرف التلقائي');
       }
     };
 
-    if (autoUpdateEnabled) {
-      // تحديث فوري عند تحميل الصفحة
-      updateExchangeRate();
-      // تحديث كل 5 دقائق
-      intervalId = setInterval(updateExchangeRate, 5 * 60 * 1000);
-    }
+    // تحديث فوري عند تحميل الصفحة
+    updateExchangeRate();
+    
+    // تحديث كل 5 دقائق
+    intervalId = setInterval(updateExchangeRate, 5 * 60 * 1000);
 
     return () => {
       if (intervalId) {
@@ -102,7 +114,7 @@ const Settings = () => {
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoUpdateEnabled, settings.exchangeRates.USD_TO_IQD]);
+  }, []);
 
   const fetchSettings = async () => {
     try {
@@ -188,18 +200,34 @@ const Settings = () => {
     }
   };
 
-  const handleUpdateExchangeRate = async (newRate) => {
+  const handleUpdateExchangeRate = async () => {
     try {
       setSaving(true);
       
-      const response = await settingsAPI.updateExchangeRates({
-        USD_TO_IQD: parseFloat(newRate)
-      });
-      
-      if (response.success) {
-        fetchSettings();
+      const response = await settingsAPI.getLatestExchangeRate();
+      if (response.success && response.data?.rate) {
+        const newRate = response.data.rate;
+        
+        // تحديث في قاعدة البيانات
+        const updateResponse = await settingsAPI.updateExchangeRates({
+          USD_TO_IQD: newRate
+        });
+        
+        if (updateResponse.success) {
+          setSettings(prev => ({
+            ...prev,
+            exchangeRates: {
+              USD_TO_IQD: newRate,
+              IQD_TO_USD: 1 / newRate
+            },
+            lastRateUpdate: new Date()
+          }));
+          toast.success('تم تحديث سعر الصرف بنجاح');
+        } else {
+          throw new Error(updateResponse.message || 'فشل في تحديث أسعار الصرف');
+        }
       } else {
-        throw new Error(response.message || 'فشل في تحديث أسعار الصرف');
+        throw new Error('فشل في الحصول على سعر الصرف الحالي');
       }
     } catch (error) {
       console.error('Error updating exchange rates:', error);
@@ -222,10 +250,13 @@ const Settings = () => {
         toCurrency: conversionTest.toCurrency
       });
 
-      if (response.success) {
+      if (response.success && response.data) {
+        const { originalAmount, convertedAmount, fromCurrency, toCurrency } = response.data;
+        const formattedResult = `${originalAmount.toLocaleString()} ${formatCurrencySymbol(fromCurrency)} = ${convertedAmount.toLocaleString()} ${formatCurrencySymbol(toCurrency)}`;
+        
         setConversionTest(prev => ({
           ...prev,
-          result: response.data
+          result: formattedResult
         }));
       } else {
         throw new Error(response.message || 'فشل في تحويل العملة');
@@ -233,6 +264,10 @@ const Settings = () => {
     } catch (error) {
       console.error('Error testing conversion:', error);
       toast.error(error.message || 'حدث خطأ أثناء تحويل العملة');
+      setConversionTest(prev => ({
+        ...prev,
+        result: null
+      }));
     }
   };
 
@@ -352,16 +387,6 @@ const Settings = () => {
                       color="success"
                     />
                   }
-                  label={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography sx={{ fontFamily: 'Cairo' }}>
-                        تحويل العملة تلقائياً
-                      </Typography>
-                      <Tooltip title="عند التفعيل، ستُحوّل جميع المبالغ تلقائياً إلى العملة الافتراضية">
-                        <InfoIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                      </Tooltip>
-                    </Box>
-                  }
                 />
               </Box>
             </CardContent>
@@ -419,7 +444,7 @@ const Settings = () => {
                     endAdornment: (
                       <InputAdornment position="end">
                         <Button
-                          onClick={() => handleUpdateExchangeRate(tempExchangeRate)}
+                          onClick={handleUpdateExchangeRate}
                           size="small"
                           disabled={true}
                           sx={{ fontFamily: 'Cairo' }}
@@ -502,7 +527,7 @@ const Settings = () => {
                 <Grid item xs={12} md={3}>
                   {conversionTest.result && (
                     <Alert severity="info" sx={{ fontFamily: 'Cairo',fontSize: '13px' }}>
-                      النتيجة: {conversionTest.result.formattedResult}
+                      النتيجة: {conversionTest.result}
                     </Alert>
                   )}
                 </Grid>

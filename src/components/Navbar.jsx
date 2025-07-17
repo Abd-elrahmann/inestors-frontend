@@ -49,7 +49,6 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
     };
   }, [location.pathname, isInitialized]); 
 
-  // ✅ animations أسرع لتحسين الأداء
   const navbarVariants = {
     hidden: { 
       y: -80,
@@ -59,9 +58,9 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
       y: 0,
       opacity: 1,
       transition: {
-        duration: 0.3, // أسرع من 0.6
+        duration: 0.3, 
         ease: "easeOut",
-        staggerChildren: 0.05 // أسرع من 0.1
+        staggerChildren: 0.05 
       }
     }
   };
@@ -69,13 +68,13 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
   const itemVariants = {
     hidden: { 
       opacity: 0,
-      y: -10 // أقل من -20
+      y: -10 
     },
     visible: { 
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.2, // أسرع من 0.4
+        duration: 0.2, 
         ease: "easeOut"
       }
     }
@@ -84,15 +83,15 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
   const userInfoVariants = {
     hidden: { 
       opacity: 0,
-      x: 10, // أقل من 20
-      scale: 0.98 // أقرب للحجم الطبيعي
+      x: 10, 
+      scale: 0.98 
     },
     visible: { 
       opacity: 1,
       x: 0,
       scale: 1,
       transition: {
-        duration: 0.25, // أسرع من 0.5
+        duration: 0.25, 
         ease: "easeOut"
       }
     },
@@ -101,7 +100,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
       x: 10,
       scale: 0.98,
       transition: {
-        duration: 0.15 // أسرع من 0.3
+        duration: 0.15 
       }
     }
   };
@@ -159,7 +158,6 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
       }}
     >
       <Toolbar sx={{ justifyContent: 'space-between', direction: 'rtl' }}>
-        {/* Left side - Menu button and Logo */}
         <motion.div variants={itemVariants}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             {user && (
@@ -169,13 +167,12 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                 aria-label="toggle sidebar"
                 onClick={() => {
                   onMenuToggle();
-                  // Dispatch custom event for sidebar toggle
                   window.dispatchEvent(new Event('sidebarToggle'));
                 }}
                 sx={{ 
                   color: '#28a745',
                   mr: 1,
-                  transition: 'all 0.15s ease', // ✅ أسرع
+                    transition: 'all 0.15s ease', 
                   '&:hover': {
                     backgroundColor: 'rgba(40, 167, 69, 0.1)',
                     transform: 'scale(1.1)'
@@ -204,11 +201,9 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
           </Box>
         </motion.div>
 
-        {/* Right side - User info or Login buttons */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AnimatePresence mode="wait">
             {user ? (
-              // Show user info when logged in
               <motion.div
                 key="user-logged-in"
                 variants={userInfoVariants}
@@ -217,7 +212,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                 exit="exit"
                 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
               >
-                <Box sx={{ textAlign: 'right', mr: 2, display: { xs: 'none', sm: 'block' } }}>
+                <Box sx={{ textAlign: 'right', mr: 2, display: 'block' }}>
                   <Typography 
                     variant="body2" 
                     sx={{ 
@@ -239,7 +234,6 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                     {user.username}
                   </Typography>
                 </Box>
-                
                 <IconButton
                   onClick={handleUserMenuOpen}
                   sx={{ p: 0 }}
@@ -281,7 +275,6 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                 </Menu>
               </motion.div>
             ) : (
-              // Show login/register buttons when not logged in
               <motion.div
                 key="user-not-logged-in"
                 variants={userInfoVariants}

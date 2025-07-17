@@ -14,9 +14,7 @@ export const apiConfig = {
 export const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   if (!token) {
-    // إعادة توجيه لصفحة تسجيل الدخول
-    window.location.href = '/login';
-    throw new Error('لا يوجد رمز مصادقة - يرجى تسجيل الدخول');
+    return apiConfig.defaultHeaders;
   }
   
   return {
@@ -35,7 +33,7 @@ export const apiRequest = async (endpoint, options = {}) => {
     
     const config = {
       method: 'GET',
-      headers: getAuthHeaders(),
+      headers: options.skipAuth ? apiConfig.defaultHeaders : getAuthHeaders(),
       signal: controller.signal,
       ...options
     };
@@ -44,10 +42,12 @@ export const apiRequest = async (endpoint, options = {}) => {
     clearTimeout(timeoutId);
 
     // معالجة خاصة لخطأ 401 (انتهاء صلاحية الجلسة)
-    if (response.status === 401) {
+    if (response.status === 401 && !endpoint.includes('/auth/login')) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
       throw new Error('انتهت صلاحية الجلسة - يرجى تسجيل الدخول مرة أخرى');
     }
 
