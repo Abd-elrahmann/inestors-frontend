@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Box } from '@mui/material';
-import TableComponent from '../components/TableComponent';
-import AddInvestorModal from '../components/AddInvestorModal';
-import EditInvestorModal from '../components/EditInvestorModal';
+import TableComponent from '../components/shared/TableComponent';
+import AddInvestorModal from '../modals/AddInvestorModal';
+import EditInvestorModal from '../modals/EditInvestorModal';
 import { PageLoadingSpinner, ErrorAlert, PageLoader } from '../components/shared/LoadingComponents';
 import { 
   getCurrencyCell, 
   getPercentageCell, 
-  columnWidths 
 } from '../styles/tableStyles';
 import { investorsAPI, transformers, handleApiError } from '../services/apiHelpers';
 import { showDeleteConfirmation, showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
@@ -21,7 +20,6 @@ const Investors = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedInvestor, setSelectedInvestor] = useState(null);
   
-  // 💰 استخدام مدير العملة المركزي
   const { formatAmount, currentCurrency } = useCurrencyManager();
 
   useEffect(() => {
@@ -29,17 +27,15 @@ const Investors = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 🚀 تحسين دالة جلب البيانات - تبسيط العمليات
   const fetchInvestors = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // تحسين الأداء: استخدام pagination بدلاً من جلب جميع البيانات
       const response = await investorsAPI.getAll({ 
-        limit: 50,  // تقليل العدد لتحسين الأداء
+        limit: 50,
         page: 1,
-        includeInactive: 'true'  // جلب جميع المساهمين (نشط وغير نشط)
+        includeInactive: 'true'
       });
       
       if (response.data && response.data.investors) {
@@ -61,27 +57,30 @@ const Investors = () => {
     {
       field: 'name',
       headerName: 'اسم المساهم',
-      width: columnWidths.large,
+      flex: 2,
+      minWidth: 150,
       sortable: false,
     },
     {
       field: 'nationalId',
       headerName: 'رقم الهوية',
-      width: columnWidths.medium,
+      flex: 1.5,
+      minWidth: 130,
       sortable: false,
     },
     {
       field: 'phone',
-      headerName: 'رقم الهاتف (اختياري)',
-      width: columnWidths.medium,
+      headerName: 'رقم الهاتف',
+      flex: 1.5,
+      minWidth: 130,
       sortable: false,
     },
     {
       field: 'contribution',
       headerName: `المبلغ المساهم (${currentCurrency})`,
-      width: columnWidths.currency,
+      flex: 1.8,
+      minWidth: 140,
       sortable: false,
-      // 💰 استخدام مدير العملة المركزي
       renderCell: (params) => (
         <span style={getCurrencyCell()}>
           {formatAmount(params.value, params.row.originalCurrency || 'IQD')}
@@ -91,7 +90,8 @@ const Investors = () => {
     {
       field: 'sharePercentage',
       headerName: 'نسبة المساهمة',
-      width: columnWidths.medium,
+      flex: 1.2,
+      minWidth: 110,
       sortable: false,
       renderCell: (params) => (
         <span style={getPercentageCell()}>
@@ -102,7 +102,8 @@ const Investors = () => {
     {
       field: 'joinDate',
       headerName: 'تاريخ الانضمام',
-      width: columnWidths.medium,
+      flex: 1.5,
+      minWidth: 130,
       sortable: false,
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -129,7 +130,6 @@ const Investors = () => {
     const confirmed = await showDeleteConfirmation(investor.name, 'المساهم');
     
     if (confirmed) {
-      // الحذف النهائي فقط من جدول المساهمين
       try {
         await investorsAPI.delete(investor.id, { forceDelete: 'true' });
         showSuccessAlert(`تم حذف المساهم "${investor.name}" نهائياً من النظام`);

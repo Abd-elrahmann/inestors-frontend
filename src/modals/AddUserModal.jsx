@@ -51,42 +51,36 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    // Full name validation
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'الاسم الكامل مطلوب';
     } else if (formData.fullName.trim().length < 2) {
       newErrors.fullName = 'الاسم الكامل يجب أن يكون على الأقل حرفان';
     }
 
-    // Username validation
     if (!formData.username.trim()) {
       newErrors.username = 'اسم المستخدم مطلوب';
     } else if (formData.username.trim().length < 3) {
       newErrors.username = 'اسم المستخدم يجب أن يكون على الأقل 3 أحرف';
     }
 
-    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = 'البريد الإلكتروني مطلوب';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'البريد الإلكتروني غير صحيح';
     }
 
-    // National ID validation
     if (!formData.nationalId.trim()) {
       newErrors.nationalId = 'رقم الهوية مطلوب';
     } else if (!/^\d{10,14}$/.test(formData.nationalId)) {
       newErrors.nationalId = 'رقم الهوية يجب أن يكون من 10 إلى 14 رقم';
     }
 
-    // Password validation
     if (!formData.password) {
       newErrors.password = 'كلمة المرور مطلوبة';
     } else if (formData.password.length < 6) {
       newErrors.password = 'كلمة المرور يجب أن تكون على الأقل 6 أحرف';
     }
 
-    // Confirm password validation
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'تأكيد كلمة المرور مطلوب';
     } else if (formData.password !== formData.confirmPassword) {
@@ -98,7 +92,6 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
   };
 
   const handleInputChange = (field, value) => {
-    // Special handling for nationalId to allow only numbers
     if (field === 'nationalId') {
       const numericValue = value.replace(/[^0-9]/g, '');
       setFormData(prev => ({
@@ -112,7 +105,6 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
       }));
     }
 
-    // Clear error for this field when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -131,7 +123,6 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
     setLoading(true);
     
     try {
-      // Format the data for API
       const userData = {
         username: formData.username.trim(),
         password: formData.password,
@@ -141,12 +132,10 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
         role: formData.role
       };
 
-      // Call API using the existing helper
       const result = await usersAPI.create(userData);
       
       toast.success('تم إضافة المستخدم بنجاح');
       
-      // Reset form
       setFormData({
         fullName: '',
         username: '',
@@ -157,7 +146,6 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
         role: 'user'
       });
       
-      // Close modal and refresh data
       onClose();
       if (onSuccess) {
         onSuccess(result.data);
@@ -166,7 +154,6 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
     } catch (error) {
       console.error('Error adding user:', error);
       
-      // Handle specific errors
       if (error.message.includes('duplicate') || error.message.includes('already exists')) {
         if (error.message.includes('username')) {
           setErrors({ username: 'اسم المستخدم مستخدم بالفعل' });
@@ -249,7 +236,7 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
 
       <form onSubmit={handleSubmit}>
         <DialogContent sx={{ mt: 2, px: 3 }}>
-          {/* قسم البيانات الأساسية */}
+         
           <Typography variant="h6" sx={{ 
             fontFamily: 'Cairo', 
             fontWeight: 600, 
@@ -263,10 +250,10 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
           </Typography>
           
           <Grid container spacing={6} sx={{ mb: 4 }}>
-            {/* العمود الأيمن */}
+           
             <Grid item xs={12} md={6}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {/* الاسم الكامل */}
+               
                 <TextField
                   fullWidth
                   label="الاسم الكامل"
@@ -292,7 +279,7 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
                   }}
                 />
 
-                {/* البريد الإلكتروني */}
+                
                 <TextField
                   fullWidth
                   type="email"
@@ -321,10 +308,10 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
               </Box>
             </Grid>
 
-            {/* العمود الأيسر */}
+           
             <Grid item xs={12} md={6}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {/* اسم المستخدم */}
+               
                 <TextField
                   fullWidth
                   label="اسم المستخدم"
@@ -352,7 +339,7 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
 
                 
 
-                {/* رقم الهوية */}
+                
                 <TextField
                   fullWidth
                   label="رقم الهوية"
@@ -408,7 +395,7 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
 
       
 
-          {/* قسم كلمة المرور */}
+          
           <Typography variant="h6" sx={{ 
             fontFamily: 'Cairo', 
             fontWeight: 600, 
@@ -423,7 +410,7 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
           </Typography>
           
           <Grid container spacing={6} sx={{ mb: 4, justifyContent: 'center' }}>
-            {/* كلمة المرور */}
+           
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
@@ -464,7 +451,7 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
               />
             </Grid>
 
-            {/* تأكيد كلمة المرور */}
+                
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth

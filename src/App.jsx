@@ -8,25 +8,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import './styles/commonStyles.css';
 import './styles/sweetAlert.css';
 import { globalCurrencyManager } from './utils/globalCurrencyManager';
+import routes from './routes';
 
-// تحميل الـ components الأساسية مباشرة (بدون lazy) لسرعة أكبر
-import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
-
-// تحميل الصفحات الأساسية مباشرة
-import Dashboard from './pages/Dashboard';
-import Investors from './pages/Investors';
-import FinancialYears from './pages/FinancialYears';
-import Login from './pages/Login';
-
-// lazy loading للصفحات الأقل استخداماً فقط
-const Users = React.lazy(() => import('./pages/Users'));
-const Transactions = React.lazy(() => import('./pages/Transactions'));
-const Reports = React.lazy(() => import('./pages/Reports'));
-const Profile = React.lazy(() => import('./pages/Profile'));
-const Settings = React.lazy(() => import('./pages/Settings'));
-
-
+const Navbar = React.lazy(() => import('./components/Navbar'));
+const Sidebar = React.lazy(() => import('./components/Sidebar'));
 
 const pulse = keyframes`
   0% { opacity: 1; }
@@ -160,11 +145,11 @@ const theme = createTheme({
 
 const AppLayout = () => {
   const location = useLocation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Start closed
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Save sidebar state to localStorage
+  
   useEffect(() => {
     const initializeSidebar = () => {
       try {
@@ -172,7 +157,7 @@ const AppLayout = () => {
         if (savedSidebarState !== null) {
           setIsSidebarOpen(JSON.parse(savedSidebarState));
         } else {
-          setIsSidebarOpen(true); // Default to open if no saved state
+          setIsSidebarOpen(true); 
         }
       } catch (error) {
         console.warn('Error loading sidebar state:', error);
@@ -181,7 +166,7 @@ const AppLayout = () => {
       setIsInitialized(true);
     };
 
-    // Add small delay to ensure DOM is ready
+    
     const timer = setTimeout(initializeSidebar, 100);
     return () => clearTimeout(timer);
   }, []);
@@ -200,7 +185,7 @@ const AppLayout = () => {
     };
   }, [location]);
 
-  // 💰 تهيئة مدير العملة المركزي عند تحميل التطبيق
+  
   useEffect(() => {
     if (isLoggedIn) {
       globalCurrencyManager.initialize().catch(error => {
@@ -227,14 +212,19 @@ const AppLayout = () => {
     return (
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
-          <Route 
-            path="/login" 
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            } 
-          />
+          {routes
+            .filter(route => !route.protected)
+            .map(route => (
+              <Route
+                key={route.path}
+                path={route.path}
+                element={
+                  <PublicRoute>
+                    <route.element />
+                  </PublicRoute>
+                }
+              />
+            ))}
         </Routes>
       </Suspense>
     );
@@ -245,9 +235,9 @@ const AppLayout = () => {
         display: 'flex', 
         flexDirection: 'column', 
         minHeight: '100vh',
-        overflow: 'hidden' // منع السكرول على المستوى الأعلى
+        overflow: 'hidden' 
       }}>
-        {/* ✅ إزالة Suspense من Navbar لسرعة أكبر */}
+        
         <Navbar onMenuToggle={handleMenuToggle} isSidebarOpen={isSidebarOpen} />
       
               <Box sx={{ 
@@ -256,15 +246,15 @@ const AppLayout = () => {
           mt: '64px', 
           position: 'relative',
           overflow: 'hidden',
-          maxWidth: '100vw' // منع تجاوز عرض الشاشة
+          maxWidth: '100vw' 
         }}>
-        {/* Main Content */}
+          
         <Box 
           component="main" 
           sx={{ 
             flexGrow: 1,
             p: isLoggedIn ? 3 : 0,
-            transition: 'margin-right 0.2s ease-out, width 0.2s ease-out', // ✅ transitions أسرع
+            transition: 'margin-right 0.2s ease-out, width 0.2s ease-out', 
             marginRight: { 
               xs: 0, 
               md: (isLoggedIn && isInitialized && isSidebarOpen) ? '280px' : '0' 
@@ -279,108 +269,29 @@ const AppLayout = () => {
             },
             backgroundColor: isLoggedIn ? '#f8f9fa' : 'transparent',
             minHeight: 'calc(100vh - 64px)',
-            overflow: 'auto', // يسمح بالسكرول داخل المحتوى بس
-            overflowX: 'hidden' // منع السكرول الأفقي
+            overflow: 'auto', 
+            overflowX: 'hidden' 
           }}
         >
-          <Routes>
-            {/* ✅ الصفحات الأساسية بدون Suspense لسرعة أكبر */}
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/investors" 
-              element={
-                <ProtectedRoute>
-                  <Investors />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/financial-years" 
-              element={
-                <ProtectedRoute>
-                  <FinancialYears />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* ✅ الصفحات الأقل استخداماً مع Suspense فقط */}
-            <Route 
-              path="/users" 
-              element={
-                <ProtectedRoute>
-                  <Suspense fallback={<FastLoadingSpinner />}>
-                    <Users />
-                  </Suspense>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/transactions" 
-              element={
-                <ProtectedRoute>
-                  <Suspense fallback={<FastLoadingSpinner />}>
-                    <Transactions />
-                  </Suspense>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/reports" 
-              element={
-                <ProtectedRoute>
-                  <Suspense fallback={<FastLoadingSpinner />}>
-                    <Reports />
-                  </Suspense>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute>
-                  <Suspense fallback={<FastLoadingSpinner />}>
-                    <Profile />
-                  </Suspense>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/settings" 
-              element={
-                <ProtectedRoute>
-                  <Suspense fallback={<FastLoadingSpinner />}>
-                    <Settings />
-                  </Suspense>
-                </ProtectedRoute>
-              } 
-            />
-
-            {/* Redirect routes */}
-            <Route 
-              path="/" 
-              element={
-                localStorage.getItem('token') ? 
-                  <Navigate to="/dashboard" replace /> : 
-                  <Navigate to="/login" replace />
-              } 
-            />
-            <Route 
-              path="*" 
-              element={
-                <Navigate to="/" replace />
-              } 
-            />
-          </Routes>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              {routes
+                .filter(route => route.protected)
+                .map(route => (
+                  <Route
+                    key={route.path}
+                    path={route.path}
+                    element={
+                      <ProtectedRoute>
+                        <route.element />
+                      </ProtectedRoute>
+                    }
+                  />
+                ))}
+            </Routes>
+          </Suspense>
         </Box>
         
-        {/* Sidebar - ✅ إزالة Suspense لسرعة أكبر */}
         {isLoggedIn && isInitialized && (
           <Sidebar 
             isOpen={isSidebarOpen} 
@@ -395,18 +306,17 @@ const AppLayout = () => {
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" replace />;
+  return token ? children : <Navigate to="/login" />;
 };
 
 const PublicRoute = ({ children }) => {
   const token = localStorage.getItem('token');
-  return !token ? children : <Navigate to="/dashboard" replace />;
+  return !token ? children : <Navigate to="/" />;
 };
 
 function App() {
 
   useEffect(() => {
-    // تهيئة مدير العملة العالمي
     globalCurrencyManager.initialize().catch(error => {
       console.error('Error initializing currency manager:', error);
     });
@@ -417,12 +327,20 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
-        <Suspense fallback={<LoadingSpinner />}>
-          <AppLayout />
-        </Suspense>
+        <AppLayout />
       </Router>
       
-      <ToastContainer rtl />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </ThemeProvider>
   );
 }

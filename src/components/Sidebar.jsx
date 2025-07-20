@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Button, Box, List, ListItem, ListItemIcon, ListItemText, Drawer } from '@mui/material';
+import { Button, Box, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import {
   MdDashboard as Dashboard,
   MdPeople as People,
@@ -52,7 +52,6 @@ const Sidebar = ({ isOpen, onClose }) => {
   const hoverPrefetchCache = new Set();
 
   const getAllMenuItems = () => {
-    // ترتيب العناصر حسب المطلوب
     const orderedItems = [
       {
         path: '/dashboard',
@@ -98,7 +97,6 @@ const Sidebar = ({ isOpen, onClose }) => {
       }
     ];
 
-    // فلترة العناصر حسب صلاحيات المستخدم
     return orderedItems.filter(item => item.roles.includes(userRole));
   };
 
@@ -130,7 +128,6 @@ const Sidebar = ({ isOpen, onClose }) => {
     <Box
       sx={{
         width: isOpen ? 280 : 0,
-        maxWidth: isOpen ? 280 : 0,
         minWidth: isOpen ? 280 : 0,
         flexShrink: 0,
         transition: 'all 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
@@ -149,7 +146,6 @@ const Sidebar = ({ isOpen, onClose }) => {
         boxShadow: isOpen ? '0 4px 20px rgba(0, 0, 0, 0.15)' : 'none'
       }}
     >
-      {/* Sidebar Content */}
       <Box
         sx={{
           width: 280,
@@ -161,7 +157,6 @@ const Sidebar = ({ isOpen, onClose }) => {
           transform: isOpen ? 'translateX(0)' : 'translateX(50px)'
         }}
       >
-        {/* Navigation Menu */}
         <List sx={{ flexGrow: 1, px: 1, py: 2 }}>
           {menuItems.map((item, index) => (
             <ListItem
@@ -173,7 +168,8 @@ const Sidebar = ({ isOpen, onClose }) => {
               onFocus={() => handleHoverPrefetch(item.path)}
               sx={{
                 borderRadius: 2,
-                mb: 1,
+                mb: 2,
+                mt: 1,
                 textDecoration: 'none',
                 color: 'inherit',
                 opacity: isOpen ? 1 : 0,
@@ -217,8 +213,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             </ListItem>
           ))}
         </List>
-
-        {/* Logout Button */}
+          
         <Box sx={{ 
           p: 2, 
           borderTop: '1px solid #e0e0e0',

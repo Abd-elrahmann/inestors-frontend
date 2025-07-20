@@ -19,7 +19,6 @@ import {
 import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
 
-// Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -33,7 +32,6 @@ ChartJS.register(
   Filler
 );
 
-// Animation variants for smooth transitions
 const pageVariants = {
   initial: { 
     opacity: 0, 
@@ -83,13 +81,11 @@ const chartVariants = {
   }
 };
 
-// Counter component for animating numbers
 const AnimatedCounter = ({ value, duration = 2000 }) => {
   const [count, setCount] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Start animation after component mounts
     const initTimer = setTimeout(() => {
       setIsVisible(true);
     }, 100);
@@ -109,7 +105,6 @@ const AnimatedCounter = ({ value, duration = 2000 }) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
       
-      // Easing function for smooth animation (easeOutExpo)
       const easeOutExpo = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
       const currentCount = Math.floor(startValue + (endValue - startValue) * easeOutExpo);
       
@@ -122,18 +117,15 @@ const AnimatedCounter = ({ value, duration = 2000 }) => {
 
     const timer = setTimeout(() => {
       requestAnimationFrame(updateCount);
-    }, 200); // Delay to sync with card animation
+    }, 200);
 
     return () => clearTimeout(timer);
   }, [value, duration, isVisible]);
 
-  // Format the number back to original format
   const formatNumber = (num) => {
     if (value.includes('ريال')) {
-      // Format with commas for thousands
       return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' ريال';
     }
-    // Regular number formatting
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   };
 
@@ -162,10 +154,8 @@ const Dashboard = () => {
     operationsGrowth: 0
   });
   
-  // 💰 استخدام مدير العملة المركزي
   const { formatAmount, convertAmount, currentCurrency } = useCurrencyManager();
 
-  // إضافة state للرسوم البيانية
   const [companyFinancialsData, setCompanyFinancialsData] = useState({
     labels: [],
     datasets: []
@@ -186,7 +176,6 @@ const Dashboard = () => {
     datasets: []
   });
 
-  // Get sidebar state from localStorage and listen for changes
   useEffect(() => {
     const getSidebarState = () => {
       try {
@@ -199,7 +188,6 @@ const Dashboard = () => {
 
     getSidebarState();
     
-    // Listen for storage changes (when sidebar is toggled)
     const handleStorageChange = () => {
       getSidebarState();
     };
@@ -214,18 +202,16 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    fetchDashboardData();
-    // ✅ تحديث أقل تكراراً - كل 15 دقيقة بدلاً من 5
+    fetchDashboardData(); 
     const interval = setInterval(fetchDashboardData, 15 * 60 * 1000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentCurrency]); // Add currentCurrency as dependency to refresh when currency changes
+  }, [currentCurrency]); 
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       
-      // جلب البيانات كما هو موجود سابقاً
       const [investorsResponse, transactionsResponse, financialYearsResponse] = await Promise.all([
         fetch('/api/investors', {
           headers: {
@@ -253,7 +239,6 @@ const Dashboard = () => {
         financialYearsResponse.json()
       ]);
 
-      // تحديث البيانات الإحصائية مع تحويل العملة
       const totalCapital = await Promise.all(
         investorsData.data?.investors?.map(async investor => {
           const amount = investor.amountContributed || 0;
@@ -263,18 +248,16 @@ const Dashboard = () => {
       
       const totalProfits = await Promise.all(
         financialYearsData.data?.financialYears?.map(async year => {
-          const profit = year.totalProfit || 0;
-          return convertAmount(profit, year.currency || 'IQD', currentCurrency);
+          const amount = year.totalProfit || 0;
+          return convertAmount(amount, year.currency || 'IQD', currentCurrency);
         }) || []
-      ).then(profits => profits.reduce((sum, profit) => sum + profit, 0));
+      ).then(amounts => amounts.reduce((sum, amount) => sum + amount, 0));
       
-      // حساب عدد العمليات الشهرية
       const currentDate = new Date();
       const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const monthlyOperations = transactionsData.data?.transactions?.filter(t => 
         new Date(t.createdAt) >= monthStart).length || 0;
       
-      // حساب نسب النمو (مقارنة بالشهر السابق)
       const lastMonthStart = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
       const lastMonthOperations = transactionsData.data?.transactions?.filter(t => 
         new Date(t.createdAt) >= lastMonthStart && new Date(t.createdAt) < monthStart).length || 0;
@@ -293,7 +276,6 @@ const Dashboard = () => {
         operationsGrowth
       });
       
-      // تحديث بيانات الرسوم البيانية
       await updateChartData(investorsData.data?.investors || [], 
                      transactionsData.data?.transactions || [], 
                      financialYearsData.data?.financialYears || []);
@@ -305,16 +287,12 @@ const Dashboard = () => {
     }
   };
 
-  // دالة لتحديث بيانات الرسوم البيانية
   const updateChartData = async (investors, transactions, financialYears) => {
-    // 1. تحديث بيانات الأداء المالي
     const sortedYears = [...financialYears].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
     
-    // حساب البيانات مع تحويل العملة
     const yearlyData = await Promise.all(sortedYears.map(async year => {
       const yearStart = new Date(year.startDate);
       
-      // حساب إجمالي رأس المال للسنة مع تحويل العملة
       const totalInvestments = await Promise.all(
         investors.map(async investor => {
           const investorJoinDate = new Date(investor.createdAt);
@@ -325,7 +303,6 @@ const Dashboard = () => {
         })
       ).then(amounts => amounts.reduce((sum, amount) => sum + amount, 0));
 
-      // تحويل الأرباح إلى العملة المطلوبة
       const convertedProfit = await convertAmount(year.totalProfit || 0, year.currency || 'IQD', currentCurrency);
 
       return {
@@ -360,14 +337,12 @@ const Dashboard = () => {
       ]
     });
 
-    // 2. ✅ تبسيط بيانات تطور رأس المال - أسبوع واحد بدلاً من 30 يوم
     const last7Days = Array.from({length: 7}, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (6 - i));
       return date;
     });
 
-    // حساب مبسط - رأس المال الإجمالي لكل يوم مع تحويل العملة
     const totalCapital = await Promise.all(
       investors.map(async investor => 
         convertAmount(investor.amountContributed || 0, investor.currency || 'IQD', currentCurrency)
@@ -395,7 +370,6 @@ const Dashboard = () => {
       ]
     });
 
-    // 3. تحديث بيانات توزيع المحفظة مع تحويل العملة
     const investorAmounts = await Promise.all(
       investors.map(async inv => ({
         ...inv,
@@ -437,18 +411,15 @@ const Dashboard = () => {
       ]
     });
 
-    // 4. ✅ تبسيط بيانات الأداء اليومي - 7 أيام بدلاً من 14
     const last7DaysPerf = Array.from({length: 7}, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (6 - i));
       return date;
     });
 
-    // حساب مبسط للمعاملات
     const totalTransactions = transactions.length;
     const totalDeposits = transactions.filter(t => t.type === 'deposit').length;
     
-    // توزيع البيانات بشكل متساوٍ لتبسيط الحساب
     const avgDailyTransactions = Math.floor(totalTransactions / 7);
     const avgDailyDeposits = Math.floor(totalDeposits / 7);
 
@@ -593,9 +564,9 @@ const Dashboard = () => {
       layout={false}
       key="dashboard-page"
       style={{
-        maxWidth: isSidebarOpen ? 'none' : '1200px',
-        margin: isSidebarOpen ? 'auto' : '0 auto',
-        textAlign: isSidebarOpen ? 'inherit' : 'center'
+        maxWidth: '1500px',
+        margin: '0 auto',
+        textAlign:  'center'
       }}
     >
       <motion.div 
@@ -609,7 +580,6 @@ const Dashboard = () => {
         <p className="page-subtitle">تحليلات شاملة وإحصائيات مرئية لأداء النظام</p>
       </motion.div>
 
-      {/* Statistics Cards */}
       {loading ? (
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
           <CircularProgress />
@@ -626,7 +596,7 @@ const Dashboard = () => {
           }}
         >
           {stats.map((stat, index) => (
-            <Grid item xs={12} sm={6} md={3} lg={3} key={index}>
+            <Grid  xs={12} sm={6} md={3} lg={3} key={index}>
               <motion.div
                 variants={cardVariants}
                 whileHover={{ 
@@ -688,9 +658,9 @@ const Dashboard = () => {
         </Grid>
       )}
 
-      {/* Charts Section */}
+      
       <Grid container spacing={3}>
-        <Grid item xs={12} sx={{width: '94%'}}>
+        <Grid  xs={12} sx={{width: '94%'}}>
           <motion.div variants={chartVariants}>
             <Paper elevation={1} sx={{ 
               p: 3, 
@@ -765,8 +735,8 @@ const Dashboard = () => {
           </motion.div>
         </Grid>
 
-        {/* Price History Line Chart - Full Width */}
-        <Grid item xs={12} sx={{width: '94%'}}>
+        
+        <Grid  xs={12} sx={{width: '94%'}}>
           <motion.div variants={chartVariants}>
             <Paper elevation={1} sx={{ 
               p: 3, 
@@ -851,8 +821,8 @@ const Dashboard = () => {
           </motion.div>
         </Grid>
 
-        {/* Row 1: Portfolio Distribution and Daily Performance */}
-        <Grid item xs={12} md={6} sx={{width: '94%'}}>
+                
+        <Grid  xs={12} md={6} sx={{width: '94%'}}>
           <motion.div variants={chartVariants}>
             <Paper elevation={1} sx={{ 
               p: 3, 
@@ -893,7 +863,7 @@ const Dashboard = () => {
           </motion.div>
         </Grid>
 
-        <Grid item xs={12} md={6} sx={{width: '94%'}}>
+        <Grid  xs={12} md={6} sx={{width: '94%'}}>
           <motion.div variants={chartVariants}>
             <Paper elevation={1} sx={{ 
               p: 3, 

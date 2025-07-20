@@ -2,13 +2,13 @@ import React from 'react';
 import { Box, Alert, CircularProgress, Button, Typography, Backdrop, Skeleton, Card, CardContent, LinearProgress, Fade } from '@mui/material';
 import { MdRefresh as RefreshIcon } from 'react-icons/md';
 
-// Shared constants
+
 const sharedStyles = {
   fontFamily: 'Cairo',
   primaryColor: '#28a745'
 };
 
-// Loading spinner for tables and pages
+
 export const PageLoadingSpinner = ({ message = 'جاري التحميل...', minHeight = '400px' }) => (
   <Box 
     sx={{ 
@@ -38,7 +38,7 @@ export const PageLoadingSpinner = ({ message = 'جاري التحميل...', min
   </Box>
 );
 
-// Small loading spinner for navigation
+
 export const SmallLoadingSpinner = ({ size = 24 }) => (
   <Box
     sx={{
@@ -56,7 +56,7 @@ export const SmallLoadingSpinner = ({ size = 24 }) => (
   </Box>
 );
 
-// Error alert with retry functionality
+
 export const ErrorAlert = ({ 
   error, 
   onRetry = null, 
@@ -91,7 +91,7 @@ export const ErrorAlert = ({
   </Box>
 );
 
-// Loading overlay for forms
+
 export const FormLoadingOverlay = ({ loading, children }) => (
   <Box sx={{ position: 'relative' }}>
     {children}
@@ -119,7 +119,7 @@ export const FormLoadingOverlay = ({ loading, children }) => (
   </Box>
 );
 
-// Empty state component
+
 export const EmptyState = ({ 
   message = 'لا توجد بيانات', 
   icon = null,
@@ -154,14 +154,14 @@ export const EmptyState = ({
   </Box>
 );
 
-// ⚡ مؤشر تحميل سريع وخفيف
+
 export const QuickLoader = ({ size = 24, color = "primary" }) => (
   <Box display="flex" justifyContent="center" alignItems="center" p={1}>
     <CircularProgress size={size} color={color} thickness={4} />
   </Box>
 );
 
-// 💨 مؤشر تحميل كامل الشاشة محسّن
+
 export const FullScreenLoader = ({ open, message = "جاري التحميل..." }) => (
   <Backdrop 
     sx={{ 
@@ -183,7 +183,7 @@ export const FullScreenLoader = ({ open, message = "جاري التحميل..." 
   </Backdrop>
 );
 
-// 📊 هيكل عظمي للجداول - سريع التحميل
+
 export const TableSkeleton = ({ rows = 5, columns = 6 }) => (
   <Box sx={{ width: '100%' }}>
     {[...Array(rows)].map((_, index) => (
@@ -202,7 +202,7 @@ export const TableSkeleton = ({ rows = 5, columns = 6 }) => (
   </Box>
 );
 
-// 📋 هيكل عظمي للكروت
+
 export const CardSkeleton = ({ count = 4 }) => (
   <Box display="flex" gap={2} flexWrap="wrap">
     {[...Array(count)].map((_, index) => (
@@ -217,7 +217,7 @@ export const CardSkeleton = ({ count = 4 }) => (
   </Box>
 );
 
-// ⏳ شريط تقدم خفيف
+
 export const ProgressBar = ({ progress, message }) => (
   <Box sx={{ width: '100%', mb: 2 }}>
     <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
@@ -236,7 +236,7 @@ export const ProgressBar = ({ progress, message }) => (
   </Box>
 );
 
-// 🔄 مؤشر تحميل المودال المحسّن
+
 export const ModalLoader = ({ loading, children, message = "جاري التحميل..." }) => {
   if (loading) {
     return (
@@ -263,7 +263,7 @@ export const ModalLoader = ({ loading, children, message = "جاري التحم�
   );
 };
 
-// 🚀 مؤشر تحميل الصفحة المحسّن
+  
 export const PageLoader = ({ loading, children, skeletonType = "table" }) => {
   if (loading) {
     return (

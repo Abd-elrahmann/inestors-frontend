@@ -1,6 +1,5 @@
 import Swal from 'sweetalert2';
 
-// Configure SweetAlert2 with Arabic RTL support
 const swalConfig = {
   customClass: {
     popup: 'swal-rtl',
@@ -10,7 +9,7 @@ const swalConfig = {
     cancelButton: 'swal-cancel-btn'
   },
   buttonsStyling: false,
-  reverseButtons: true, // Put confirm button on the right for RTL
+  reverseButtons: true,
   showClass: {
     popup: 'animate__animated animate__fadeInDown'
   },
@@ -19,7 +18,6 @@ const swalConfig = {
   }
 };
 
-// Delete confirmation alert
 export const showDeleteConfirmation = async (itemName, itemType = 'العنصر') => {
   const result = await Swal.fire({
     ...swalConfig,
@@ -51,7 +49,6 @@ export const showDeleteConfirmation = async (itemName, itemType = 'العنصر'
   return result.isConfirmed;
 };
 
-// Delete confirmation for investors with option for force delete
 export const showInvestorDeleteConfirmation = async (investorName) => {
   const result = await Swal.fire({
     ...swalConfig,
@@ -131,7 +128,6 @@ export const showInvestorDeleteConfirmation = async (investorName) => {
   if (result.isConfirmed) {
     return { confirmed: true, forceDelete: false };
   } else if (result.isDenied) {
-    // تأكيد إضافي للحذف النهائي
     const forceConfirm = await Swal.fire({
       ...swalConfig,
       customClass: {
@@ -174,7 +170,6 @@ export const showInvestorDeleteConfirmation = async (investorName) => {
   return { confirmed: false, forceDelete: false };
 };
 
-// Success alert
 export const showSuccessAlert = (message, title = 'تم بنجاح') => {
   return Swal.fire({
     ...swalConfig,
@@ -188,7 +183,6 @@ export const showSuccessAlert = (message, title = 'تم بنجاح') => {
   });
 };
 
-// Error alert
 export const showErrorAlert = (message, title = 'خطأ') => {
   return Swal.fire({
     ...swalConfig,
@@ -200,7 +194,6 @@ export const showErrorAlert = (message, title = 'خطأ') => {
   });
 };
 
-// Info alert
 export const showInfoAlert = (message, title = 'معلومات') => {
   return Swal.fire({
     ...swalConfig,
@@ -212,7 +205,6 @@ export const showInfoAlert = (message, title = 'معلومات') => {
   });
 };
 
-// Warning alert
 export const showWarningAlert = (message, title = 'تحذير') => {
   return Swal.fire({
     ...swalConfig,
@@ -223,8 +215,7 @@ export const showWarningAlert = (message, title = 'تحذير') => {
     confirmButtonColor: '#ffc107'
   });
 };
-
-// Confirmation alert
+    
 export const showConfirmAlert = async (title, message, confirmText = 'نعم', cancelText = 'إلغاء') => {
   const result = await Swal.fire({
     ...swalConfig,

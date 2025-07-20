@@ -1,16 +1,14 @@
-// API Helper utilities
+
 import { performanceMonitor } from '../utils/performanceOptimization';
 
-// Shared API utilities
 export const apiConfig = {
   baseURL: 'http://localhost:5000/api',
   defaultHeaders: {
     'Content-Type': 'application/json'
   },
-  timeout: 30000  // 30 ثانية timeout
+  timeout: 30000
 };
 
-// Get authorization headers
 export const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -23,7 +21,6 @@ export const getAuthHeaders = () => {
   };
 };
 
-// Generic API request function مُحسن للأداء
 export const apiRequest = async (endpoint, options = {}) => {
   const operationId = performanceMonitor.start(`API Request: ${endpoint}`);
   
@@ -41,7 +38,6 @@ export const apiRequest = async (endpoint, options = {}) => {
     const response = await fetch(`${apiConfig.baseURL}${endpoint}`, config);
     clearTimeout(timeoutId);
 
-    // معالجة خاصة لخطأ 401 (انتهاء صلاحية الجلسة)
     if (response.status === 401 && !endpoint.includes('/auth/login')) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -62,7 +58,6 @@ export const apiRequest = async (endpoint, options = {}) => {
           errorMessage = errorData.error;
         }
         
-        // إضافة تفاصيل إضافية إذا كانت متوفرة
         if (errorData.details) {
           errorMessage += ` - تفاصيل: ${errorData.details}`;
         }
@@ -71,7 +66,6 @@ export const apiRequest = async (endpoint, options = {}) => {
       } catch (parseError) {
         console.error('🚨 لا يمكن تحليل رسالة الخطأ:', parseError);
         
-        // محاولة الحصول على النص الخام
         try {
           const errorText = await response.text();
           console.error('🚨 نص الخطأ الخام:', errorText);
@@ -100,7 +94,6 @@ export const apiRequest = async (endpoint, options = {}) => {
     
     console.error(`🚨 API Error for ${endpoint}:`, error);
     
-    // معالجة خاصة لأخطاء الشبكة
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
       throw new Error('فشل في الاتصال بالخادم - تحقق من اتصال الإنترنت');
     }
@@ -111,35 +104,28 @@ export const apiRequest = async (endpoint, options = {}) => {
   }
 };
 
-// Specific API functions
 export const investorsAPI = {
-  // Get all investors
   getAll: (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     const endpoint = `/investors${queryString ? `?${queryString}` : ''}`;
     return apiRequest(endpoint);
   },
 
-  // Get single investor
   getById: (id) => apiRequest(`/investors/${id}`),
 
-  // Create investor
   create: (data) => apiRequest('/investors', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
 
-  // Update investor
   update: (id, data) => apiRequest(`/investors/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data)
   }),
 
-  // Delete investor
   delete: (id, options = {}) => {
     const queryParams = new URLSearchParams();
-    
-    // إضافة معامل forceDelete إذا كان موجوداً
+
     if (options.forceDelete !== undefined) {
       queryParams.append('forceDelete', options.forceDelete.toString());
     }
@@ -152,17 +138,14 @@ export const investorsAPI = {
     });
   },
 
-  // Get investor balance
   getBalance: (id) => apiRequest(`/investors/${id}/balance`),
 
-  // Get investor transactions
   getTransactions: (id, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     const endpoint = `/investors/${id}/transactions${queryString ? `?${queryString}` : ''}`;
     return apiRequest(endpoint);
   },
 
-  // Get investor profits
   getProfits: (id, params = {}) => {
     const queryString = new URLSearchParams(params).toString();
     const endpoint = `/investors/${id}/profits${queryString ? `?${queryString}` : ''}`;
@@ -338,9 +321,7 @@ export const financialYearsAPI = {
   getSummary: (id) => apiRequest(`/financial-years/${id}/summary`)
 };
 
-// Data transformation utilities
 export const transformers = {
-  // Transform investor data for table display
   investor: (investor) => {
     return {
       id: investor._id,
@@ -356,13 +337,11 @@ export const transformers = {
         month: '2-digit',
         day: '2-digit'
       }) : 'غير محدد',
-      status: investor.isActive ? 'نشط' : 'غير نشط',
       sharePercentage: investor.sharePercentage ? 
         `${investor.sharePercentage.toFixed(2)}%` : '0%'
     };
   },
 
-  // Transform transaction data for table display
   transaction: (transaction) => {
     return {
       id: transaction._id,
@@ -374,18 +353,16 @@ export const transformers = {
       amount: transaction.amount,
       currency: transaction.currency || 'IQD',
       originalCurrency: transaction.currency || 'IQD',
-      profitYear: transaction.profitYear, // إضافة سنة الأرباح
+      profitYear: transaction.profitYear,
       date: transaction.transactionDate ? new Date(transaction.transactionDate).toLocaleDateString('en-US', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit'
       }) : 'غير محدد',
-      description: transaction.description || 'لا يوجد وصف',
       status: transaction.status || 'مكتمل'
     };
   },
 
-  // Transform financial year data for table display
   financialYear: (financialYear) => {
     const getStatusText = (status) => {
       const statusMap = {
@@ -416,7 +393,6 @@ export const transformers = {
     };
   },
 
-  // Transform user data for table display
   user: (user) => ({
     id: user._id || user.id,
     fullName: user.fullName,
@@ -424,22 +400,10 @@ export const transformers = {
     email: user.email,
     nationalId: user.nationalId,
     role: user.role === 'admin' ? 'مدير' : 'مستخدم',
-    status: user.isActive ? 'نشط' : 'غير نشط',
-    lastLogin: user.lastLogin ? 
-      new Date(user.lastLogin).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      }) : 'لم يسجل دخول',
-    createdAt: new Date(user.createdAt).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      })
+    
   })
 };
 
-// Error handling utilities
 export const handleApiError = (error) => {
   if (error.message.includes('401')) {
     localStorage.removeItem('token');

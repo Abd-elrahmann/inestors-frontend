@@ -1,14 +1,12 @@
-// Shared styles for all table components
 export const tableConstants = {
-  // Dimensions
-  rowHeight: 65, // Increased row height
-  headerHeight: 70, // Increased header height
-  fontSize: '13px', // Increased font size
-  headerFontSize: '15px', // Increased header font size
-  cellPadding: '16px 24px', // Increased padding
+ 
+  rowHeight: 65, 
+  headerHeight: 70, 
+  fontSize: '13px', 
+  headerFontSize: '15px', 
+  cellPadding: '16px 12px', 
   
   
-  // Colors
   primaryColor: '#28a745',
   secondaryColor: '#007bff',
   errorColor: '#dc3545',
@@ -20,17 +18,17 @@ export const tableConstants = {
   borderColor: '#e0e0e0',
   hoverBg: '#d4edda',
   
-  // Spacing
-  tableGap: 2,
+  
+  tableGap: 1,
   buttonPadding: '6px 12px',
   statusPadding: '6px 12px',
   
-  // Font weights
+  
   boldWeight: 600,
   normalWeight: 500
 };
 
-// Common DataGrid styles
+
 export const getDataGridStyles = () => ({
   direction: 'rtl',
   fontFamily: 'Cairo',
@@ -38,9 +36,7 @@ export const getDataGridStyles = () => ({
   width: '100%',
   height: '100%',
   minHeight: 0,
-  minWidth: 'max-content', // Allow horizontal scrolling
   
-  // Header styles
   '& .MuiDataGrid-columnHeaders': {
     backgroundColor: tableConstants.primaryColor,
     color: 'white',
@@ -48,8 +44,7 @@ export const getDataGridStyles = () => ({
     fontSize: tableConstants.headerFontSize,
     height: `${tableConstants.headerHeight}px !important`,
     minHeight: `${tableConstants.headerHeight}px !important`,
-    borderRadius: '8px 8px 0 0',
-    minWidth: 'max-content' // Allow horizontal scrolling
+    borderRadius: '8px 8px 0 0'
   },
   
   '& .MuiDataGrid-columnHeaderTitle': {
@@ -60,29 +55,7 @@ export const getDataGridStyles = () => ({
     width: '100%',
     display: 'flex',
     justifyContent: 'center',
-    alignItems: 'center',
-    whiteSpace: 'nowrap', // Keep header text on one line
-    overflow: 'visible', // Show full header text
-    minWidth: 'max-content' // Allow content to determine width
-
-  },
-  
-  // Cell styles
-  '& .MuiDataGrid-cell': {
-    textAlign: 'center',
-    borderBottom: `1px solid ${tableConstants.borderColor}`,
-    borderRight: `1px solid ${tableConstants.borderColor}`,
-    fontSize: tableConstants.fontSize,
-    height: `${tableConstants.rowHeight}px !important`,
-    lineHeight: '1.5',
-    padding: tableConstants.cellPadding, // Use increased padding
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'visible', // Show full content
-    whiteSpace: 'nowrap', // Keep content on one line
-    textOverflow: 'unset', // Don't truncate text
-    minWidth: 'max-content' // Allow content to determine width
+    alignItems: 'center'
   },
   
   '& .MuiDataGrid-row': {
@@ -95,11 +68,10 @@ export const getDataGridStyles = () => ({
   },
   
   '& .MuiDataGrid-columnHeader': {
-    padding: '0 24px', // Increased padding
+    padding: '0 12px', 
     justifyContent: 'center',
     alignItems: 'center',
     borderRight: '1px solid rgba(255, 255, 255, 0.3)',
-    minWidth: 'max-content', // Allow content to determine width
     '&:focus, &:focus-within': {
       outline: 'none'
     }
@@ -111,15 +83,13 @@ export const getDataGridStyles = () => ({
   
   '& .MuiDataGrid-virtualScroller': {
     direction: 'rtl',
-    overflow: 'auto !important',
-    minWidth: 'max-content' // Allow horizontal scrolling
+    overflow: 'auto !important'
   },
   
   '& .MuiDataGrid-main': {
     borderRadius: '8px',
-    overflow: 'auto', // Enable scrolling
-    border: `2px solid ${tableConstants.primaryColor}`,
-    minWidth: 'max-content' // Allow horizontal scrolling
+    overflow: 'hidden', 
+    border: `2px solid ${tableConstants.primaryColor}`
   },
   
   '& .MuiDataGrid-footerContainer': {
@@ -142,7 +112,7 @@ export const getDataGridStyles = () => ({
   }
 });
 
-// Common cell renderers
+
 export const getCurrencyCell = () => ({
   fontWeight: tableConstants.boldWeight,
   color: tableConstants.primaryColor,
@@ -169,7 +139,7 @@ export const getStatusCell = (status, activeText = 'نشط') => {
   };
 };
 
-// Common column configurations
+
 export const getColumnDefaults = () => ({
   headerAlign: 'center',
   align: 'center',
@@ -177,29 +147,28 @@ export const getColumnDefaults = () => ({
   filterable: false
 });
 
-// Responsive column widths that auto-fit to container
+
 export const columnWidths = {
-  small: 120, // Increased
-  medium: 160, // Increased
-  large: 200, // Increased
-  extraLarge: 240, // Increased
-  currency: 180, // Increased
-  status: 140, // Increased
-  actions: 180, // Increased
-  investorName: 220, // Increased
-  phone: 180, // Increased
-  email: 220, // Increased
-  transactionType: 220, // Increased
-  amount: 220, // Increased
-  date: 200, // Increased
-  description: 250, // Increased
-  profitPercentage: 160, // Increased
-  period: 200 // Increased
+  small: 120, 
+  medium: 160, 
+  large: 200, 
+  extraLarge: 240, 
+  currency: 180, 
+  status: 140, 
+  actions: 180, 
+  investorName: 220, 
+  phone: 180, 
+  email: 220, 
+  transactionType: 220, 
+  amount: 220, 
+  date: 200, 
+  profitPercentage: 160, 
+  period: 200 
 };
 
-// Function to calculate responsive column widths
+
 export const getResponsiveColumnWidths = (containerWidth, columnCount) => {
-  const availableWidth = containerWidth - 50; // Account for scrollbar and padding
+  const availableWidth = containerWidth - 100; 
   const averageWidth = Math.floor(availableWidth / columnCount);
   
   return {

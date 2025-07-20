@@ -45,7 +45,6 @@ const EditFinancialYearModal = ({ open, onClose, onSuccess, financialYear }) => 
 
   useEffect(() => {
     if (financialYear && open) {
-      // جلب أحدث بيانات السنة المالية من الخادم
       fetchLatestFinancialYearData();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -76,7 +75,7 @@ const EditFinancialYearModal = ({ open, onClose, onSuccess, financialYear }) => 
        }
     } catch (error) {
       console.error('Error fetching latest financial year data:', error);
-      // في حالة الخطأ، استخدم البيانات المُمررة
+      
       setFormData({
         year: financialYear.year || '',
         startDate: financialYear.startDate ? new Date(financialYear.startDate) : null,
@@ -108,7 +107,7 @@ const EditFinancialYearModal = ({ open, onClose, onSuccess, financialYear }) => 
       [field]: value
     }));
     
-    // Clear error when user starts typing
+    
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -273,7 +272,7 @@ const EditFinancialYearModal = ({ open, onClose, onSuccess, financialYear }) => 
         <form onSubmit={handleSubmit}>
           <DialogContent sx={{ mt: 2 }}>
             <Grid container spacing={3}>
-              {/* الصف الأول: السنة المالية وإجمالي الربح والعملة */}
+             
               <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
@@ -329,7 +328,7 @@ const EditFinancialYearModal = ({ open, onClose, onSuccess, financialYear }) => 
                 </FormControl>
               </Grid>
 
-              {/* الصف الثاني: تاريخ بداية ونهاية الفترة */}
+             
               <Grid item xs={12} md={6}>
                 <DatePicker
                   label="تاريخ بداية الفترة"
@@ -368,7 +367,7 @@ const EditFinancialYearModal = ({ open, onClose, onSuccess, financialYear }) => 
                 />
               </Grid>
 
-              {/* الصف الثالث: نوع الفترة ومدة الفترة */}
+             
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
@@ -403,7 +402,7 @@ const EditFinancialYearModal = ({ open, onClose, onSuccess, financialYear }) => 
                 />
               </Grid>
 
-              {/* الصف الرابع: نسبة التدوير وخيار التفعيل التلقائي */}
+             
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
@@ -452,7 +451,7 @@ const EditFinancialYearModal = ({ open, onClose, onSuccess, financialYear }) => 
                 </Grid>
               )}
 
-              {/* Current Status */}
+              
               <Grid item xs={12}>
                 <Alert 
                   severity={

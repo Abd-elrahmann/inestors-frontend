@@ -36,23 +36,12 @@ body {
   max-width: 100vw !important;
 }
 
-/* Prevent horizontal scroll globally */
 * {
   box-sizing: border-box;
   max-width: 100%;
 }
 
-/* Hide horizontal scrollbar completely */
-body::-webkit-scrollbar-x {
-  display: none;
-}
 
-/* For all elements */
-*::-webkit-scrollbar-x {
-  display: none;
-}
-
-/* Smooth Sidebar Animations */
 @keyframes slideInFromRight {
   from {
     opacity: 0;
@@ -94,7 +83,6 @@ body::-webkit-scrollbar-x {
   max-width: 100vw !important;
 }
 
-/* Utility Classes */
 .text-center {
   text-align: center;
 }
@@ -111,7 +99,6 @@ body::-webkit-scrollbar-x {
   background-color: var(--background-white);
 }
 
-/* Sidebar Styles */
 .sidebar {
   position: fixed;
   top: var(--navbar-height);
@@ -163,7 +150,6 @@ body::-webkit-scrollbar-x {
   border-top: 1px solid var(--border-light);
 }
 
-/* Form Styles */
 .form-container {
   background-color: var(--background-white);
   padding: 30px;
@@ -215,7 +201,6 @@ body::-webkit-scrollbar-x {
   box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
 }
 
-/* Material-UI RTL Overrides */
 .MuiDataGrid-root {
   direction: rtl;
 }
@@ -274,7 +259,6 @@ body::-webkit-scrollbar-x {
   text-align: right;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;

@@ -5,8 +5,8 @@ import { MdSearch as Search, MdAdd as Add, MdEdit as Edit, MdDelete as Delete } 
 import { 
   getDataGridStyles, 
   getColumnDefaults 
-} from '../styles/tableStyles';
-import { createDebouncedSearch } from '../utils/performanceOptimization';
+} from '../../styles/tableStyles';
+import { createDebouncedSearch } from '../../utils/performanceOptimization';
 
 const TableComponent = ({ 
   title, 
@@ -66,19 +66,26 @@ const TableComponent = ({
   const columnsWithActions = React.useMemo(() => {
     const baseColumns = columns.map(col => ({
       ...getColumnDefaults(),
-      ...col
+      ...col,
+      width: undefined,
+      flex: col.flex || 1,
+      minWidth: col.minWidth || 120
     }));
 
     if (isAdmin && showActions && (onEdit || onDelete) && !readOnly) {
       const actionColumn = {
         field: 'actions',
         headerName: 'الإجراءات',
-        width: 150,
+        flex: 0,
+        width: 170,
+        minWidth: 170,
+        maxWidth: 170,
         headerAlign: 'center',
         align: 'center',
         sortable: false,
         filterable: false,
         disableColumnMenu: true,
+        resizable: false,
         renderCell: (params) => (
           <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
             {onEdit && (
@@ -137,10 +144,10 @@ const TableComponent = ({
       flexDirection: 'column',
       height: '100%',
       width: '100%',
+      maxWidth: '100%',
       minHeight: 0,
       overflow: 'hidden'
     }}>
-      {/* Table Header */}
       <Box sx={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -226,13 +233,13 @@ const TableComponent = ({
           )}
         </Box>
       </Box>
-
-      {/* Data Grid */}
+          
       <Box sx={{ 
         height: 'calc(100% - 64px)', 
         width: '100%',
+        maxWidth: '100%',
         flex: 1,
-        overflow: 'auto', 
+        overflow: 'hidden', 
         position: 'relative',
         backgroundColor: 'white'
       }}>
@@ -248,7 +255,7 @@ const TableComponent = ({
           disableSelectionOnClick
           rowHeight={60} 
           headerHeight={50} 
-          disableColumnResize={true}
+          disableColumnResize={false}
           autoHeight={false}
           checkboxSelection={false}
           disableRowSelectionOnClick
@@ -267,19 +274,19 @@ const TableComponent = ({
                 display: 'flex', 
                 justifyContent: 'center', 
                 alignItems: 'center',
-                width: '500px',
+                width: '100%',
+                height: '100%',
                 position: 'absolute',
-                top:55,
+                top: 0,
                 left: 0,
-                right: 500,
-                bottom: 0,
-                margin: 'auto'
+                right: 0,
+                bottom: 0
               }}>
                 <Typography sx={{ 
                   fontFamily: 'Cairo', 
-                  fontSize: '0.8rem',
+                  fontSize: '1rem',
                   textAlign: 'center',
-                  width: '500px',
+                  color: '#666',
                   direction: 'rtl'
                 }}>
                   لا توجد بيانات
@@ -290,9 +297,15 @@ const TableComponent = ({
           sx={{
             ...getDataGridStyles(),
             border: 'none',
+            width: '100%',
+            maxWidth: '100%',
             '& .MuiDataGrid-main': {
               border: 'none',
-              direction: 'rtl'
+              direction: 'rtl',
+              width: '100%'
+            },
+            '& .MuiDataGrid-virtualScroller': {
+              width: '100%'
             },
             '& .MuiDataGrid-cell': {
               borderRight: '1px solid #e0e0e0',
@@ -306,6 +319,7 @@ const TableComponent = ({
               lineHeight: '1.2'
             },
             '& .MuiDataGrid-row': {
+              width: '100%',
               '&:hover': {
                 backgroundColor: 'rgba(40, 167, 69, 0.08) !important'
               }
@@ -315,6 +329,7 @@ const TableComponent = ({
               color: 'white',
               fontSize: '14px',
               fontWeight: 'bold',
+              width: '100%',
               '& .MuiDataGrid-columnHeaderTitle': {
                 color: 'white',
                 fontWeight: 'bold',
@@ -329,38 +344,10 @@ const TableComponent = ({
               width: '100%',
               height: '100%',
               backgroundColor: 'rgba(255, 255, 255, 0.9)',
-              zIndex: 1,
-              '& .MuiDataGrid-overlayWrapper': {
-                textAlign: 'center'
-              },
-              '& .MuiDataGrid-overlayWrapperInner': {
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center'
-              }
+              zIndex: 1
             }
           }}
-          localeText={{
-            toolbarDensityLabel: 'كثافة',
-            toolbarDensityCompact: 'مضغوط',
-            toolbarDensityStandard: 'عادي',
-            toolbarDensityComfortable: 'مريح',
-            
-            columnsPanelTextFieldLabel: 'البحث عن عمود',
-            columnsPanelTextFieldPlaceholder: 'عنوان العمود',
-            columnsPanelDragIconLabel: 'إعادة ترتيب العمود',
-            columnsPanelShowAllButton: 'إظهار الكل',
-            columnsPanelHideAllButton: 'إخفاء الكل',
-            
-            filterPanelAddFilter: 'إضافة فلتر',
-            filterPanelDeleteIconLabel: 'حذف',
-            filterPanelOperators: 'العوامل',
-            filterPanelOperatorAnd: 'و',
-            filterPanelOperatorOr: 'أو',
-            filterPanelColumns: 'الأعمدة',
-            filterPanelInputLabel: 'القيمة',
-            filterPanelInputPlaceholder: 'قيمة الفلتر',
-            
+          localeText={{    
             MuiTablePagination: {
               labelRowsPerPage: 'الصفوف في الصفحة:',
               labelDisplayedRows: ({ from, to, count }) =>

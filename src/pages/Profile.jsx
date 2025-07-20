@@ -36,7 +36,6 @@ const Profile = () => {
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Load user data on component mount
   useEffect(() => {
     loadUserData();
   }, []);
@@ -46,7 +45,6 @@ const Profile = () => {
     setErrors({});
     
     try {
-      // First try to get from localStorage
       const localUser = localStorage.getItem('user');
       const token = localStorage.getItem('token');
       
@@ -63,14 +61,13 @@ const Profile = () => {
             fullName: userData.fullName || '',
             username: userData.username || ''
           });
-          setIsPageLoading(false); // Show page immediately with cached data
+          setIsPageLoading(false);
         } catch (parseError) {
           console.error('Error parsing localStorage user data:', parseError);
-          localStorage.removeItem('user'); // Clean corrupted data
+          localStorage.removeItem('user');
         }
       }
 
-      // Then fetch fresh data from backend
       try {
         const response = await authAPI.getProfile();
         
@@ -80,8 +77,7 @@ const Profile = () => {
           setFormData({
             fullName: apiUser.fullName || '',
             username: apiUser.username || ''
-          });
-          // Update localStorage with fresh data
+          }); 
           localStorage.setItem('user', JSON.stringify(apiUser));
         } else {
           console.warn('API response format unexpected:', response);
@@ -91,10 +87,8 @@ const Profile = () => {
         }
       } catch (apiError) {
         console.error('Error fetching from API:', apiError);
-        // If API call fails but we have localStorage data, continue with that
         if (!localUser) {
           if (apiError.message.includes('Not authorized')) {
-            // Token is invalid, redirect to login
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             window.location.href = '/login';
@@ -118,7 +112,6 @@ const Profile = () => {
       [name]: value
     }));
     
-    // Clear error for this field
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -160,14 +153,11 @@ const Profile = () => {
       });
 
       if (response.success) {
-        // Update local state - البيانات في response.data.user
         const updatedUser = response.data?.user || { ...user, fullName: formData.fullName, username: formData.username };
         setUser(updatedUser);
         
-        // Update localStorage
         localStorage.setItem('user', JSON.stringify(updatedUser));
         
-        // Update formData to reflect the saved changes
         setFormData({
           fullName: updatedUser.fullName || '',
           username: updatedUser.username || ''
@@ -176,7 +166,6 @@ const Profile = () => {
         setSuccessMessage('تم تحديث البيانات بنجاح!');
         setIsEditing(false);
         
-        // Clear success message after 3 seconds
         setTimeout(() => setSuccessMessage(''), 3000);
       } else {
         setErrors({ submit: response.message || 'حدث خطأ في تحديث البيانات' });
@@ -194,8 +183,7 @@ const Profile = () => {
     }
   };
 
-  const handleCancel = () => {
-    // Reset form data to original values
+  const handleCancel = () => {  
     setFormData({
       fullName: user?.fullName || '',
       username: user?.username || ''
@@ -242,8 +230,7 @@ const Profile = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: '600px', mx: 'auto', p: 2 }}>
-      {/* Header */}
+    <Box sx={{ maxWidth: '500px', mx: 'auto', p: 2 }}>
       <Paper elevation={1} sx={{ p: 3, mb: 3, textAlign: 'center' }}>
         <Avatar
           sx={{
@@ -266,14 +253,12 @@ const Profile = () => {
         </Typography>
       </Paper>
 
-      {/* Success Message */}
       {successMessage && (
         <Alert severity="success" sx={{ mb: 3, fontFamily: 'Cairo' }}>
           {successMessage}
         </Alert>
       )}
 
-      {/* Error Message */}
       {errors.submit && (
         <Alert severity="error" sx={{ mb: 3, fontFamily: 'Cairo' }}>
           {errors.submit}
@@ -281,7 +266,6 @@ const Profile = () => {
       )}
 
       <Grid container spacing={3} justifyContent="center">
-        {/* Profile Information */}
         <Grid item xs={12} md={12}>
           <Card sx={{ width: '100%' }}>
             <CardContent>
@@ -326,7 +310,6 @@ const Profile = () => {
 
               <Divider sx={{ mb: 3 }} />
 
-              {/* الصف الأول: الحقول القابلة للتعديل */}
               <Grid container spacing={3} sx={{ mb: 3 }}>
                 <Grid item xs={12} sm={6}>
                   <TextField
@@ -371,7 +354,6 @@ const Profile = () => {
                 </Grid>
               </Grid>
 
-              {/* الصف الثاني: الحقول للعرض فقط */}
               <Grid container spacing={3}>
                 <Grid item xs={12} sm={6}>
                   <TextField

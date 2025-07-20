@@ -1,4 +1,4 @@
-/* SweetAlert2 RTL Support */
+  
 .swal-rtl {
   font-family: 'Cairo', sans-serif !important;
   direction: rtl !important;
@@ -54,7 +54,6 @@
   box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3) !important;
 }
 
-/* Success alert button */
 .swal2-confirm.swal2-styled[style*="background-color: rgb(40, 167, 69)"] {
   background-color: #28a745 !important;
 }
@@ -65,7 +64,6 @@
   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3) !important;
 }
 
-/* Info alert button */
 .swal2-confirm.swal2-styled[style*="background-color: rgb(23, 162, 184)"] {
   background-color: #17a2b8 !important;
 }
@@ -76,7 +74,6 @@
   box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3) !important;
 }
 
-/* Warning alert button */
 .swal2-confirm.swal2-styled[style*="background-color: rgb(255, 193, 7)"] {
   background-color: #ffc107 !important;
   color: #212529 !important;
@@ -88,7 +85,6 @@
   box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3) !important;
 }
 
-/* SweetAlert2 popup customization */
 .swal2-popup {
   border-radius: 16px !important;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
@@ -114,12 +110,10 @@
   gap: 1rem !important;
 }
 
-/* Timer progress bar */
 .swal2-timer-progress-bar {
   background-color: #28a745 !important;
 }
 
-/* Animation */
 @keyframes fadeInDown {
   from {
     opacity: 0;
@@ -154,7 +148,6 @@
   animation-name: fadeOutUp;
 } 
 
-/* Custom button styles for investor deletion */
 .swal-confirm-btn-warning {
   background-color: #ffc107 !important;
   color: #212529 !important;
@@ -195,7 +188,6 @@
   box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3) !important;
 }
 
-/* Enhanced button styling for all SweetAlert buttons */
 .swal2-actions button {
   outline: none !important;
   border: none !important;

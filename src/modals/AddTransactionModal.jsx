@@ -20,8 +20,6 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import DescriptionIcon from '@mui/icons-material/Description';
 import PersonIcon from '@mui/icons-material/Person';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -38,7 +36,6 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
     type: 'deposit',
     amount: '',
     currency: 'IQD',
-    description: '',
     transactionDate: new Date()
   });
 
@@ -55,7 +52,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
     { code: 'USD', name: 'دولار أمريكي', symbol: '$' }
   ];
 
-  // Load investors when modal opens
+  
   useEffect(() => {
     if (open) {
       fetchInvestors();
@@ -84,24 +81,21 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    // Investor validation
+   
     if (!formData.investorId) {
       newErrors.investorId = 'اختيار المساهم مطلوب';
     }
 
-    // Amount validation
+    
     if (!formData.amount.trim()) {
       newErrors.amount = 'المبلغ مطلوب';
     } else if (isNaN(formData.amount) || parseFloat(formData.amount) <= 0) {
       newErrors.amount = 'المبلغ يجب أن يكون رقم أكبر من صفر';
     }
 
-    // Description validation
-    if (!formData.description.trim()) {
-      newErrors.description = 'وصف العملية مطلوب';
-    }
+   
 
-    // Date validation
+    
     if (!formData.transactionDate) {
       newErrors.transactionDate = 'تاريخ العملية مطلوب';
     }
@@ -116,7 +110,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       [field]: value
     }));
 
-    // Clear error for this field when user starts typing
+      
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -128,6 +122,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    
     if (!validateForm()) {
       return;
     }
@@ -135,32 +130,31 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
     setLoading(true);
     
     try {
-      // Format the data for API
+     
       const transactionData = {
         investorId: formData.investorId,
         type: formData.type,
         amount: parseFloat(formData.amount),
         currency: formData.currency,
-        description: formData.description.trim(),
         transactionDate: formData.transactionDate
       };
 
-      // Call API using the existing helper
+
       const result = await transactionsAPI.create(transactionData);
+      
       
       toast.success('تم إضافة العملية المالية بنجاح');
       
-      // Reset form
+     
       setFormData({
         investorId: null,
         type: 'deposit',
         amount: '',
         currency: 'IQD',
-        description: '',
         transactionDate: new Date()
       });
       
-      // Close modal and refresh data
+     
       onClose();
       if (onSuccess) {
         onSuccess(result.data);
@@ -168,7 +162,8 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       
     } catch (error) {
       console.error('Error adding transaction:', error);
-      toast.error(error.message || 'حدث خطأ أثناء إضافة العملية المالية');
+      
+    
     } finally {
       setLoading(false);
     }
@@ -181,7 +176,6 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
         type: 'deposit',
         amount: '',
         currency: 'IQD',
-        description: '',
         transactionDate: new Date()
       });
       setErrors({});
@@ -191,23 +185,23 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <Dialog 
-      open={open} 
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-      TransitionProps={{
-        timeout: { enter: 200, exit: 150 } 
-      }}
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-          minHeight: '60vh', 
-          width: '50%',
-          scrollbarWidth: 'none'
-        }
-      }}
-    >
+      <Dialog 
+        open={open} 
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth
+        TransitionProps={{
+          timeout: { enter: 200, exit: 150 } 
+        }}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            minHeight: '60vh', 
+            width: '50%',
+            scrollbarWidth: 'none'
+          }
+        }}
+      >
         <DialogTitle sx={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -240,7 +234,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
               width: '60%',
               mx: 'auto'
             }}>
-              {/* اختيار المساهم */}
+             
               <Autocomplete
                 options={investors}
                 getOptionLabel={(option) => option.label || ''}
@@ -282,7 +276,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
                 )}
               />
 
-              {/* المبلغ */}
+             
               <TextField
                 fullWidth
                 type="number"
@@ -315,7 +309,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
                 }}
               />
 
-              {/* نوع العملية */}
+             
               <FormControl fullWidth>
                 <InputLabel sx={{ fontFamily: 'Cairo' }}>نوع العملية</InputLabel>
                 <Select
@@ -335,7 +329,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
                 </Select>
               </FormControl>
 
-              {/* العملة */}
+             
               <FormControl fullWidth>
                 <InputLabel sx={{ fontFamily: 'Cairo' }}>العملة</InputLabel>
                 <Select
@@ -362,7 +356,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
                 </Select>
               </FormControl>
 
-              {/* تاريخ العملية */}
+             
               <DatePicker
                 label="تاريخ العملية"
                 value={formData.transactionDate}
@@ -441,7 +435,9 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
                   <span>جاري الحفظ...</span>
                 </Box>
               ) : (
-                'إضافة العملية'
+                <>
+                  إضافة العملية
+                </>
               )}
             </Button>
           </DialogActions>

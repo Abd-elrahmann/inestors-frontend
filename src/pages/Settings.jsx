@@ -19,7 +19,9 @@ import {
   MenuItem,
   InputAdornment,
   IconButton,
-  Tooltip
+  Tooltip,
+  CardHeader,
+  Stack
 } from '@mui/material';
 import {
   Settings as SettingsIcon,
@@ -27,7 +29,8 @@ import {
   Save as SaveIcon,
   Refresh as RefreshIcon,
   Info as InfoIcon,
-  RestartAlt as ResetIcon
+  RestartAlt as ResetIcon,
+  MonetizationOn as MoneyIcon
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import { settingsAPI } from '../services/apiHelpers';
@@ -35,21 +38,78 @@ import { PageLoadingSpinner, ErrorAlert } from '../components/shared/LoadingComp
 import { showSuccessAlert, showDeleteConfirmation } from '../utils/sweetAlert';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
 
-// تنسيق رمز العملة
 const formatCurrencySymbol = (currency) => {
   return currency === 'USD' ? '$' : 'د.ع';
+};
+
+const styles = {
+  card: {
+    height: '100%',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+      transform: 'translateY(-2px)'
+    }
+  },
+  cardHeader: {
+    backgroundColor: '#f8f9fa',
+    borderBottom: '1px solid #eee',
+    '& .MuiCardHeader-title': {
+      fontSize: '1.1rem',
+      fontWeight: 600,
+      color: '#2c3e50',
+      
+    }
+  },
+  cardContent: {
+    padding: 3,
+    '&:last-child': {
+      paddingBottom: 3
+    }
+  },
+  formControl: {
+    width: '100%',
+    marginBottom: 2
+  },
+  button: {
+    fontFamily: 'Cairo',
+    textTransform: 'none',
+    borderRadius: '8px',
+    boxShadow: 'none',
+    '&:hover': {
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    }
+  },
+  primaryButton: {
+    backgroundColor: '#28a745',
+    color: 'white',
+    '&:hover': {
+      backgroundColor: '#218838'
+    }
+  },
+  warningButton: {
+    borderColor: '#dc3545',
+    color: '#dc3545',
+    '&:hover': {
+      backgroundColor: 'rgba(220, 53, 69, 0.04)',
+      borderColor: '#c82333'
+    }
+  },
+  chip: {
+    borderRadius: '6px',
+    '& .MuiChip-label': {
+      fontFamily: 'Cairo'
+    }
+  }
 };
 
 const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  // eslint-disable-next-line no-unused-vars
-  const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(true);
-  const [lastAutoUpdate, setLastAutoUpdate] = useState(null);
-  
-  // 💰 استخدام مدير العملة المركزي
   const { updateSettings: updateCurrencySettings, refreshPage } = useCurrencyManager();
+  
   const [settings, setSettings] = useState({
     defaultCurrency: 'IQD',
     autoConvertCurrency: false,
@@ -69,52 +129,6 @@ const Settings = () => {
     toCurrency: 'IQD',
     result: null
   });
-
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  // تحديث تلقائي لسعر الصرف
-  useEffect(() => {
-    let intervalId;
-
-    const updateExchangeRate = async () => {
-      try {
-        const response = await settingsAPI.getLatestExchangeRate();
-        if (response.success && response.data?.rate) {
-          const newRate = response.data.rate;
-          // تحديث فقط إذا كان السعر مختلف
-          if (newRate !== settings.exchangeRates.USD_TO_IQD) {
-            setSettings(prev => ({
-              ...prev,
-              exchangeRates: {
-                USD_TO_IQD: newRate,
-                IQD_TO_USD: 1 / newRate
-              },
-              lastRateUpdate: new Date()
-            }));
-            setLastAutoUpdate(new Date());
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching latest exchange rate:', error);
-        toast.error('فشل في تحديث سعر الصرف التلقائي');
-      }
-    };
-
-    // تحديث فوري عند تحميل الصفحة
-    updateExchangeRate();
-    
-    // تحديث كل 5 دقائق
-    intervalId = setInterval(updateExchangeRate, 5 * 60 * 1000);
-
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const fetchSettings = async () => {
     try {
@@ -136,6 +150,10 @@ const Settings = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   const handleSettingChange = (field, value) => {
     if (field === 'defaultCurrency') {
@@ -175,16 +193,13 @@ const Settings = () => {
         autoConvertCurrency: settings.defaultCurrency === 'USD' ? true : settings.autoConvertCurrency
       };
       
-      // تحديث مدير العملة المركزي أولاً
       const currencyUpdateSuccess = await updateCurrencySettings(updatedSettings);
       
       if (currencyUpdateSuccess) {
-        // ثم تحديث الإعدادات في قاعدة البيانات
         const response = await settingsAPI.updateSettings(updatedSettings);
         
         if (response.success) {
           await showSuccessAlert('تم حفظ الإعدادات بنجاح وسيتم تحديث جميع الصفحات');
-          // تحديث الصفحة لتطبيق التغييرات على جميع المكونات
           refreshPage();
         } else {
           throw new Error(response.message || 'فشل في حفظ الإعدادات');
@@ -202,32 +217,51 @@ const Settings = () => {
 
   const handleUpdateExchangeRate = async () => {
     try {
+      const newRate = parseFloat(tempExchangeRate);
+      
+      if (!newRate || newRate <= 0) {
+        toast.error('يرجى إدخال سعر صرف صحيح (أكبر من صفر)');
+        return;
+      }
+
+      if (newRate < 1000 || newRate > 2000) {
+        const confirmed = await showDeleteConfirmation(
+          'تأكيد سعر الصرف',
+          'سعر الصرف',
+          'سعر الصرف المدخل غير معتاد. هل أنت متأكد من صحة هذا السعر؟'
+        );
+        if (!confirmed) return;
+      }
+
       setSaving(true);
       
-      const response = await settingsAPI.getLatestExchangeRate();
-      if (response.success && response.data?.rate) {
-        const newRate = response.data.rate;
-        
-        // تحديث في قاعدة البيانات
-        const updateResponse = await settingsAPI.updateExchangeRates({
-          USD_TO_IQD: newRate
+      const updateResponse = await settingsAPI.updateExchangeRates({
+        USD_TO_IQD: newRate
+      });
+      
+      if (updateResponse.success) {
+        setSettings(prev => ({
+          ...prev,
+          exchangeRates: {
+            USD_TO_IQD: newRate,
+            IQD_TO_USD: 1 / newRate
+          },
+          lastRateUpdate: new Date()
+        }));
+
+        await updateCurrencySettings({
+          exchangeRates: {
+            USD_TO_IQD: newRate,
+            IQD_TO_USD: 1 / newRate
+          }
         });
+
+        toast.success('تم تحديث سعر الصرف بنجاح');
         
-        if (updateResponse.success) {
-          setSettings(prev => ({
-            ...prev,
-            exchangeRates: {
-              USD_TO_IQD: newRate,
-              IQD_TO_USD: 1 / newRate
-            },
-            lastRateUpdate: new Date()
-          }));
-          toast.success('تم تحديث سعر الصرف بنجاح');
-        } else {
-          throw new Error(updateResponse.message || 'فشل في تحديث أسعار الصرف');
-        }
+
+        refreshPage();
       } else {
-        throw new Error('فشل في الحصول على سعر الصرف الحالي');
+        throw new Error(updateResponse.message || 'فشل في تحديث أسعار الصرف');
       }
     } catch (error) {
       console.error('Error updating exchange rates:', error);
@@ -299,16 +333,6 @@ const Settings = () => {
     }
   };
 
-  const formatLastUpdate = (date) => {
-    return new Date(date).toLocaleString('ar-SA', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   if (loading) {
     return <PageLoadingSpinner message="جاري تحميل إعدادات النظام..." />;
   }
@@ -319,28 +343,19 @@ const Settings = () => {
 
   return (
     <Box className="content-area">
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-        </Box>
-    
-      </Box>
+  
 
-      <Grid container spacing={4} sx={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-        {/* Currency Settings */}
+      <Grid container spacing={3} sx={{display: 'flex', justifyContent: 'center', alignItems: 'center',mt: 10}}>
         <Grid item xs={12} md={6}>
-          <Card sx={{ height: '330px' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-                <CurrencyIcon sx={{ color: '#28a745' }} />
-                <Typography variant="h6" sx={{ fontFamily: 'Cairo', fontWeight: 600 }}>
-                  إعدادات العملة
-                </Typography>
-              </Box>
-
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {/* Default Currency */}
-                <FormControl fullWidth>
+          <Card sx={styles.card}>
+            <CardHeader
+              avatar={<CurrencyIcon sx={{ color: '#28a745' }} />}
+              title="إعدادات العملة"
+              sx={styles.cardHeader}
+            />
+            <CardContent sx={styles.cardContent}>
+              <Stack spacing={3}>
+                <FormControl sx={styles.formControl}>
                   <InputLabel sx={{ fontFamily: 'Cairo' }}>العملة الافتراضية</InputLabel>
                   <Select
                     value={settings.defaultCurrency}
@@ -357,8 +372,7 @@ const Settings = () => {
                   </Select>
                 </FormControl>
 
-                {/* Display Currency */}
-                <FormControl fullWidth>
+                <FormControl sx={styles.formControl}>
                   <InputLabel sx={{ fontFamily: 'Cairo' }}>عرض العملة</InputLabel>
                   <Select
                     value={settings.displayCurrency}
@@ -378,7 +392,6 @@ const Settings = () => {
                   </Select>
                 </FormControl>
 
-                {/* Auto Convert */}
                 <FormControlLabel
                   control={
                     <Switch
@@ -387,69 +400,72 @@ const Settings = () => {
                       color="success"
                     />
                   }
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography sx={{ fontFamily: 'Cairo' }}>
+                        تحويل تلقائي للعملة
+                      </Typography>
+                      <Tooltip title="تحويل جميع المبالغ تلقائياً إلى العملة المحددة" arrow>
+                        <InfoIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                      </Tooltip>
+                    </Box>
+                  }
                 />
-              </Box>
+              </Stack>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Exchange Rates */}
         <Grid item xs={12} md={6}>
-          <Card sx={{ height: '330px' }}>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-                <RefreshIcon sx={{ color: '#28a745' }} />
-                <Typography variant="h6" sx={{ fontFamily: 'Cairo', fontWeight: 600 }}>
-                  أسعار الصرف
-                </Typography>
-              </Box>
-
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {/* Current Rates */}
+          <Card sx={styles.card}>
+            <CardHeader
+              avatar={<MoneyIcon sx={{ color: '#28a745' }} />}
+              title="أسعار الصرف"
+              sx={styles.cardHeader}
+            />
+            <CardContent sx={styles.cardContent}>
+              <Stack spacing={3}>
                 <Box>
-                  <Typography variant="subtitle2" sx={{ fontFamily: 'Cairo', mb: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontFamily: 'Cairo', mb: 1, color: '#2c3e50' }}>
                     الأسعار الحالية:
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, mb: 2, direction: 'ltr' }}>
+                  <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
                     <Chip 
                       label={`1 USD = ${settings.exchangeRates.USD_TO_IQD} IQD`}
                       color="success"
                       variant="outlined"
+                      sx={styles.chip}
                     />
                     <Chip 
                       label={`1 IQD = ${settings.exchangeRates.IQD_TO_USD.toFixed(6)} USD`}
                       color="primary"
                       variant="outlined"
+                      sx={styles.chip}
                     />
-                  </Box>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {lastAutoUpdate && (
-                      <Typography variant="caption" sx={{ fontFamily: 'Cairo', color: 'text.secondary' }}>
-                        آخر تحديث تلقائي: {formatLastUpdate(lastAutoUpdate)}
-                      </Typography>
-                    )}
-                  </Box>
+                  </Stack>
                 </Box>
 
-               
-                {/* Update Rate */}
                 <TextField
                   fullWidth
                   label="سعر الدولار بالدينار العراقي"
                   value={tempExchangeRate}
-                  disabled={true}
-                  onChange={(e) => setTempExchangeRate(e.target.value)}
-                  type="number"
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!value || /^\d*\.?\d*$/.test(value)) {
+                      setTempExchangeRate(value);
+                    }
+                  }}
+                  type="text"
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">
                         <Button
                           onClick={handleUpdateExchangeRate}
                           size="small"
-                          disabled={true}
-                          sx={{ fontFamily: 'Cairo' }}
+                          disabled={saving}
+                          sx={{ ...styles.button, ...styles.primaryButton }}
                         >
-                          تحديث يدوي
+                          {saving ? 'جاري التحديث...' : 'تحديث'}
                         </Button>
                       </InputAdornment>
                     ),
@@ -458,22 +474,23 @@ const Settings = () => {
                     '& .MuiInputLabel-root': { fontFamily: 'Cairo' },
                     '& .MuiInputBase-input': { fontFamily: 'Cairo' }
                   }}
+                  helperText="أدخل سعر صرف الدولار مقابل الدينار العراقي"
                 />
-              </Box>
+              </Stack>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Currency Converter Test */}
-        <Grid item xs={12} md={6}>
-          <Card sx={{height: '170px'}}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ fontFamily: 'Cairo', fontWeight: 600, mb: 3 ,textAlign: 'center'}}>
-                اختبار تحويل العملة
-              </Typography>
-
-              <Grid container spacing={3} alignItems="center">
-                <Grid item xs={12} md={3}>
+        <Grid item xs={12}>
+          <Card sx={styles.card}>
+            <CardHeader
+              avatar={<RefreshIcon sx={{ color: '#28a745' }} />}
+              title="اختبار تحويل العملة"
+              sx={styles.cardHeader}
+            />
+            <CardContent sx={styles.cardContent}>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={3}>
                   <TextField
                     fullWidth
                     label="المبلغ"
@@ -486,7 +503,7 @@ const Settings = () => {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} md={2}>
+                <Grid item xs={12} sm={3}>
                   <FormControl fullWidth>
                     <InputLabel sx={{ fontFamily: 'Cairo' }}>من</InputLabel>
                     <Select
@@ -500,7 +517,7 @@ const Settings = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} md={2}>
+                <Grid item xs={12} sm={3}>
                   <FormControl fullWidth>
                     <InputLabel sx={{ fontFamily: 'Cairo' }}>إلى</InputLabel>
                     <Select
@@ -514,42 +531,57 @@ const Settings = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} md={2}>
+                <Grid item xs={12} sm={3}>
                   <Button
                     fullWidth
                     variant="contained"
                     onClick={handleTestConversion}
-                    sx={{ fontFamily: 'Cairo', backgroundColor: '#28a745' }}
+                    sx={{ ...styles.button, ...styles.primaryButton }}
                   >
                     تحويل
                   </Button>
                 </Grid>
-                <Grid item xs={12} md={3}>
-                  {conversionTest.result && (
-                    <Alert severity="info" sx={{ fontFamily: 'Cairo',fontSize: '13px' }}>
+                {conversionTest.result && (
+                  <Grid item xs={12}>
+                    <Alert 
+                      severity="info" 
+                      sx={{ 
+                        fontFamily: 'Cairo',
+                        fontSize: '13px',
+                        backgroundColor: '#e8f4fd',
+                        '& .MuiAlert-icon': {
+                          color: '#0288d1'
+                        }
+                      }}
+                    >
                       النتيجة: {conversionTest.result}
                     </Alert>
-                  )}
-                </Grid>
+                  </Grid>
+                )}
               </Grid>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Action Buttons */}
         <Grid item xs={12}>
-          <Paper sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center',flexDirection: 'column',height: '120px' }}>
+          <Paper 
+            elevation={0}
+            sx={{ 
+              p: 3, 
+              backgroundColor: '#f8f9fa',
+              borderRadius: '12px'
+            }}
+          >
+            <Stack direction="row" spacing={6} justifyContent="center">
               <Button
                 variant="contained"
-                startIcon={<SaveIcon />}
+                startIcon={<SaveIcon sx={{marginLeft: 1}} />}
                 onClick={handleSaveSettings}
                 disabled={saving}
-                sx={{
-                  fontFamily: 'Cairo',
-                  backgroundColor: '#28a745',
-                  px: 4,
-                  '&:hover': { backgroundColor: '#218838' }
+                sx={{ 
+                  ...styles.button, 
+                  ...styles.primaryButton,
+                  minWidth: '180px'
                 }}
               >
                 {saving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
@@ -557,23 +589,18 @@ const Settings = () => {
               
               <Button
                 variant="outlined"
-                startIcon={<ResetIcon />}
+                startIcon={<ResetIcon sx={{marginLeft: 1}} />}
                 onClick={handleResetSettings}
                 disabled={saving}
-                sx={{
-                  fontFamily: 'Cairo',
-                  borderColor: '#dc3545',
-                  color: '#dc3545',
-                  px: 4,
-                  '&:hover': { 
-                    borderColor: '#c82333',
-                    backgroundColor: 'rgba(220, 53, 69, 0.04)'
-                  }
+                sx={{ 
+                  ...styles.button, 
+                  ...styles.warningButton,
+                  minWidth: '180px'
                 }}
               >
                 إعادة تعيين
               </Button>
-            </Box>
+            </Stack>
           </Paper>
         </Grid>
       </Grid>

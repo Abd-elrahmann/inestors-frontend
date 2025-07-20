@@ -1,115 +1,147 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
 
+const createTable = (doc, headers, rows, startY, options = {}) => {
+  const {
+    fontSize = 10,
+    cellPadding = 3,
+    headerColor = [40, 167, 69],
+    headerTextColor = 255,
+    cellHeight = 10,
+    colWidths = Array(headers.length).fill((doc.internal.pageSize.width - 40) / headers.length)
+  } = options;
+
+  let currentY = startY;
+  
+  doc.setFillColor(...headerColor);
+  doc.rect(20, currentY, doc.internal.pageSize.width - 40, cellHeight, 'F');
+  doc.setTextColor(headerTextColor);
+  doc.setFontSize(fontSize);
+  
+  headers.forEach((header, i) => {
+    doc.text(header.toString(), 20 + cellPadding + (i * colWidths[i]), currentY + (cellHeight / 2), {
+      baseline: 'middle'
+    });
+  });
+  
+  currentY += cellHeight;
+  doc.setTextColor(0);
+  
+  rows.forEach((row, rowIndex) => {
+    if (currentY > doc.internal.pageSize.height - 20) {
+      doc.addPage();
+      currentY = 20;
+      
+      doc.setFillColor(...headerColor);
+      doc.rect(20, currentY, doc.internal.pageSize.width - 40, cellHeight, 'F');
+      doc.setTextColor(headerTextColor);
+      
+      headers.forEach((header, i) => {
+        doc.text(header.toString(), 20 + cellPadding + (i * colWidths[i]), currentY + (cellHeight / 2), {
+          baseline: 'middle'
+        });
+      });
+      
+      currentY += cellHeight;
+      doc.setTextColor(0);
+    }
+    
+    if (rowIndex % 2 === 1) {
+      doc.setFillColor(245, 245, 245);
+      doc.rect(20, currentY, doc.internal.pageSize.width - 40, cellHeight, 'F');
+    }
+    
+    row.forEach((cell, i) => {
+      doc.text(cell.toString(), 20 + cellPadding + (i * colWidths[i]), currentY + (cellHeight / 2), {
+        baseline: 'middle'
+      });
+    });
+    
+    currentY += cellHeight;
+  });
+  
+  return currentY;
+};
 
 export const exportInvestorsSummaryToPDF = (data, dateRange) => {
   const doc = new jsPDF();
   
-  // عنوان التقرير
   doc.setFontSize(18);
   doc.text('Investors Summary Report', 105, 20, { align: 'center' });
   doc.setFontSize(12);
-  doc.text(`Period: ${dateRange}`, 105, 30, { align: 'center' });
+  // Sanitize date range string by removing invalid characters
+  const sanitizedDateRange = dateRange.replace(/[^\x20-\x7E]/g, '');
+  doc.text(`Period: ${sanitizedDateRange}`, 105, 30, { align: 'center' });
   doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 40, { align: 'center' });
   
-  // الجدول
-  const headers = [['Name', 'National ID', 'Investment', 'Share %', 'Status']];
+  const headers = ['Name', 'National ID', 'Investment', 'Share percentage'];
   const rows = data.map(investor => [
     investor.name,
     investor.nationalId,
-    `${investor.totalInvestment.toLocaleString()} SAR`,
-    `${investor.sharePercentage}%`,
-    investor.status === 'نشط' ? 'Active' : 'Inactive'
+    `${investor.totalInvestment.toLocaleString()} IQD`,
+    `${investor.sharePercentage}%`
   ]);
   
-  doc.autoTable({
-    head: headers,
-    body: rows,
-    startY: 50,
-    styles: { fontSize: 10, cellPadding: 3 },
-    headStyles: { fillColor: [40, 167, 69], textColor: 255 }
-  });
-  
+  createTable(doc, headers, rows, 50);
   doc.save('investors-summary-report.pdf');
 };
 
-// تصدير تقرير العمليات المالية إلى PDF
 export const exportTransactionsToPDF = (data, dateRange) => {
   const doc = new jsPDF();
   
   doc.setFontSize(18);
   doc.text('Financial Transactions Report', 105, 20, { align: 'center' });
   doc.setFontSize(12);
-  doc.text(`Period: ${dateRange}`, 105, 30, { align: 'center' });
-  doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 40, { align: 'center' });
+  // Sanitize date range string
+  const sanitizedDateRange = dateRange.replace(/[^\x20-\x7E]/g, '');
+  doc.text(`Period: ${sanitizedDateRange}`, 105, 30, { align: 'center' });
   
-  const headers = [['Date', 'Investor', 'Type', 'Amount', 'Status']];
+  const headers = ['Date', 'Investor', 'Type', 'Amount'];
   const rows = data.map(transaction => [
     transaction.date,
     transaction.investor,
     transaction.type,
-    `${transaction.amount.toLocaleString()} SAR`,
-    transaction.status
+    `${transaction.amount.toLocaleString()} IQD`,
   ]);
   
-  doc.autoTable({
-    head: headers,
-    body: rows,
-    startY: 50,
-    styles: { fontSize: 10, cellPadding: 3 },
-    headStyles: { fillColor: [40, 167, 69], textColor: 255 }
-  });
-  
+  createTable(doc, headers, rows, 50);
   doc.save('financial-transactions-report.pdf');
 };
 
-// تصدير تقرير توزيع الأرباح إلى PDF
 export const exportProfitDistributionToPDF = (data, dateRange) => {
   const doc = new jsPDF();
   
   doc.setFontSize(18);
   doc.text('Profit Distribution Report', 105, 20, { align: 'center' });
   doc.setFontSize(12);
-  doc.text(`Period: ${dateRange}`, 105, 30, { align: 'center' });
-  doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 40, { align: 'center' });
+  // Sanitize date range string
+  const sanitizedDateRange = dateRange.replace(/[^\x20-\x7E]/g, '');
+  doc.text(`Period: ${sanitizedDateRange}`, 105, 30, { align: 'center' });
   
-  const headers = [['Investor', 'Investment', 'Days', 'Profit', 'Rate %']];
+  const headers = ['Investor', 'Investment', 'Days', 'Profit', 'Rate %'];
   const rows = data.map(profit => [
     profit.investor,
-    `${profit.investment.toLocaleString()} SAR`,
+    `${profit.investment.toLocaleString()} IQD`,
     profit.days.toString(),
-    `${profit.profit.toLocaleString()} SAR`,
+    `${profit.profit.toLocaleString()} IQD`,
     `${profit.profitRate}%`
   ]);
   
-  doc.autoTable({
-    head: headers,
-    body: rows,
-    startY: 50,
-    styles: { fontSize: 10, cellPadding: 3 },
-    headStyles: { fillColor: [40, 167, 69], textColor: 255 }
-  });
-  
+  createTable(doc, headers, rows, 50);
   doc.save('profit-distribution-report.pdf');
 };
 
-// تصدير تقرير المساهم الفردي إلى PDF
 export const exportIndividualInvestorToPDF = (reportData) => {
   const doc = new jsPDF();
   const investor = reportData.investor;
   const transactions = reportData.transactions;
   
-  // عنوان التقرير
   doc.setFontSize(18);
   doc.text('Individual Investor Report', 105, 20, { align: 'center' });
   doc.setFontSize(14);
   doc.text(`Investor: ${investor.fullName}`, 105, 35, { align: 'center' });
   doc.setFontSize(12);
-  doc.text(`Generated: ${reportData.generated}`, 105, 45, { align: 'center' });
   
-  // معلومات المساهم
   let yPosition = 60;
   doc.setFontSize(14);
   doc.text('Investor Information:', 20, yPosition);
@@ -122,40 +154,39 @@ export const exportIndividualInvestorToPDF = (reportData) => {
   yPosition += 7;
   doc.text(`Investment: ${investor.amountContributed?.toLocaleString()} ${investor.currency}`, 30, yPosition);
   yPosition += 7;
-  doc.text(`Share: ${investor.sharePercentage}%`, 30, yPosition);
+  doc.text(`Share Percentage: ${investor.sharePercentage}%`, 30, yPosition);
   yPosition += 15;
   
-  // إضافة جدول الأرباح إذا كانت موجودة
   if (reportData.profits && reportData.profits.length > 0) {
     doc.setFontSize(14);
     doc.text('Profit Distributions:', 20, yPosition);
     yPosition += 10;
     
-    const profitHeaders = [['Year', 'Investment', 'Days', 'Profit', 'Status']];
-    const profitRows = reportData.profits.map(profit => [
-      profit.profitYear?.toString() || '-',
-      `${profit.investmentAmount?.toLocaleString() || '0'} ${profit.currency || 'IQD'}`,
-      `${profit.totalDays || 0} days`,
-      `${profit.calculatedProfit?.toLocaleString() || '0'} ${profit.currency || 'IQD'}`,
-      profit.status === 'calculated' ? 'Calculated' : 
-      profit.status === 'approved' ? 'Approved' : 
-      profit.status === 'distributed' ? 'Distributed' : profit.status
-    ]);
-    
-    doc.autoTable({
-      head: profitHeaders,
-      body: profitRows,
-      startY: yPosition,
-      styles: { fontSize: 9, cellPadding: 2 },
-      headStyles: { fillColor: [40, 167, 69], textColor: 255 }
+    const profitHeaders = ['Year', 'Investment', 'Days', 'Profit', 'Status'];
+    const profitRows = reportData.profits.map(profit => {   
+      const startDate = new Date(profit.year.startDate);
+      const endDate = new Date(profit.year.endDate);
+      const today = new Date();
+      const actualEndDate = today < endDate ? today : endDate;
+      
+      const daysPassed = Math.floor((actualEndDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+      
+      return [
+        profit.year.year.toString(),
+        `${profit.investmentAmount?.toLocaleString() || '0'} ${profit.currency || 'IQD'}`,
+        `${daysPassed} days`,
+        `${profit.calculatedProfit?.toLocaleString() || '0'} ${profit.currency || 'IQD'}`,
+        profit.status === 'calculated' ? 'Calculated' : 
+        profit.status === 'approved' ? 'Approved' : 
+        profit.status === 'distributed' ? 'Distributed' : profit.status
+      ];
     });
     
-    yPosition = doc.lastAutoTable.finalY + 15;
+    yPosition = createTable(doc, profitHeaders, profitRows, yPosition) + 15;
   }
   
-  // جدول الحركات المالية
   if (transactions.length > 0) {
-    const headers = [['Date', 'Type', 'Amount', 'Profit Year', 'Description']];
+    const headers = ['Date', 'Type', 'Amount', 'Profit Year'];
     const rows = transactions.map(transaction => [
       new Date(transaction.transactionDate).toLocaleDateString(),
       transaction.type === 'deposit' ? 'Deposit' : 
@@ -163,37 +194,73 @@ export const exportIndividualInvestorToPDF = (reportData) => {
       transaction.type === 'profit' ? 'Profit' : transaction.type,
       `${transaction.amount.toLocaleString()} ${transaction.currency}`,
       transaction.type === 'profit' && transaction.profitYear ? transaction.profitYear.toString() : '-',
-      transaction.description || transaction.notes || '-'
     ]);
     
-    doc.autoTable({
-      head: headers,
-      body: rows,
-      startY: yPosition,
-      styles: { fontSize: 9, cellPadding: 2 },
-      headStyles: { fillColor: [40, 167, 69], textColor: 255 }
-    });
+    createTable(doc, headers, rows, yPosition);
   }
   
   doc.save(`investor-report-${investor.fullName.replace(/\s+/g, '-')}.pdf`);
 };
 
-// تصدير إلى Excel
+export const exportFinancialYearToPDF = (financialYear) => {
+  const doc = new jsPDF();
+  
+  doc.setFontSize(18);
+  doc.text(`Financial Year ${financialYear.year} Report`, 105, 20, { align: 'center' });
+  doc.setFontSize(12);
+  doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 30, { align: 'center' });
+  
+  let yPosition = 50;
+  doc.setFontSize(14);
+  doc.text('Financial Year Information:', 20, yPosition);
+  yPosition += 10;
+  
+  doc.setFontSize(11);
+  doc.text(`Year: ${financialYear.year}`, 30, yPosition); yPosition += 7;
+  doc.text(`Start Date: ${new Date(financialYear.startDate).toLocaleDateString()}`, 30, yPosition); yPosition += 7;
+  doc.text(`End Date: ${new Date(financialYear.endDate).toLocaleDateString()}`, 30, yPosition); yPosition += 7;
+  doc.text(`Total Days: ${financialYear.totalDays-1}`, 30, yPosition); yPosition += 7;
+  doc.text(`Total Profit: ${financialYear.totalProfit?.toLocaleString()} ${financialYear.currency}`, 30, yPosition); yPosition += 7;
+  doc.text(`Daily Profit Rate: ${financialYear.dailyProfitRate?.toFixed(6)}`, 30, yPosition); yPosition += 7;
+  doc.text(`Status: ${financialYear.status}`, 30, yPosition); yPosition += 15;
+  
+  if (financialYear.distributions && financialYear.distributions.length > 0) {
+    doc.setFontSize(14);
+    doc.text('Profit Distributions:', 20, yPosition);
+    yPosition += 10;
+    
+    const headers = ['Investor', 'Investment', 'Days', 'Profit', 'Status'];
+    const rows = financialYear.distributions.map(dist => [
+      dist.investorId?.fullName || 'N/A',
+      `${dist.calculation?.investmentAmount?.toLocaleString() || '0'} ${dist.currency}`,
+      dist.calculation?.totalDays?.toString() || '0',
+      `${dist.calculation?.calculatedProfit?.toLocaleString() || '0'} ${dist.currency}`,
+      dist.status === 'calculated' ? 'Calculated' : 
+      dist.status === 'approved' ? 'Approved' : 
+      dist.status === 'distributed' ? 'Distributed' : dist.status
+    ]);
+    
+    createTable(doc, headers, rows, yPosition);
+  }
+  
+  doc.save(`financial-year-${financialYear.year}-report.pdf`);
+};
+
 export const exportToExcel = (data, reportType) => {
   let worksheetData = [];
   let filename = '';
-  
+  let investor, transactions;
+
   switch (reportType) {
     case 'investors_summary':
       filename = 'investors-summary-report.xlsx';
       worksheetData = [
-        ['Investor Name', 'National ID', 'Total Investment', 'Share Percentage', 'Status'],
+        ['Investor Name', 'National ID', 'Total Investment', 'Share Percentage'],
         ...data.map(investor => [
           investor.name,
           investor.nationalId,
           investor.totalInvestment,
-          investor.sharePercentage,
-          investor.status
+          investor.sharePercentage
         ])
       ];
       break;
@@ -201,13 +268,12 @@ export const exportToExcel = (data, reportType) => {
     case 'financial_transactions':
       filename = 'financial-transactions-report.xlsx';
       worksheetData = [
-        ['Date', 'Investor', 'Type', 'Amount', 'Status'],
+        ['Date', 'Investor', 'Type', 'Amount'],
         ...data.map(transaction => [
           transaction.date,
           transaction.investor,
           transaction.type,
           transaction.amount,
-          transaction.status
         ])
       ];
       break;
@@ -239,22 +305,108 @@ export const exportToExcel = (data, reportType) => {
       ];
       break;
       
+    case 'financial_year':
+      filename = `financial-year-${data.year}-report.xlsx`;
+      worksheetData = [
+        ['Financial Year Information'],
+        ['Year', data.year],
+        ['Start Date', new Date(data.startDate).toLocaleDateString()],
+        ['End Date', new Date(data.endDate).toLocaleDateString()],
+        ['Total Days', data.totalDays-1],
+        ['Total Profit', `${data.totalProfit?.toLocaleString()} ${data.currency}`],
+        ['Daily Profit Rate', data.dailyProfitRate?.toFixed(6)],
+        ['Status', data.status],
+        [],
+        ['Profit Distributions'],
+        ['Investor', 'Investment', 'Days', 'Profit', 'Status'],
+        ...(data.distributions || []).map(dist => [
+          dist.investorId?.fullName || 'N/A',
+          `${dist.calculation?.investmentAmount?.toLocaleString() || '0'} ${dist.currency}`,
+          dist.calculation?.totalDays?.toString() || '0',
+          `${dist.calculation?.calculatedProfit?.toLocaleString() || '0'} ${dist.currency}`,
+          dist.status
+        ])
+      ];
+      break;
+      
+    case 'individual_investor':
+      investor = data.investor;
+      transactions = data.transactions;
+      filename = `investor-report-${investor.fullName.replace(/\s+/g, '-')}.xlsx`;
+      
+      // Basic Information
+      worksheetData = [
+        ['Individual Investor Report'],
+        ['Generated', new Date().toLocaleString()],
+        [],
+        ['Basic Information'],
+        ['Name', investor.fullName],
+        ['National ID', investor.nationalId],
+        ['Investment Amount', `${investor.amountContributed?.toLocaleString()} ${investor.currency}`],
+        ['Share Percentage', `${investor.sharePercentage}%`],
+        []
+      ];
+
+      // Profits Section
+      if (data.profits && data.profits.length > 0) {
+        worksheetData.push(
+          ['Profit Summary'],
+          ['Financial Year', 'Investment Amount', 'Days', 'Calculated Profit', 'Status']
+        );
+        
+        data.profits.forEach(profit => {
+          const startDate = new Date(profit.year.startDate);
+          const endDate = new Date(profit.year.endDate);
+          const today = new Date();
+          const actualEndDate = today < endDate ? today : endDate;
+          const daysPassed = Math.floor((actualEndDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+          
+          worksheetData.push([
+            profit.year.year.toString(),
+            `${profit.investmentAmount?.toLocaleString() || '0'} ${profit.currency || 'IQD'}`,
+            `${daysPassed} days`,
+            `${profit.calculatedProfit?.toLocaleString() || '0'} ${profit.currency || 'IQD'}`,
+            profit.status === 'calculated' ? 'Calculated' : 
+            profit.status === 'approved' ? 'Approved' : 
+            profit.status === 'distributed' ? 'Distributed' : profit.status
+          ]);
+        });
+        
+        worksheetData.push([]);
+      }
+
+      // Transactions Section
+      if (transactions.length > 0) {
+        worksheetData.push(
+          ['Financial Transactions'],
+          ['Date', 'Type', 'Amount', 'Profit Year']
+        );
+        
+        transactions.forEach(transaction => {
+          worksheetData.push([
+            new Date(transaction.transactionDate).toLocaleDateString(),
+            transaction.type === 'deposit' ? 'Deposit' : 
+            transaction.type === 'withdrawal' ? 'Withdrawal' :
+            transaction.type === 'profit' ? 'Profit' : transaction.type,
+            `${transaction.amount.toLocaleString()} ${transaction.currency}`,
+            transaction.type === 'profit' && transaction.profitYear ? transaction.profitYear.toString() : '-',
+          ]);
+        });
+      }
+      break;
+      
     default:
       filename = 'report.xlsx';
+      worksheetData = data;
   }
   
-  // إنشاء workbook
   const workbook = XLSX.utils.book_new();
   const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
   
-  // حفظ الملف
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  saveAs(blob, filename);
+  XLSX.writeFile(workbook, filename);
 };
-
-// طباعة تقرير المساهم الفردي
+    
 export const printIndividualReport = (reportData) => {
   const investor = reportData.investor;
   const transactions = reportData.transactions;
@@ -309,7 +461,7 @@ export const printIndividualReport = (reportData) => {
           <tbody>
             ${reportData.profits.map(profit => `
               <tr>
-                <td style="color: #28a745; font-weight: bold;">${profit.profitYear}</td>
+                <td style="color: #28a745; font-weight: bold;">${profit.year}</td>
                 <td>${profit.investmentAmount?.toLocaleString() || 0} ${profit.currency || 'IQD'}</td>
                 <td>${profit.totalDays || 0} يوم</td>
                 <td style="color: #28a745; font-weight: bold;">${profit.calculatedProfit?.toLocaleString() || 0} ${profit.currency || 'IQD'}</td>
@@ -330,7 +482,6 @@ export const printIndividualReport = (reportData) => {
               <th>النوع</th>
               <th>المبلغ</th>
               <th>سنة الأرباح</th>
-              <th>الوصف</th>
             </tr>
           </thead>
           <tbody>
@@ -338,13 +489,12 @@ export const printIndividualReport = (reportData) => {
               <tr>
                 <td>${new Date(transaction.transactionDate).toLocaleDateString('ar-SA')}</td>
                 <td style="color: ${transaction.type === 'deposit' ? '#28a745' : transaction.type === 'withdrawal' ? '#ffc107' : transaction.type === 'profit' ? '#007bff' : '#6c757d'};">
-                  ${transaction.type === 'deposit' ? 'إيداع' : transaction.type === 'withdrawal' ? 'سحب' : transaction.type === 'profit' ? 'أرباح' : transaction.type}
+                  ${transaction.type === 'deposit' ? 'deposit' : transaction.type === 'withdrawal' ? 'withdrawl' : transaction.type === 'profit' ? 'أرباح' : transaction.type}
                 </td>
                 <td>${transaction.amount.toLocaleString()} ${transaction.currency}</td>
                 <td style="color: #28a745; font-weight: bold;">
                   ${transaction.type === 'profit' && transaction.profitYear ? transaction.profitYear : '-'}
                 </td>
-                <td>${transaction.description || transaction.notes || '-'}</td>
               </tr>
             `).join('')}
           </tbody>

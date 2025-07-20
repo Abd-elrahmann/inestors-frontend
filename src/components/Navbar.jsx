@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Typography, Button, Box, IconButton, Menu, MenuItem, Avatar } from '@mui/material';
-import { MdAccountBalance as AccountBalance, MdMenu as MenuIcon, MdMenuOpen as MenuOpenIcon, MdPerson as Person, MdExitToApp as ExitToApp } from 'react-icons/md';
+import { Toolbar, Typography, Button, Box, IconButton, Menu, MenuItem, Avatar } from '@mui/material';
+import { MdMenu as MenuIcon, MdMenuOpen as MenuOpenIcon, MdPerson as Person, MdExitToApp as ExitToApp } from 'react-icons/md';
 import { useNavigate, useLocation } from 'react-router-dom';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
@@ -184,7 +184,6 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
             )}
             
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AccountBalance sx={{ fontSize: 32, color: '#28a745' }} />
               <Typography 
                 variant="h6" 
                 component="div"

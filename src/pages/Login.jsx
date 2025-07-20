@@ -9,7 +9,8 @@ import {
   Link,
   Alert,
   InputAdornment,
-  IconButton
+  IconButton,
+  CircularProgress
 } from '@mui/material';
 import { MdVisibility as Visibility, MdVisibilityOff as VisibilityOff, MdAccountBalance as AccountBalance, MdLogin as LoginIcon } from 'react-icons/md';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -27,11 +28,9 @@ const Login = () => {
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check for success message from registration
   useEffect(() => {
     if (location.state?.message) {
       setSuccess(location.state.message);
-      // Clear the state to prevent showing the message on refresh
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -41,7 +40,6 @@ const Login = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
-    // Clear errors when user starts typing
     if (error) setError('');
     if (success) setSuccess('');
   };
@@ -51,7 +49,6 @@ const Login = () => {
     setIsLoading(true);
     setError('');
 
-    // Basic validation
     if (!formData.username || !formData.password) {
       setError('يرجى ملء جميع الحقول المطلوبة');
       setIsLoading(false);
@@ -59,21 +56,17 @@ const Login = () => {
     }
 
     try {
-      // Call the backend API
       const response = await authAPI.login({
         username: formData.username.trim(),
         password: formData.password
       });
 
       if (response.success) {
-        // Store token and user data
         localStorage.setItem('token', response.token);
         localStorage.setItem('user', JSON.stringify(response.user));
         
-        // Show success message briefly
         setSuccess('تم تسجيل الدخول بنجاح!');
         
-        // Navigate to dashboard after a short delay
         setTimeout(() => {
           navigate('/dashboard', { replace: true });
         }, 1000);
@@ -83,7 +76,6 @@ const Login = () => {
     } catch (err) {
       console.error('Login error:', err);
       
-      // Handle different types of errors
       if (err.message.includes('Invalid credentials')) {
         setError('اسم المستخدم أو كلمة المرور غير صحيحة');
       } else if (err.message.includes('deactivated')) {
@@ -122,7 +114,6 @@ const Login = () => {
         }}
       >
         <CardContent sx={{ p: 4 }}>
-          {/* Header */}
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <AccountBalance 
               sx={{ 
@@ -152,7 +143,6 @@ const Login = () => {
             </Typography>
           </Box>
 
-          {/* Success Alert */}
           {success && (
             <Alert 
               severity="success" 
@@ -169,7 +159,6 @@ const Login = () => {
             </Alert>
           )}
 
-          {/* Error Alert */}
           {error && (
             <Alert 
               severity="error" 
@@ -186,7 +175,7 @@ const Login = () => {
             </Alert>
           )}
 
-          {/* Login Form */}
+
           <Box 
             component="form" 
             onSubmit={handleSubmit}
@@ -257,7 +246,6 @@ const Login = () => {
               type="submit"
               fullWidth
               variant="contained"
-              disabled={isLoading}
               sx={{
                 py: 1.5,
                 backgroundColor: '#28a745',
@@ -267,16 +255,18 @@ const Login = () => {
                 '&:hover': {
                   backgroundColor: '#218838'
                 },
-                '&:disabled': {
-                  backgroundColor: '#cccccc'
-                }
               }}
             >
-              {isLoading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
+              {isLoading ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={20} sx={{ color: '#ffffff' }} />
+                  <span>جاري تسجيل الدخول...</span>
+                </Box>
+              ) : 'تسجيل الدخول'}
             </Button>
           </Box>
 
-          {/* Footer */}
+              
           <Box sx={{ textAlign: 'center', mt: 3 }}>
             <Typography variant="body2" sx={{ fontFamily: 'Cairo', color: 'text.secondary' }}>
               تسجيل الدخول للإدمن فقط

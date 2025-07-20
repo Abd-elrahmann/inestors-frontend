@@ -1,29 +1,28 @@
-// ⚡ محسن المودالز لتسريع فتحها وإغلاقها
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 
-// 🎯 Hook مخصص لتحسين أداء المودالز
+
 export const useOptimizedModal = (initialOpen = false) => {
   const [isOpen, setIsOpen] = useState(initialOpen);
   const [isAnimating, setIsAnimating] = useState(false);
   const timeoutRef = useRef(null);
 
-  // 🚀 فتح المودال بتحسين
+
   const openModal = useCallback(() => {
     if (isOpen || isAnimating) return;
     
     setIsAnimating(true);
     
-    // تأخير بسيط لضمان smooth animation
+
     requestAnimationFrame(() => {
       setIsOpen(true);
       timeoutRef.current = setTimeout(() => {
         setIsAnimating(false);
-      }, 200); // مدة الانتقال
+      }, 200);
     });
   }, [isOpen, isAnimating]);
 
-  // ⚡ إغلاق المودال بتحسين
+
   const closeModal = useCallback(() => {
     if (!isOpen) return;
     
@@ -32,10 +31,10 @@ export const useOptimizedModal = (initialOpen = false) => {
     
     timeoutRef.current = setTimeout(() => {
       setIsAnimating(false);
-    }, 200); // مدة الانتقال
+    }, 200);
   }, [isOpen]);
 
-  // 🔄 تبديل حالة المودال
+
   const toggleModal = useCallback(() => {
     if (isOpen) {
       closeModal();
@@ -44,7 +43,7 @@ export const useOptimizedModal = (initialOpen = false) => {
     }
   }, [isOpen, openModal, closeModal]);
 
-  // تنظيف عند unmount
+
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -62,9 +61,9 @@ export const useOptimizedModal = (initialOpen = false) => {
   };
 };
 
-// 🎨 إعدادات الانتقالات المحسّنة
+
 export const OPTIMIZED_MODAL_TRANSITIONS = {
-  // انتقال سريع للمودالز الصغيرة
+
   fast: {
     enter: {
       duration: 150,
@@ -76,7 +75,7 @@ export const OPTIMIZED_MODAL_TRANSITIONS = {
     }
   },
   
-  // انتقال متوسط للمودالز العادية
+
   normal: {
     enter: {
       duration: 200,
@@ -88,7 +87,7 @@ export const OPTIMIZED_MODAL_TRANSITIONS = {
     }
   },
   
-  // انتقال بطيء للمودالز الكبيرة
+
   slow: {
     enter: {
       duration: 300,
@@ -101,7 +100,7 @@ export const OPTIMIZED_MODAL_TRANSITIONS = {
   }
 };
 
-// 🔧 دالة لتحسين props المودال
+
 export const getOptimizedModalProps = (size = 'normal') => {
   const transition = OPTIMIZED_MODAL_TRANSITIONS[size];
   
@@ -123,7 +122,7 @@ export const getOptimizedModalProps = (size = 'normal') => {
   };
 };
 
-// 🎯 معالج الأحداث المحسّن للمودالز
+
 export const createModalHandler = (modalSetter, shouldPreventDefault = true) => {
   return (event) => {
     if (shouldPreventDefault && event) {
@@ -131,30 +130,30 @@ export const createModalHandler = (modalSetter, shouldPreventDefault = true) => 
       event.stopPropagation();
     }
     
-    // استخدام requestAnimationFrame لتحسين الأداء
+
     requestAnimationFrame(() => {
       modalSetter(true);
     });
   };
 };
 
-// 🚀 مدير المودالز المتعددة
+
 class ModalManager {
   constructor() {
     this.openModals = new Set();
     this.modalStack = [];
   }
 
-  // فتح مودال جديد
+
   openModal(modalId) {
     this.openModals.add(modalId);
     this.modalStack.push(modalId);
     
-    // إدارة الـ z-index
+
     this.updateZIndex();
   }
 
-  // إغلاق مودال
+
   closeModal(modalId) {
     this.openModals.delete(modalId);
     const index = this.modalStack.indexOf(modalId);
@@ -165,7 +164,7 @@ class ModalManager {
     this.updateZIndex();
   }
 
-  // إغلاق آخر مودال
+
   closeLastModal() {
     if (this.modalStack.length > 0) {
       const lastModalId = this.modalStack[this.modalStack.length - 1];
@@ -175,13 +174,13 @@ class ModalManager {
     return null;
   }
 
-  // إغلاق جميع المودالز
+
   closeAllModals() {
     this.openModals.clear();
     this.modalStack = [];
   }
 
-  // تحديث z-index للمودالز
+
   updateZIndex() {
     this.modalStack.forEach((modalId, index) => {
       const modalElement = document.querySelector(`[data-modal-id="${modalId}"]`);
@@ -191,21 +190,21 @@ class ModalManager {
     });
   }
 
-  // التحقق من وجود مودالز مفتوحة
+
   hasOpenModals() {
     return this.openModals.size > 0;
   }
 
-  // الحصول على عدد المودالز المفتوحة
+
   getOpenModalCount() {
     return this.openModals.size;
   }
 }
 
-// إنشاء instance واحد للاستخدام العام
+
 export const modalManager = new ModalManager();
 
-// 🎮 Hook للتحكم في المودالز المتعددة
+
 export const useModalManager = (modalId) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -235,7 +234,7 @@ export const useModalManager = (modalId) => {
   };
 };
 
-// 🔄 Hook لمعالجة إغلاق المودال بـ ESC
+
 export const useModalEscapeKey = (isOpen, closeModal) => {
   useEffect(() => {
     if (!isOpen) return;
@@ -254,13 +253,13 @@ export const useModalEscapeKey = (isOpen, closeModal) => {
   }, [isOpen, closeModal]);
 };
 
-// 🎯 تحسينات خاصة بمودالز البيانات الكبيرة
+
 export const useLargeDataModal = (data, pageSize = 50) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [filteredData, setFilteredData] = useState(data);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // تقسيم البيانات إلى صفحات
+
   const paginatedData = filteredData.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
@@ -268,7 +267,7 @@ export const useLargeDataModal = (data, pageSize = 50) => {
 
   const totalPages = Math.ceil(filteredData.length / pageSize);
 
-  // البحث المحسّن
+    
   const handleSearch = useCallback((term) => {
     setSearchTerm(term);
     setCurrentPage(1);

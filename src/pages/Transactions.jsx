@@ -1,19 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Box } from '@mui/material';
 import { toast } from 'react-toastify';
-import TableComponent from '../components/TableComponent';
-import AddTransactionModal from '../components/AddTransactionModal';
-import EditTransactionModal from '../components/EditTransactionModal';
+import TableComponent from '../components/shared/TableComponent';
+import AddTransactionModal from '../modals/AddTransactionModal';
+import EditTransactionModal from '../modals/EditTransactionModal';
 import { PageLoadingSpinner, ErrorAlert } from '../components/shared/LoadingComponents';
 import { 
   getCurrencyCell, 
-  getStatusCell,
   columnWidths
 } from '../styles/tableStyles';
 import { transactionsAPI, transformers, handleApiError } from '../services/apiHelpers';
 import { showDeleteConfirmation, showSuccessAlert } from '../utils/sweetAlert';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
-
+  
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,14 +21,14 @@ const Transactions = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   
-  // 💰 استخدام مدير العملة المركزي
+  
   const { formatAmount, currentCurrency } = useCurrencyManager();
 
   useEffect(() => {
     fetchTransactions();
   }, []);
 
-  // ✅ تحسين دالة جلب المعاملات - تبسيط العمليات
+  
   const fetchTransactions = async () => {
     try {
       setLoading(true);
@@ -38,7 +37,7 @@ const Transactions = () => {
       const response = await transactionsAPI.getAll();
       
       if (response.data && response.data.transactions) {
-        // ✅ تبسيط - تحويل مباشر بدون عمليات إضافية
+        
         const transformedTransactions = response.data.transactions.map(transformers.transaction);
         setTransactions(transformedTransactions);
       } else {
@@ -52,9 +51,8 @@ const Transactions = () => {
     }
   };
 
-  // ✅ إزالة تحديث العملة الزائد لتسريع الأداء
+  
 
-  // Define table columns with flexible widths
   const columns = useMemo(() => [
     {
       field: 'investorName',
@@ -111,20 +109,7 @@ const Transactions = () => {
         </span>
       )
     },
-    {
-      field: 'status',
-      headerName: 'الحالة',
-      width: columnWidths.medium,
-      headerAlign: 'center',
-      align: 'center',
-      sortable: true,
-      filterable: true,
-      renderCell: (params) => (
-        <span style={getStatusCell(params.value, 'مكتمل', 'قيد المعالجة')}>
-          {params.value}
-        </span>
-      )
-    }
+  
   ], [currentCurrency, formatAmount]);
 
   const handleAddTransaction = () => {
@@ -146,7 +131,7 @@ const Transactions = () => {
       try {
         await transactionsAPI.delete(transaction.id);
         showSuccessAlert('تم حذف العملية المالية بنجاح');
-        fetchTransactions(); // Refresh the data
+        fetchTransactions(); 
       } catch (error) {
         console.error('Error deleting transaction:', error);
         toast.error(`خطأ في حذف العملية المالية: ${error.message}`);
@@ -155,11 +140,11 @@ const Transactions = () => {
   };
 
   const handleAddSuccess = () => {
-    fetchTransactions(); // Refresh transactions list
+    fetchTransactions(); 
   };
 
   const handleEditSuccess = () => {
-    fetchTransactions(); // Refresh transactions list
+    fetchTransactions(); 
   };
 
   return (
@@ -181,14 +166,14 @@ const Transactions = () => {
             searchPlaceholder="البحث في العمليات..."
           />
 
-          {/* Add Transaction Modal */}
+          
           <AddTransactionModal
             open={addModalOpen}
             onClose={() => setAddModalOpen(false)}
             onSuccess={handleAddSuccess}
           />
 
-          {/* Edit Transaction Modal */}
+          
           <EditTransactionModal
             open={editModalOpen}
             onClose={() => setEditModalOpen(false)}

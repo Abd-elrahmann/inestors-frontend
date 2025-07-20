@@ -1,9 +1,7 @@
-// 🚀 API محسّن للأداء العالي
 import { optimizedApiCall } from '../utils/performanceOptimization';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
-// 🎯 كلاس API محسّن
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
@@ -12,7 +10,6 @@ class ApiService {
     this.cacheTimeout = 5 * 60 * 1000; 
   }
 
-  // Get authentication headers
   getHeaders(includeAuth = true) {
     const headers = {
       'Content-Type': 'application/json',
@@ -42,7 +39,7 @@ class ApiService {
             ...this.getHeaders(params.includeAuth !== false),
             ...params.headers,
           },
-          signal: AbortSignal.timeout(30000), // 30 ثانية
+            signal: AbortSignal.timeout(30000),
         };
 
         if (params.body) {
@@ -77,12 +74,7 @@ class ApiService {
     });
   }
 
-  async register(userData) {
-    return this.request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
-  }
+ 
 
   async logout() {
     return this.request('/auth/logout', {
@@ -187,7 +179,6 @@ const apiService = new ApiService();
 
 export const authAPI = {
   login: (credentials) => apiService.login(credentials),
-  register: (userData) => apiService.register(userData),
   logout: () => apiService.logout(),
   getProfile: () => apiService.getProfile(),
   updateProfile: (userData) => apiService.updateProfile(userData),

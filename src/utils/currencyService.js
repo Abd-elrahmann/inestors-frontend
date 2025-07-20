@@ -3,7 +3,6 @@ import { settingsAPI } from './apiHelpers';
 let currentSettings = null;
 let settingsPromise = null;
 
-// تحديث الإعدادات
 export const updateSettings = async () => {
   try {
     const response = await settingsAPI.getSettings();
@@ -17,7 +16,6 @@ export const updateSettings = async () => {
   }
 };
 
-// الحصول على الإعدادات الحالية
 export const getSettings = async () => {
   if (!currentSettings && !settingsPromise) {
     settingsPromise = updateSettings();
@@ -27,7 +25,6 @@ export const getSettings = async () => {
   return currentSettings;
 };
 
-// تنسيق المبلغ حسب العملة
 export const formatAmount = (amount, currency) => {
   if (typeof amount !== 'number') {
     amount = parseFloat(amount) || 0;
@@ -44,14 +41,12 @@ export const formatAmount = (amount, currency) => {
   return `${formattedAmount} ${symbol}`;
 };
 
-// تحويل المبلغ من عملة إلى أخرى
 export const convertAmount = async (amount, fromCurrency, toCurrency) => {
   try {
     if (fromCurrency === toCurrency) {
       return amount;
     }
 
-    // تحويل المبلغ إلى رقم
     amount = parseFloat(amount);
     if (isNaN(amount)) {
       throw new Error('المبلغ غير صالح');
@@ -65,7 +60,6 @@ export const convertAmount = async (amount, fromCurrency, toCurrency) => {
 
     if (response.success) {
       const convertedAmount = response.data.convertedAmount || response.data;
-      // التأكد من أن النتيجة رقم
       return typeof convertedAmount === 'number' ? convertedAmount : parseFloat(convertedAmount);
     }
 
@@ -76,7 +70,6 @@ export const convertAmount = async (amount, fromCurrency, toCurrency) => {
   }
 };
 
-// تحديث سعر الصرف تلقائياً
 export const updateExchangeRate = async () => {
   try {
     const response = await settingsAPI.getLatestExchangeRate();
@@ -93,7 +86,6 @@ export const updateExchangeRate = async () => {
   }
 };
 
-// الحصول على رمز العملة
 export const getCurrencySymbol = (currency) => {
   const symbols = {
     'IQD': 'د.ع',
@@ -102,7 +94,6 @@ export const getCurrencySymbol = (currency) => {
   return symbols[currency] || currency;
 };
 
-// تحديث العملة في الجداول
 export const updateTableCurrency = async (data) => {
   try {
     const settings = await getSettings();
@@ -118,22 +109,16 @@ export const updateTableCurrency = async (data) => {
 
       const updates = {};
       const fieldsToConvert = [
-        // حقول أساسية
         'amount', 'contribution', 'totalProfit', 'profit', 'balance',
-        // حقول المعاملات
         'depositAmount', 'withdrawalAmount', 'profitAmount',
-        // حقول السنة المالية
         'dailyProfitRate', 'yearlyProfitRate', 'distributedAmount',
-        // حقول التوزيعات
-        'distributionAmount', 'rolloverAmount',
-        // حقول مخصصة تحتوي على كلمات مالية
+            'distributionAmount', 'rolloverAmount',
         ...Object.keys(obj).filter(key => 
           /amount|profit|balance|total|sum|value/i.test(key) && 
           typeof obj[key] === 'number'
         )
       ];
 
-      // تحويل جميع الحقول المطابقة
       for (const field of fieldsToConvert) {
         if (field in obj) {
           updates[field] = await convertField(
@@ -144,7 +129,6 @@ export const updateTableCurrency = async (data) => {
         }
       }
 
-      // معالجة الكائنات المتداخلة في المصفوفات
       if (Array.isArray(obj.distributions)) {
         updates.distributions = await Promise.all(
           obj.distributions.map(dist => processObject(dist, originalCurrency))
@@ -170,7 +154,6 @@ export const updateTableCurrency = async (data) => {
       };
     };
 
-    // معالجة جميع العناصر في المصفوفة
     return Promise.all(
       data.map(async (item) => {
         const originalCurrency = item.currency || 'IQD';
@@ -184,7 +167,6 @@ export const updateTableCurrency = async (data) => {
   }
 };
 
-// إعادة تعيين الإعدادات (يستخدم عند تسجيل الخروج)
 export const resetSettings = () => {
   currentSettings = null;
   settingsPromise = null;

@@ -60,12 +60,10 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [forceFullPeriod, setForceFullPeriod] = useState(false);
   
-  // تغيير نوع الحساب مع تنبيه المستخدم
   const handleCalculationTypeChange = () => {
     const newValue = !forceFullPeriod;
     setForceFullPeriod(newValue);
     
-    // عرض رسالة توضيحية للمستخدم
     const message = newValue ? 
       "🧮 تم التبديل لمعادلة الفترة الكاملة: سيتم حساب الأرباح بناءً على نسبة المشاركة × إجمالي الربح" :
       "📅 تم التبديل لمعادلة الأيام الجزئية: سيتم حساب الأرباح بناءً على الأيام الفعلية المنقضية";
@@ -93,10 +91,9 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
     if (open && financialYear) {
       fetchDistributions();
       
-      // تحديث كل دقيقة بدلاً من كل 10 دقائق لضمان تحديث عدد الأيام
-      const interval = setInterval(() => {
+        const interval = setInterval(() => {
         fetchDistributions();
-      }, 60000); // كل دقيقة
+      }, 60000);
       
       return () => clearInterval(interval);
     }
@@ -172,7 +169,6 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
     try {
       setUpdating(true);
       
-      // استدعاء API لإعادة حساب التوزيعات
       const response = await financialYearsAPI.calculateDistributions(financialYear._id, {
         forceFullPeriod
       });
@@ -181,9 +177,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
         await fetchDistributions();
         const summary = response.data?.summary;
         
-        // التحقق من حالة التوزيعات
         if (summary?.status === 'approved') {
-          // عرض رسالة للتوزيعات الموافق عليها
           Swal.fire({
             title: 'توزيعات موافق عليها',
             html: `
@@ -196,7 +190,6 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
             confirmButtonText: 'حسناً'
           });
         } else {
-          // عرض رسالة نجاح للحسابات الجديدة
           const elapsedDays = summary?.elapsedDays || 0;
           const totalDays = summary?.totalDaysInYear || 0;
           const calculationMessage = summary?.calculationMessage;
@@ -214,25 +207,19 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
             confirmButtonText: 'حسناً'
           });
           
-          console.log('✅ تم تحديث الأرباح بنجاح!');
-          console.log(`📅 الأيام المنقضية: ${elapsedDays} من ${totalDays} يوم`);
-          if (calculationMessage) {
-            console.log(`📝 ${calculationMessage}`);
-          }
         }
       } else {
-        console.error('❌ فشل تحديث الأرباح:', response.message);
+        console.error('فشل تحديث الأرباح:', response.message);
         showErrorAlert(response.message || 'فشل في تحديث الأرباح');
       }
     } catch (error) {
-      console.error('❌ خطأ في تحديث الأرباح:', error);
+      console.error('خطأ في تحديث الأرباح:', error);
       showErrorAlert('حدث خطأ أثناء تحديث الأرباح');
     } finally {
       setUpdating(false);
     }
   };
 
-  // تحديث دالة عرض جدول التوزيعات
   const renderDistributionsTable = () => {
     if (loading) {
       return (
@@ -264,7 +251,6 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
               {forceFullPeriod ? " حساب الفترة كاملة" : " حساب الأيام الفعلية"}
             </Button>
             
-            {/* توضيح المعادلة المستخدمة */}
             <Box sx={{ 
               p: 1, 
               backgroundColor: forceFullPeriod ? 'primary.light' : 'info.light', 
@@ -309,27 +295,21 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
             </TableHead>
             <TableBody>
               {distributions.map((distribution) => {
-                // حساب نسبة المساهمة ومبلغ الربح
                 const investmentAmount = distribution.calculation?.investmentAmount || 0;
                 const totalCapital = distributions.reduce((sum, d) => sum + (d.calculation?.investmentAmount || 0), 0);
                 const sharePercentage = totalCapital > 0 ? (investmentAmount / totalCapital) * 100 : 0;
                 
-                // حساب الربح بناءً على نوع الحساب
                 let calculatedProfit;
                 if (forceFullPeriod) {
-                  // للفترة الكاملة: نسبة المشاركة × إجمالي الربح
                   calculatedProfit = (sharePercentage / 100) * financialYear.totalProfit;
                 } else {
-                  // للأيام الجزئية: المبلغ × الأيام × معدل الربح اليومي
                   const actualInvestorDays = distribution.calculation?.totalDays || 0;
                   const dailyRate = distribution.calculation?.dailyProfitRate || 0;
                   calculatedProfit = investmentAmount * actualInvestorDays * dailyRate;
                 }
                 
-                // تقريب الربح إلى 3 أرقام عشرية
-                calculatedProfit = Number(calculatedProfit.toFixed(3));
+                  calculatedProfit = Number(calculatedProfit.toFixed(3));
 
-                // حساب المبلغ المتبقي بعد التدوير
                 let remainingProfit = calculatedProfit;
                 if (distribution.rolloverSettings?.isRolledOver) {
                   remainingProfit = calculatedProfit - (distribution.rolloverSettings?.rolloverAmount || 0);
@@ -416,7 +396,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
       maxWidth="lg" 
       fullWidth
       TransitionProps={{
-        timeout: { enter: 200, exit: 150 } // ✅ انتقالات أسرع
+          timeout: { enter: 200, exit: 150 }
       }}
     >
       <DialogTitle>
@@ -452,7 +432,6 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
         </Tabs>
 
         <TabPanel value={tabValue} index={0}>
-          {/* شرح آلية الحساب والتحديث */}
           <Box sx={{ 
             color:'black',
             p: 2, 
@@ -489,7 +468,6 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
             </Typography>
           </Box>
 
-          {/* Summary Cards */}
           <Grid container spacing={3} sx={{ mb: 3, justifyContent: 'space-between' }}>
             <Grid item xs={12} sm={6} md={3}>
               <Card sx={{ width: '200px', height: '110px' }}>
@@ -583,7 +561,6 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
             </Grid>
           </Grid>
 
-          {/* Financial Year Info */}
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ textAlign: 'center' }}>
@@ -638,8 +615,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
         </TabPanel>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2, justifyContent: 'center', gap: 2 }}>
-        {/* ✅ تقليل عدد الأزرار لسرعة أكبر */}
+      <DialogActions sx={{ p: 2, justifyContent: 'center', gap: 2 }}>     
         <Button 
           onClick={handleUpdateProfits}
           disabled={updating || loading}

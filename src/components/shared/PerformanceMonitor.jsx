@@ -16,7 +16,7 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon
 } from '@mui/icons-material';
-import { getPerformanceReport, cleanup } from '../utils/performanceOptimization';
+import { getPerformanceReport, cleanup } from '../../utils/performanceOptimization';
 
 const PerformanceMonitor = ({ show = false, position = 'bottom-right' }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -26,12 +26,10 @@ const PerformanceMonitor = ({ show = false, position = 'bottom-right' }) => {
   useEffect(() => {
     if (!show) return;
 
-    // تحديث البيانات كل 5 ثوانِ
     const interval = setInterval(() => {
       updatePerformanceData();
     }, 5000);
-
-    // قياس سرعة الاتصال
+      
     measureConnectionSpeed();
 
     return () => {
@@ -123,7 +121,6 @@ const PerformanceMonitor = ({ show = false, position = 'bottom-right' }) => {
           <Box mt={1}>
             {performanceData && (
               <Grid container spacing={1}>
-                {/* API Performance */}
                 <Grid item xs={12}>
                   <Typography variant="caption" display="block" gutterBottom>
                     <NetworkIcon fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
@@ -144,7 +141,6 @@ const PerformanceMonitor = ({ show = false, position = 'bottom-right' }) => {
                   ))}
                 </Grid>
 
-                {/* Cache Stats */}
                 <Grid item xs={12}>
                   <Typography variant="caption" display="block" gutterBottom>
                     <MemoryIcon fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
@@ -174,7 +170,6 @@ const PerformanceMonitor = ({ show = false, position = 'bottom-right' }) => {
                   </Box>
                 </Grid>
 
-                {/* Connection Speed */}
                 <Grid item xs={12}>
                   <Box display="flex" justifyContent="space-between">
                     <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
@@ -189,7 +184,6 @@ const PerformanceMonitor = ({ show = false, position = 'bottom-right' }) => {
                   </Box>
                 </Grid>
 
-                {/* Memory Usage (if available) */}
                 {performance.memory && (
                   <Grid item xs={12}>
                     <Typography variant="caption" display="block" gutterBottom>

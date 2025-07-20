@@ -1,34 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
   TextField,
+  Button,
   Box,
   Grid,
-  IconButton,
   Typography,
-  FormControl,
-  InputLabel,
+  IconButton,
   Select,
   MenuItem,
+  FormControl,
+  InputLabel,
   InputAdornment,
   CircularProgress
 } from '@mui/material';
-import {
-  Close as CloseIcon,
-  Person as PersonIcon,
-  Phone as PhoneIcon,
-  Money as MoneyIcon
-} from '@mui/icons-material';
-import { investorsAPI } from '../services/apiHelpers';
-import { showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
+import CloseIcon from '@mui/icons-material/Close';
+import PersonIcon from '@mui/icons-material/Person';
 
-const EditInvestorModal = ({ open, onClose, onSuccess, investor }) => {
+import PhoneIcon from '@mui/icons-material/Phone';
+import MoneyIcon from '@mui/icons-material/AccountBalance';
+import { toast } from 'react-toastify';
+import { investorsAPI } from '../services/apiHelpers';
+
+const AddInvestorModal = ({ open, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     name: '',
     nationalId: '',
@@ -38,86 +36,43 @@ const EditInvestorModal = ({ open, onClose, onSuccess, investor }) => {
     currency: 'IQD',
     address: '',
     notes: '',
-    startDate: ''
+    startDate: new Date().toISOString().split('T')[0]
   });
 
-  // Country codes with flags
-  const countryCodes = [
-    { code: '+964', name: 'العراق', flag: '🇮🇶' }
-  ];
+  const [errors, setErrors] = useState({});
 
   const currencies = [
     { code: 'IQD', name: 'دينار عراقي', symbol: 'د.ع' },
     { code: 'USD', name: 'دولار أمريكي', symbol: '$' }
   ];
 
-  // Load investor data when modal opens
-  useEffect(() => {
-    if (open && investor) {
-      // Extract phone number and country code
-      let phoneNumber = '';
-      let phoneCountryCode = '+964';
-      
-      if (investor.phone) {
-        const phoneMatch = investor.phone.match(/(\+\d{1,4})?(\d+)/);
-        if (phoneMatch) {
-          phoneCountryCode = phoneMatch[1] || '+964';
-          phoneNumber = phoneMatch[2] || '';
-        }
-      }
-      
-      // Extract contribution amount (remove currency symbol and formatting)
-      let contributionAmount = '';
-      if (typeof investor.contribution === 'string') {
-        const contributionMatch = investor.contribution.match(/[\d,]+/);
-        contributionAmount = contributionMatch ? contributionMatch[0].replace(/,/g, '') : '';
-      } else if (typeof investor.contribution === 'number') {
-        contributionAmount = investor.contribution.toString();
-      }
-
-      setFormData({
-        name: investor.name || '',
-        nationalId: investor.nationalId || '',
-        phone: phoneNumber,
-        phoneCountryCode: phoneCountryCode,
-        contribution: contributionAmount,
-        currency: investor.currency || 'IQD',
-        address: investor.address || '',
-        notes: investor.notes || '',
-        startDate: investor.startDate ? new Date(investor.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-      });
-      setErrors({});
-    }
-  }, [open, investor]);
+  const countryCodes = [
+    { code: '+964', name: 'العراق', flag: '🇮🇶' }
+  ];
 
   const validateForm = () => {
     const newErrors = {};
 
-    // Validate name
+    
     if (!formData.name.trim()) {
-      newErrors.name = 'الاسم مطلوب';
+      newErrors.name = 'اسم المساهم مطلوب';
     }
 
-    // Validate national ID
+    
     if (!formData.nationalId.trim()) {
-      newErrors.nationalId = 'رقم الهوية مطلوب';
-    } else if (!/^\d{10,14}$/.test(formData.nationalId)) {
-      newErrors.nationalId = 'رقم الهوية يجب أن يكون بين 10-14 رقم';
+      newErrors.nationalId = 'الرقم الوطني مطلوب';
     }
 
-    // Validate start date
+    
+    if (!formData.contribution) {
+      newErrors.contribution = 'مبلغ المساهمة مطلوب';
+    } else if (isNaN(formData.contribution) || parseFloat(formData.contribution) <= 0) {
+      newErrors.contribution = 'يجب أن يكون مبلغ المساهمة رقماً موجباً';
+    }
+
+    
     if (!formData.startDate) {
-      newErrors.startDate = 'تاريخ انضمام المساهم مطلوب';
-    }
-
-    // Validate phone (optional for Iraq)
-    if (formData.phone.trim() && !/^\d{7,15}$/.test(formData.phone)) {
-      newErrors.phone = 'رقم الهاتف يجب أن يكون بين 7-15 رقم';
-    }
-
-    // Validate contribution
-    if (!formData.contribution || formData.contribution <= 0) {
-      newErrors.contribution = 'مبلغ المساهمة مطلوب ويجب أن يكون أكبر من صفر';
+      newErrors.startDate = 'تاريخ الانضمام مطلوب';
     }
 
     setErrors(newErrors);
@@ -130,7 +85,7 @@ const EditInvestorModal = ({ open, onClose, onSuccess, investor }) => {
       [field]: value
     }));
 
-    // Clear error when user starts typing
+    
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -146,40 +101,48 @@ const EditInvestorModal = ({ open, onClose, onSuccess, investor }) => {
       return;
     }
 
+    setLoading(true);
+    
     try {
-      setLoading(true);
-
-      // Prepare data for API
-      const updateData = {
+      
+      const investorData = {
         fullName: formData.name.trim(),
         nationalId: formData.nationalId.trim(),
-        phone: formData.phone.trim() ? formData.phoneCountryCode + formData.phone.trim() : '',
+        phone: formData.phone.trim() ? `${formData.phoneCountryCode}${formData.phone.trim()}` : '',
         amountContributed: parseFloat(formData.contribution),
         currency: formData.currency,
-        address: formData.address.trim() || undefined,
-        notes: formData.notes.trim() || undefined,
-        startDate: formData.startDate
+        startDate: formData.startDate,
+        address: formData.address?.trim(),
+        notes: formData.notes?.trim()
       };
 
-      // Remove undefined values
-      Object.keys(updateData).forEach(key => {
-        if (updateData[key] === undefined) {
-          delete updateData[key];
-        }
+      
+      const result = await investorsAPI.create(investorData);
+      
+      toast.success('تم إضافة المساهم بنجاح');
+      
+      
+      setFormData({
+        name: '',
+        nationalId: '',
+        phone: '',
+        phoneCountryCode: '+964',
+        contribution: '',
+        currency: 'IQD',
+        address: '',
+        notes: '',
+        startDate: new Date().toISOString().split('T')[0]
       });
-
-      const response = await investorsAPI.update(investor.id, updateData);
-
-      if (response.success) {
-        await showSuccessAlert('تم تعديل بيانات المساهم بنجاح');
-        onSuccess();
-        handleClose();
-      } else {
-        throw new Error(response.message || 'فشل في تعديل المساهم');
+      
+      
+      onClose();
+      if (onSuccess) {
+        onSuccess(result.data);
       }
+      
     } catch (error) {
-      console.error('Error updating investor:', error);
-      showErrorAlert(error.message || 'حدث خطأ أثناء تعديل المساهم');
+      console.error('Error adding investor:', error);
+      toast.error(error.message || 'حدث خطأ أثناء إضافة المساهم');
     } finally {
       setLoading(false);
     }
@@ -196,7 +159,7 @@ const EditInvestorModal = ({ open, onClose, onSuccess, investor }) => {
         currency: 'IQD',
         address: '',
         notes: '',
-        startDate: ''
+        startDate: new Date().toISOString().split('T')[0]
       });
       setErrors({});
       onClose();
@@ -205,42 +168,45 @@ const EditInvestorModal = ({ open, onClose, onSuccess, investor }) => {
 
   const getCurrencySymbol = (currencyCode) => {
     const currency = currencies.find(c => c.code === currencyCode);
-    return currency ? currency.symbol : currencyCode;
+    return currency ? currency.symbol : '';
   };
 
   return (
-    <Dialog
-      open={open}
+    <Dialog 
+      open={open} 
       onClose={handleClose}
-      maxWidth="sm" 
+      maxWidth="sm"
       fullWidth
       TransitionProps={{
-        timeout: { enter: 200, exit: 150 }
+        timeout: { enter: 200, exit: 150 } 
       }}
       PaperProps={{
         sx: {
           borderRadius: 3,
-          minHeight: '60vh',
-          width: '50%'
+          minHeight: '60vh', 
+          width: '50%',
+          scrollbarWidth: 'none'
         }
       }}
     >
-      <DialogTitle >
+      <DialogTitle sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        backgroundColor: '#28a745',
+        color: 'white',
+        fontFamily: 'Cairo',
+        fontSize: '1.2rem',
+        fontWeight: 600,
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <PersonIcon />
+          <span>إضافة مساهم جديد</span>
+        </Box>
         <IconButton 
           onClick={handleClose}
           disabled={loading}
-          sx={{
-            position: 'absolute',
-            left: 8,
-            top: 8,
-            color: 'green',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            backdropFilter: 'blur(10px)',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              transform: 'scale(1.1)'
-            }
-          }}
+          sx={{ color: 'white' }}
         >
           <CloseIcon />
         </IconButton>
@@ -249,7 +215,7 @@ const EditInvestorModal = ({ open, onClose, onSuccess, investor }) => {
       <form onSubmit={handleSubmit}>
         <DialogContent sx={{ mt: 2, px: 3 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, width: '60%', mx: 'auto' }}>
-            {/* الاسم */}
+            
             <TextField
               fullWidth
               label="اسم المساهم"
@@ -275,7 +241,7 @@ const EditInvestorModal = ({ open, onClose, onSuccess, investor }) => {
               }}
             />
 
-            {/* رقم الهوية */}
+
             <TextField
               fullWidth
               label="رقم الهوية"
@@ -295,34 +261,61 @@ const EditInvestorModal = ({ open, onClose, onSuccess, investor }) => {
               }}
             />
 
-            {/* رقم الهاتف */}
-            <TextField
-              fullWidth
-              label="رقم الهاتف"
-              value={formData.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
-              error={!!errors.phone}
-              helperText={errors.phone}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Select
-                      value={formData.phoneCountryCode}
-                      onChange={(e) => handleInputChange('phoneCountryCode', e.target.value)}
-                      sx={{ mr: 1, minWidth: 100 }}
-                    >
-                      {countryCodes.map(country => (
-                        <MenuItem key={country.code} value={country.code}>
-                          {country.flag} {country.code}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </InputAdornment>
-                )
-              }}
-            />
+            
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <FormControl sx={{ width: '30%' }}>
+                <InputLabel sx={{ fontFamily: 'Cairo', fontSize: '0.9rem' }}>كود الدولة</InputLabel>
+                <Select
+                  value={formData.phoneCountryCode}
+                  label="كود الدولة"
+                  onChange={(e) => handleInputChange('phoneCountryCode', e.target.value)}
+                  disabled={loading}
+                  sx={{
+                    fontFamily: 'Cairo',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  {countryCodes.map((country) => (
+                    <MenuItem key={country.code} value={country.code} sx={{ fontFamily: 'Cairo' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <span>{country.flag}</span>
+                        <Typography variant="body2" sx={{ fontFamily: 'Cairo' }}>
+                          {country.code}
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              
+              <TextField
+                sx={{
+                  width: '70%',
+                  '& .MuiOutlinedInput-root': {
+                    fontFamily: 'Cairo'
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontFamily: 'Cairo'
+                  }
+                }}
+                label="رقم الهاتف (اختياري)"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                error={!!errors.phone}
+                helperText={errors.phone}
+                disabled={loading}
+                placeholder="123456789"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PhoneIcon sx={{ color: '#28a745' }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
 
-            {/* مبلغ المساهمة */}
+            
             <TextField
               fullWidth
               type="number"
@@ -335,6 +328,7 @@ const EditInvestorModal = ({ open, onClose, onSuccess, investor }) => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
+                    <MoneyIcon sx={{ color: '#28a745' }} />
                   </InputAdornment>
                 ),
                 endAdornment: (
@@ -355,7 +349,7 @@ const EditInvestorModal = ({ open, onClose, onSuccess, investor }) => {
               }}
             />
 
-            {/* العملة */}
+            
             <FormControl fullWidth>
               <InputLabel sx={{ fontFamily: 'Cairo' }}>العملة</InputLabel>
               <Select
@@ -370,11 +364,11 @@ const EditInvestorModal = ({ open, onClose, onSuccess, investor }) => {
                 {currencies.map((currency) => (
                   <MenuItem key={currency.code} value={currency.code} sx={{ fontFamily: 'Cairo' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {currency.symbol}
-                      </Typography>
-                      <Typography variant="body2">
+                      <Typography variant="body1" sx={{ fontFamily: 'Cairo' }}>
                         {currency.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'Cairo' }}>
+                        ({currency.code})
                       </Typography>
                     </Box>
                   </MenuItem>
@@ -382,19 +376,26 @@ const EditInvestorModal = ({ open, onClose, onSuccess, investor }) => {
               </Select>
             </FormControl>
 
-            {/* تاريخ الانضمام */}
-            <TextField
-              fullWidth
-              type="date"
-              label="تاريخ الانضمام"
-              value={formData.startDate}
-              onChange={(e) => handleInputChange('startDate', e.target.value)}
-              error={!!errors.startDate}
-              helperText={errors.startDate}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
+                
+            <FormControl fullWidth>
+              <TextField
+                type="date"
+                label="تاريخ الانضمام"
+                value={formData.startDate}
+                onChange={(e) => handleInputChange('startDate', e.target.value)}
+                disabled={loading}
+                error={!!errors.startDate}
+                helperText={errors.startDate}
+                InputLabelProps={{
+                  shrink: true,
+                  sx: { fontFamily: 'Cairo' }
+                }}
+                sx={{
+                  fontFamily: 'Cairo'
+                }}
+              />
+            </FormControl>
+
           </Box>
         </DialogContent>
 
@@ -451,7 +452,7 @@ const EditInvestorModal = ({ open, onClose, onSuccess, investor }) => {
                 <span>جاري الحفظ...</span>
               </Box>
             ) : (
-              'تعديل المساهم'
+              'إضافة المساهم'
             )}
           </Button>
         </DialogActions>
@@ -460,4 +461,4 @@ const EditInvestorModal = ({ open, onClose, onSuccess, investor }) => {
   );
 };
 
-export default EditInvestorModal; 
+export default AddInvestorModal; 

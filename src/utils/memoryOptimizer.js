@@ -1,10 +1,7 @@
-// 🧠 محسن الذاكرة لتسريع الجداول والمودالز
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 
-// 🎯 Hook لتحسين أداء الجداول الكبيرة
 export const useOptimizedTable = (data, searchTerm, pageSize = 20) => {
-  // 📦 تخزين مؤقت للبيانات المفلترة
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     
@@ -16,7 +13,6 @@ export const useOptimizedTable = (data, searchTerm, pageSize = 20) => {
     );
   }, [data, searchTerm]);
 
-  // 📄 تقسيم البيانات إلى صفحات
   const paginatedData = useMemo(() => {
     return {
       data: filteredData,
@@ -28,7 +24,6 @@ export const useOptimizedTable = (data, searchTerm, pageSize = 20) => {
   return paginatedData;
 };
 
-// ⚡ Hook لتحسين البحث مع Debouncing
 export const useDebouncedSearch = (initialValue = '', delay = 300) => {
   const [searchTerm, setSearchTerm] = useState(initialValue);
   const [debouncedValue, setDebouncedValue] = useState(initialValue);
@@ -48,16 +43,14 @@ export const useDebouncedSearch = (initialValue = '', delay = 300) => {
   return [debouncedValue, updateSearch, searchTerm];
 };
 
-// 🔄 Hook لتحسين إعادة التحميل
-export const useOptimizedRefresh = (fetchFunction, dependencies = []) => {
+export const useOptimizedRefresh = (fetchFunction = []) => {
   const [loading, setLoading] = useState(false);
   const lastFetchTime = useRef(0);
-  const MINIMUM_INTERVAL = 1000; // ثانية واحدة على الأقل بين الطلبات
+  const MINIMUM_INTERVAL = 1000;
 
   const optimizedFetch = useCallback(async (...args) => {
     const now = Date.now();
     
-    // منع الطلبات المتكررة
     if (now - lastFetchTime.current < MINIMUM_INTERVAL) {
       return;
     }
@@ -74,7 +67,6 @@ export const useOptimizedRefresh = (fetchFunction, dependencies = []) => {
   return { loading, fetch: optimizedFetch };
 };
 
-// 🎨 Hook لتحسين عرض البيانات المالية
 export const useFormattedCurrency = (amount, currency = 'IQD') => {
   return useMemo(() => {
     if (typeof amount !== 'number') return '0 ' + currency;
@@ -82,7 +74,6 @@ export const useFormattedCurrency = (amount, currency = 'IQD') => {
   }, [amount, currency]);
 };
 
-// 🗂️ Hook لتحسين إدارة النماذج
 export const useOptimizedForm = (initialState) => {
   const [formData, setFormData] = useState(initialState);
   const [errors, setErrors] = useState({});
@@ -90,7 +81,6 @@ export const useOptimizedForm = (initialState) => {
   const updateField = useCallback((field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
-    // مسح الخطأ عند البدء بالكتابة
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -115,7 +105,6 @@ export const useOptimizedForm = (initialState) => {
   };
 };
 
-// 🎯 Hook لتحسين أداء المودالز
 export const useModalOptimization = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -128,8 +117,7 @@ export const useModalOptimization = () => {
 
   const closeModal = useCallback(() => {
     setIsClosing(true);
-    
-    // تأخير قصير لضمان smooth animation
+
     timeoutRef.current = setTimeout(() => {
       setIsOpen(false);
       setIsClosing(false);
@@ -147,7 +135,6 @@ export const useModalOptimization = () => {
   return { isOpen, openModal, closeModal, isClosing };
 };
 
-// 📊 Hook لتحسين عرض الإحصائيات
 export const useOptimizedStats = (data) => {
   return useMemo(() => {
     if (!Array.isArray(data) || data.length === 0) {
@@ -171,7 +158,6 @@ export const useOptimizedStats = (data) => {
   }, [data]);
 };
 
-// 🎮 مدير الذاكرة للتطبيق
 class MemoryManager {
   constructor() {
     this.cache = new Map();
@@ -179,9 +165,7 @@ class MemoryManager {
     this.maxCacheSize = 100;
   }
 
-  // حفظ في التخزين المؤقت
-  set(key, value, ttl = 5 * 60 * 1000) { // 5 دقائق افتراضياً
-    // إزالة العناصر القديمة إذا امتلأ التخزين
+  set(key, value, ttl = 5 * 60 * 1000) {
     if (this.cache.size >= this.maxCacheSize) {
       const firstKey = this.cache.keys().next().value;
       this.delete(firstKey);
@@ -189,7 +173,6 @@ class MemoryManager {
 
     this.cache.set(key, value);
     
-    // تعيين مؤقت للحذف التلقائي
     if (this.timers.has(key)) {
       clearTimeout(this.timers.get(key));
     }
@@ -201,17 +184,14 @@ class MemoryManager {
     this.timers.set(key, timer);
   }
 
-  // استرجاع من التخزين المؤقت
   get(key) {
     return this.cache.get(key);
   }
 
-  // التحقق من وجود العنصر
   has(key) {
     return this.cache.has(key);
   }
 
-  // حذف عنصر محدد
   delete(key) {
     this.cache.delete(key);
     if (this.timers.has(key)) {
@@ -220,24 +200,20 @@ class MemoryManager {
     }
   }
 
-  // مسح جميع العناصر
   clear() {
     this.cache.clear();
     this.timers.forEach(timer => clearTimeout(timer));
     this.timers.clear();
   }
 
-  // الحصول على حجم التخزين المؤقت
   size() {
     return this.cache.size;
   }
 }
 
-// إنشاء instance مشترك
 export const memoryManager = new MemoryManager();
 
-// 🚀 Hook لاستخدام التخزين المؤقت
-export const useCachedData = (key, fetchFunction, dependencies = []) => {
+export const useCachedData = (key, fetchFunction) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -248,7 +224,6 @@ export const useCachedData = (key, fetchFunction, dependencies = []) => {
         setLoading(true);
         setError(null);
 
-        // التحقق من التخزين المؤقت أولاً
         if (memoryManager.has(key)) {
           const cachedData = memoryManager.get(key);
           setData(cachedData);
@@ -256,10 +231,8 @@ export const useCachedData = (key, fetchFunction, dependencies = []) => {
           return;
         }
 
-        // جلب البيانات إذا لم تكن موجودة في التخزين المؤقت
         const result = await fetchFunction();
         
-        // حفظ في التخزين المؤقت
         memoryManager.set(key, result);
         setData(result);
         
@@ -271,15 +244,13 @@ export const useCachedData = (key, fetchFunction, dependencies = []) => {
     };
 
     loadData();
-  }, [key, fetchFunction, ...dependencies]);
+  }, [key, fetchFunction]);
 
-  // دالة إعادة التحميل مع تخطي التخزين المؤقت
   const refresh = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // حذف من التخزين المؤقت
       memoryManager.delete(key);
       
       const result = await fetchFunction();
@@ -296,7 +267,6 @@ export const useCachedData = (key, fetchFunction, dependencies = []) => {
   return { data, loading, error, refresh };
 };
 
-// 🎯 Hook لتحسين أداء القوائم المنسدلة
 export const useOptimizedSelect = (options, searchable = true) => {
   const [searchTerm, setSearchTerm] = useState('');
   

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Box } from '@mui/material';
 import { toast } from 'react-toastify';
-import TableComponent from '../components/TableComponent';
-import AddUserModal from '../components/AddUserModal';
-import EditUserModal from '../components/EditUserModal';
+import TableComponent from '../components/shared/TableComponent';
+import AddUserModal from '../modals/AddUserModal';
+import EditUserModal from '../modals/EditUserModal';
 import { PageLoadingSpinner, ErrorAlert } from '../components/shared/LoadingComponents';
 import { 
-  getStatusCell,
   // eslint-disable-next-line no-unused-vars
   columnWidths 
 } from '../styles/tableStyles';
@@ -46,13 +45,11 @@ const Users = () => {
     }
   };
 
-  // Define table columns with flexible widths
   const columns = [
     {
       field: 'fullName',
       headerName: 'الاسم الكامل',
-      flex: 1.5,
-      minWidth: 180,
+      minWidth: 250,
       headerAlign: 'center',
       align: 'center',
       sortable: true,
@@ -61,8 +58,7 @@ const Users = () => {
     {
       field: 'username',
       headerName: 'اسم المستخدم',
-      flex: 1.2,
-      minWidth: 140,
+      minWidth: 180,
       headerAlign: 'center',
       align: 'center',
       sortable: true,
@@ -71,7 +67,6 @@ const Users = () => {
     {
       field: 'email',
       headerName: 'البريد الإلكتروني',
-      flex: 2,
       minWidth: 200,
       headerAlign: 'center',
       align: 'center',
@@ -81,8 +76,7 @@ const Users = () => {
     {
       field: 'nationalId',
       headerName: 'رقم الهوية',
-      flex: 1.2,
-      minWidth: 140,
+      minWidth: 160,
       headerAlign: 'center',
       align: 'center',
       sortable: true,
@@ -91,8 +85,7 @@ const Users = () => {
     {
       field: 'role',
       headerName: 'الدور',
-      flex: 0.8,
-      minWidth: 100,
+      minWidth: 160,
       headerAlign: 'center',
       align: 'center',
       sortable: true,
@@ -125,21 +118,7 @@ const Users = () => {
         );
       }
     },
-    {
-      field: 'status',
-      headerName: 'الحالة',
-      flex: 0.8,
-      minWidth: 100,
-      headerAlign: 'center',
-      align: 'center',
-      sortable: true,
-      filterable: true,
-      renderCell: (params) => (
-        <span style={getStatusCell(params.value, 'نشط')}>
-          {params.value}
-        </span>
-      )
-    }
+  
   ];
 
   const handleAddUser = () => {
@@ -158,7 +137,7 @@ const Users = () => {
       try {
         await usersAPI.delete(user.id);
         showSuccessAlert(`تم حذف المستخدم "${user.fullName}" بنجاح`);
-        fetchUsers(); // Refresh the data
+        fetchUsers();
       } catch (error) {
         console.error('Error deleting user:', error);
         toast.error(`خطأ في حذف المستخدم: ${error.message}`);
@@ -167,11 +146,11 @@ const Users = () => {
   };
 
   const handleAddSuccess = () => {
-    fetchUsers(); // Refresh users list
+    fetchUsers();
   };
 
   const handleEditSuccess = () => {
-    fetchUsers(); // Refresh users list
+    fetchUsers();
   };
 
   return (
@@ -193,14 +172,12 @@ const Users = () => {
             searchPlaceholder="البحث عن مستخدم..."
           />
 
-          {/* Add User Modal */}
           <AddUserModal
             open={addModalOpen}
             onClose={() => setAddModalOpen(false)}
             onSuccess={handleAddSuccess}
           />
 
-          {/* Edit User Modal */}
           <EditUserModal
             open={editModalOpen}
             onClose={() => setEditModalOpen(false)}

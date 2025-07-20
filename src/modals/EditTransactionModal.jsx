@@ -58,12 +58,11 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
     { code: 'USD', name: 'دولار أمريكي', symbol: '$' }
   ];
 
-  // Load transaction data and investors when modal opens
+  
   useEffect(() => {
     if (open) {
       fetchInvestors();
       if (transaction) {
-        console.log('Loading transaction data:', transaction);
         setFormData({
           investorId: transaction.investorId || null,
           type: transaction.type === 'إيداع' ? 'deposit' : 
@@ -92,13 +91,13 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
         }));
         setInvestors(investorsList);
         
-        // إذا كان هناك معاملة محددة، تأكد من تحديد المساهم الصحيح
+        
         if (transaction && transaction.investorId) {
           const selectedInvestor = investorsList.find(inv => inv.id === transaction.investorId);
           if (selectedInvestor) {
-            console.log('Selected investor found:', selectedInvestor);
+                console.log('Selected investor found:', selectedInvestor);
           } else {
-            console.warn('Investor not found for transaction:', transaction.investorId);
+            console.log('Investor not found for transaction:', transaction.investorId);
           }
         }
       }
@@ -113,24 +112,24 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    // Investor validation
+    
     if (!formData.investorId) {
       newErrors.investorId = 'اختيار المساهم مطلوب';
     }
 
-    // Amount validation
+    
     if (!formData.amount.toString().trim()) {
       newErrors.amount = 'المبلغ مطلوب';
     } else if (isNaN(formData.amount) || parseFloat(formData.amount) <= 0) {
       newErrors.amount = 'المبلغ يجب أن يكون رقم أكبر من صفر';
     }
 
-    // Description validation
+    
     if (!formData.description.trim()) {
       newErrors.description = 'وصف العملية مطلوب';
     }
 
-    // Date validation
+    
     if (!formData.transactionDate) {
       newErrors.transactionDate = 'تاريخ العملية مطلوب';
     }
@@ -145,7 +144,7 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
       [field]: value
     }));
 
-    // Clear error when user starts typing
+    
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -164,7 +163,7 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
     try {
       setLoading(true);
 
-      // Prepare data for API
+      
       const updateData = {
         investorId: formData.investorId,
         type: formData.type,
@@ -211,27 +210,13 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
       <Dialog
         open={open}
         onClose={handleClose}
-        maxWidth="lg"
+        maxWidth="xs"
         fullWidth
-        TransitionProps={{
-          timeout: { enter: 200, exit: 150 } // ✅ انتقالات أسرع
-        }}
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            minHeight: '60vh', // ✅ ارتفاع أقل
-            width: '40%'
-          }
-        }}
       >
-        {/* Header */}
+        
         <DialogTitle
           sx={{
-            background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
-            color: 'white',
-            position: 'relative',
-            textAlign: 'center',
-            py: 3
+            textAlign: 'center'
           }}
         >
           <IconButton
@@ -241,40 +226,34 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
               position: 'absolute',
               left: 8,
               top: 8,
-              color: 'white',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(10px)',
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                transform: 'scale(1.1)'
-              }
+              color: 'green',
             }}
           >
             <CloseIcon />
           </IconButton>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-            <EditIcon sx={{ fontSize: 40 }} />
-            <Typography variant="h5" sx={{ fontFamily: 'Cairo', fontWeight: 700 }}>
-              تعديل العملية المالية
-            </Typography>
-            <Typography variant="body2" sx={{ fontFamily: 'Cairo', opacity: 0.9 }}>
-              تعديل بيانات العملية المالية في النظام
-            </Typography>
-          </Box>
         </DialogTitle>
 
-        {/* Content */}
+            
         <DialogContent sx={{ p: 4, mt: 4 }}>
-          <Box component="form" onSubmit={handleSubmit}>
-            <Grid container spacing={6}>
-              {/* العمود الأيمن */}
-              <Grid item xs={12} md={6}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  {/* اختيار المساهم */}
+          <Box 
+            component="form" 
+            onSubmit={handleSubmit}
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              width: '100%'
+            }}
+          >
+            <Grid container spacing={6} sx={{ width: '100%', justifyContent: 'center' }}>
+
+              <Grid item xs={12} sm={10} md={8}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, width: '100%' }}>
+                  
                   <TextField
                     fullWidth
-                    label="اختر المساهم"
+                    label=" المساهم"
                     value={investors.find(inv => inv.id === formData.investorId)?.name || ''}
                     disabled={true}
                     error={!!errors.investorId}
@@ -301,7 +280,7 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
                     }}
                   />
 
-                  {/* المبلغ */}
+                  
                   <TextField
                     fullWidth
                     type="number"
@@ -314,7 +293,6 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <AttachMoneyIcon sx={{ color: '#28a745' }} />
                         </InputAdornment>
                       ),
                       endAdornment: (
@@ -337,10 +315,10 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
                 </Box>
               </Grid>
 
-              {/* العمود الأيسر */}
-              <Grid item xs={12} md={6}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  {/* نوع العملية */}
+              
+              <Grid item xs={12} sm={10} md={8}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, width: '100%' }}>
+                  
                   <FormControl fullWidth>
                     <InputLabel sx={{ fontFamily: 'Cairo' }}>نوع العملية</InputLabel>
                     <Select
@@ -360,7 +338,7 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
                     </Select>
                   </FormControl>
 
-                  {/* العملة */}
+                  
                   <FormControl fullWidth>
                     <InputLabel sx={{ fontFamily: 'Cairo' }}>العملة</InputLabel>
                     <Select
@@ -387,7 +365,7 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
                     </Select>
                   </FormControl>
 
-                  {/* تاريخ العملية */}
+                  
                   <DatePicker
                     label="تاريخ العملية"
                     value={formData.transactionDate}
@@ -418,14 +396,13 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
           </Box>
         </DialogContent>
 
-        {/* Actions */}
+                    
         <DialogActions
           sx={{
-            background: 'linear-gradient(90deg, #f8f9fa 0%, #e9ecef 100%)',
-            borderTop: '1px solid #dee2e6',
             p: 3,
             justifyContent: 'center',
-            gap: 2
+            gap: 2,
+            direction: 'ltr'
           }}
         >
           <Button

@@ -44,6 +44,7 @@ import {
   exportInvestorsSummaryToPDF,
   exportTransactionsToPDF,
   exportIndividualInvestorToPDF,
+  exportFinancialYearToPDF,
   exportToExcel,
   printIndividualReport
 } from '../utils/reportExporter';
@@ -71,6 +72,11 @@ const Reports = () => {
     monthlyOperations: 0
   });
 
+  const [financialYears, setFinancialYears] = useState([]);
+  const [selectedFinancialYear, setSelectedFinancialYear] = useState(null);
+  const [financialYearReportData, setFinancialYearReportData] = useState(null);
+  const [financialYearReportLoading, setFinancialYearReportLoading] = useState(false);
+
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -88,12 +94,13 @@ const Reports = () => {
       
       const investorsData = investorsResponse?.data?.investors || [];
       const transactionsData = transactionsResponse?.data?.transactions || [];
-      const financialYears = financialYearsResponse?.data?.financialYears || [];
-      
+      const financialYearsData = financialYearsResponse?.data?.financialYears || [];
+            
       setInvestors(Array.isArray(investorsData) ? investorsData : []);
+      setFinancialYears(Array.isArray(financialYearsData) ? financialYearsData : []);
       
       const totalCapital = investorsData.reduce((sum, investor) => sum + (investor.amountContributed || 0), 0);
-      const totalProfits = financialYears.reduce((sum, year) => sum + (year.totalProfit || 0), 0);
+      const totalProfits = financialYearsData.reduce((sum, year) => sum + (year.totalProfit || 0), 0);
       
       setQuickStats({
         totalInvestors: investorsData.length,
@@ -129,6 +136,12 @@ const Reports = () => {
       description: "تقرير مفصل لمساهم واحد مع جميع حركاته المالية والأرباح",
       icon: <Person sx={{ fontSize: 40, color: "#28a745" }} />,
     },
+    {
+      id: "financial_year",
+      title: "تقرير السنة المالية",
+      description: "تقرير تفصيلي عن السنة المالية وتوزيعات الأرباح",
+      icon: <TableChart sx={{ fontSize: 40, color: "#28a745" }} />,
+    }
   ];
 
   const handleGenerateReport = async () => {
@@ -141,10 +154,46 @@ const Reports = () => {
         setReportGenerating(false);
         return;
       }
+
+      if (selectedReport === "financial_year") {
+        if (!selectedFinancialYear) {
+          setError('يرجى اختيار السنة المالية');
+          setReportGenerating(false);
+          return;
+        }
+
+        try {
+          
+          setFinancialYearReportLoading(true);
+          const [yearResponse, distributionsResponse] = await Promise.all([
+            apiService.request(`/financial-years/${selectedFinancialYear._id}`),
+            apiService.request(`/financial-years/${selectedFinancialYear._id}/distributions`)
+          ]);
+          
+          
+          
+          const yearData = yearResponse?.data?.financialYear || {};
+          const distributions = distributionsResponse?.data?.distributions || [];
+          
+          
+          
+          setFinancialYearReportData({
+            ...yearData,
+            distributions: distributions
+          });
+        } catch (err) {
+          console.error('Error loading financial year data:', err);
+          setError('فشل في تحميل بيانات السنة المالية');
+        } finally {
+          setFinancialYearReportLoading(false);
+          setReportGenerating(false);
+        }
+        return;
+      }
       
       let reportData = {
         type: selectedReport,
-        dateRange: `${dateFrom} - ${dateTo}`,
+        dateRange: dateFrom && dateTo ? `${dateFrom} - ${dateTo}` : 'كل الفترات',
         data: []
       };
 
@@ -163,15 +212,19 @@ const Reports = () => {
         }
           
         case "financial_transactions": {
+          if (!dateFrom || !dateTo) {
+            setError('يرجى تحديد الفترة الزمنية للعمليات المالية');
+            setReportGenerating(false);
+            return;
+          }
           const transactionsResponse = await apiService.request('/transactions?limit=500');
           const transactionsData = transactionsResponse?.data?.transactions || [];
           reportData.data = transactionsData.map(transaction => ({
             id: transaction._id,
-            date: new Date(transaction.transactionDate).toLocaleDateString('en-CA'),
-            investor: transaction.investorId?.fullName || 'غير محدد',
-            type: transaction.type === 'deposit' ? 'إيداع' : 'سحب',
+            date: new Date(transaction.transactionDate).toLocaleDateString('en-US'),
+            investor: transaction.investorId?.fullName || 'N/A',
+            type: transaction.type,
             amount: transaction.amount || 0,
-            status: 'مؤكد'
           }));
           break;
         }
@@ -220,7 +273,7 @@ const Reports = () => {
             
             if (investorDistribution) {
               return {
-                year: year.year,
+                year: year,
                 investmentAmount: investorDistribution.calculation?.investmentAmount || 0,
                 totalDays: year.totalDays || 0,
                 calculatedProfit: investorDistribution.calculation?.calculatedProfit || 0,
@@ -252,7 +305,7 @@ const Reports = () => {
   };
 
   const handleDownloadPDF = () => {
-    if (!reportData && !individualReportData) {
+    if (!reportData && !individualReportData && !financialYearReportData) {
       setError('يرجى إنشاء التقرير أولاً');
       return;
     }
@@ -260,6 +313,8 @@ const Reports = () => {
     try {
       if (selectedReport === "individual_investor" && individualReportData) {
         exportIndividualInvestorToPDF(individualReportData);
+      } else if (selectedReport === "financial_year" && financialYearReportData) {
+        exportFinancialYearToPDF(financialYearReportData);
       } else if (reportData) {
         const dateRange = reportData.dateRange;
         switch (selectedReport) {
@@ -281,13 +336,19 @@ const Reports = () => {
   };
 
   const handleDownloadExcel = () => {
-    if (!reportData) {
+    if (!reportData && !financialYearReportData && !individualReportData) {
       setError('يرجى إنشاء التقرير أولاً');
       return;
     }
     
     try {
-      exportToExcel(reportData.data, selectedReport, reportData.dateRange);
+      if (selectedReport === "financial_year" && financialYearReportData) {
+        exportToExcel(financialYearReportData, 'financial_year');
+      } else if (selectedReport === "individual_investor" && individualReportData) {
+        exportToExcel(individualReportData, 'individual_investor');
+      } else if (reportData) {
+        exportToExcel(reportData.data, selectedReport, reportData.dateRange);
+      }
     } catch (err) {
       console.error('Error downloading Excel:', err);
       setError('فشل في تحميل ملف Excel');
@@ -473,14 +534,39 @@ const Reports = () => {
 
     const reportTitle = reportTypes.find(r => r.id === selectedReport)?.title || 'تقرير';
     
-    let content = `
-      <div class="report-header">
-        <div class="report-title">${reportTitle}</div>
-        <div class="report-subtitle">الفترة: ${reportData.dateRange}</div>
-      </div>
-    `;
+    let content = '';
 
     switch (selectedReport) {
+      case 'financial_transactions':
+        content = `
+          <div class="report-header">
+            <div class="report-title">${reportTitle}</div>
+            <div class="report-subtitle">Period: ${reportData.dateRange}</div>
+            <div class="report-date">Generated: ${new Date().toLocaleString()}</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Investor</th>
+                <th>Type</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${reportData.data.map(item => `
+                <tr>
+                  <td>${item.date}</td>
+                  <td>${item.investor}</td>
+                  <td>${item.type}</td>
+                  <td>${item.amount.toLocaleString()} IQD</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        break;
+
       case "investors_summary":
         content += `
           <table>
@@ -506,41 +592,6 @@ const Reports = () => {
         `;
         break;
 
-      case "financial_transactions":
-        content += `
-          <table>
-            <thead>
-              <tr>
-                <th>التاريخ</th>
-                <th>المساهم</th>
-                <th>النوع</th>
-                <th>المبلغ</th>
-                <th>الحالة</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${reportData.data.map(transaction => `
-                <tr>
-                  <td>${transaction.date}</td>
-                  <td>${transaction.investor}</td>
-                  <td>
-                    <span class="chip ${transaction.type === 'إيداع' ? 'chip-success' : 'chip-warning'}">
-                      ${transaction.type}
-                    </span>
-                  </td>
-                  <td>${formatAmount(transaction.amount, 'IQD')}</td>
-                  <td>
-                    <span class="chip chip-success">
-                      ${transaction.status}
-                    </span>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-        break;
-
       default:
         content += '<p>لا توجد بيانات للعرض</p>';
     }
@@ -549,6 +600,145 @@ const Reports = () => {
   };
 
   const renderReportPreview = () => {
+    if (!reportData && !financialYearReportData) return null;
+
+    if (selectedReport === "financial_transactions" && reportData) {
+      return (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: '#28a745' }}>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Date</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Investor</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Type</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Amount</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {reportData.data.map((transaction, index) => (
+                <TableRow key={index}>
+                  <TableCell>{transaction.date}</TableCell>
+                  <TableCell>{transaction.investor}</TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={transaction.type}
+                      color={transaction.type === 'deposit' ? "success" : "warning"}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>{transaction.amount.toLocaleString()} IQD</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      );
+    }
+
+    if (selectedReport === "financial_year") {
+      if (!financialYearReportData) return null;
+
+      return (
+        <Box>
+          
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontFamily: "Cairo", mb: 2 }}>
+                معلومات السنة المالية
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid  xs={12} md={4}>
+                  <Typography sx={{ fontFamily: "Cairo" }}>
+                    <strong>السنة:</strong> {financialYearReportData.year}
+                  </Typography>
+                </Grid>
+                <Grid  xs={12} md={4}>
+                  <Typography sx={{ fontFamily: "Cairo" }}>
+                    <strong>تاريخ البداية:</strong> {new Date(financialYearReportData.startDate).toLocaleDateString()}
+                  </Typography>
+                </Grid>
+                <Grid  xs={12} md={4}>
+                  <Typography sx={{ fontFamily: "Cairo" }}>
+                    <strong>تاريخ النهاية:</strong> {new Date(financialYearReportData.endDate).toLocaleDateString()}
+                  </Typography>
+                </Grid>
+                <Grid  xs={12} md={4}>
+                  <Typography sx={{ fontFamily: "Cairo" }}>
+                    <strong>إجمالي الأيام:</strong> {financialYearReportData.totalDays-1}
+                  </Typography>
+                </Grid>
+                <Grid  xs={12} md={4}>
+                  <Typography sx={{ fontFamily: "Cairo" }}>
+                    <strong>إجمالي الربح:</strong> {formatAmount(financialYearReportData.totalProfit, financialYearReportData.currency)}
+                  </Typography>
+                </Grid>
+                <Grid  xs={12} md={4}>
+                  <Typography sx={{ fontFamily: "Cairo" }}>
+                    <strong>معدل الربح اليومي:</strong> {financialYearReportData.dailyProfitRate?.toFixed(6)}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+
+            
+          {financialYearReportData.distributions?.length > 0 && (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" sx={{ fontFamily: "Cairo", mb: 2 }}>
+                  توزيعات الأرباح
+                </Typography>
+                <TableContainer component={Paper}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: '#28a745' }}>
+                        <TableCell sx={{ fontFamily: "Cairo", color: 'white', fontWeight: 'bold' }}>المساهم</TableCell>
+                        <TableCell sx={{ fontFamily: "Cairo", color: 'white', fontWeight: 'bold' }}>المبلغ المستثمر</TableCell>
+                        <TableCell sx={{ fontFamily: "Cairo", color: 'white', fontWeight: 'bold' }}>عدد الأيام</TableCell>
+                        <TableCell sx={{ fontFamily: "Cairo", color: 'white', fontWeight: 'bold' }}>الربح المحسوب</TableCell>
+                        <TableCell sx={{ fontFamily: "Cairo", color: 'white', fontWeight: 'bold' }}>الحالة</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {financialYearReportData.distributions.map((dist, index) => (
+                        <TableRow key={index}>
+                          <TableCell sx={{ fontFamily: "Cairo" }}>{dist.investorId?.fullName || 'غير محدد'}</TableCell>
+                          <TableCell sx={{ fontFamily: "Cairo" }}>
+                            {formatAmount(dist.calculation?.investmentAmount, dist.currency)}
+                          </TableCell>
+                          <TableCell sx={{ fontFamily: "Cairo" }}>{dist.calculation?.totalDays}</TableCell>
+                          <TableCell sx={{ fontFamily: "Cairo", fontWeight: 'bold', color: '#28a745' }}>
+                            {formatAmount(dist.calculation?.calculatedProfit, dist.currency)}
+                          </TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={
+                                dist.status === 'calculated' ? 'محسوب' :
+                                dist.status === 'approved' ? 'موافق عليه' :
+                                dist.status === 'distributed' ? 'موزع' :
+                                dist.status === 'pending' ? 'قيد الانتظار' : dist.status
+                              }
+                              color={
+                                dist.status === 'calculated' ? "info" :
+                                dist.status === 'approved' ? "warning" :
+                                dist.status === 'distributed' ? "success" :
+                                dist.status === 'pending' ? "default" : "default"
+                              }
+                              size="small"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          )}
+        </Box>
+      );
+    }
+
     if (!reportData) return null;
 
     switch (selectedReport) {
@@ -588,7 +778,6 @@ const Reports = () => {
                   <TableCell sx={{ fontFamily: "Cairo", color: 'white', fontWeight: 'bold' }}>المساهم</TableCell>
                   <TableCell sx={{ fontFamily: "Cairo", color: 'white', fontWeight: 'bold' }}>النوع</TableCell>
                   <TableCell sx={{ fontFamily: "Cairo", color: 'white', fontWeight: 'bold' }}>المبلغ</TableCell>
-                  <TableCell sx={{ fontFamily: "Cairo", color: 'white', fontWeight: 'bold' }}>الحالة</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -604,13 +793,7 @@ const Reports = () => {
                       />
                     </TableCell>
                     <TableCell sx={{ fontFamily: "Cairo" }}>{formatAmount(transaction.amount, 'IQD')}</TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={transaction.status} 
-                        color={transaction.status === 'مؤكد' ? "success" : "default"} 
-                        size="small" 
-                      />
-                    </TableCell>
+                    
                   </TableRow>
                 ))}
               </TableBody>
@@ -626,29 +809,29 @@ const Reports = () => {
   const renderIndividualReport = () => {
   return (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3, mt: 2 }}>
-                {/* Investor Info */}
+
                 <Card sx={{ mb: 3 }}>
                   <CardContent>
                     <Typography variant="h6" sx={{ fontFamily: "Cairo", mb: 2 }}>
                       المعلومات الأساسية
                     </Typography>
                     <Grid container spacing={2}>
-                      <Grid item xs={12} md={6}>
+                      <Grid  xs={12} md={6}>
                         <Typography sx={{ fontFamily: "Cairo" }}>
                           <strong>الاسم:</strong> {individualReportData.investor.fullName}
                         </Typography>
                       </Grid>
-                      <Grid item xs={12} md={6}>
+                      <Grid  xs={12} md={6}>
                         <Typography sx={{ fontFamily: "Cairo" }}>
                           <strong>الرقم الوطني:</strong> {individualReportData.investor.nationalId}
                         </Typography>
                       </Grid>
-                      <Grid item xs={12} md={6}>
+                      <Grid  xs={12} md={6}>
                         <Typography sx={{ fontFamily: "Cairo" }}>
                           <strong>مبلغ المساهمة:</strong> {individualReportData.investor.amountContributed?.toLocaleString()} {individualReportData.investor.currency}
                         </Typography>
                       </Grid>
-                      <Grid item xs={12} md={6}>
+                      <Grid  xs={12} md={6}>
                         <Typography sx={{ fontFamily: "Cairo" }}>
                           <strong>نسبة المساهمة:</strong> {parseFloat((individualReportData.investor.sharePercentage || 0).toFixed(2))}%
                         </Typography>
@@ -657,7 +840,7 @@ const Reports = () => {
                   </CardContent>
                 </Card>
 
-                {/* Transactions Table */}
+
                 {individualReportData.transactions.length > 0 && (
                   <Card sx={{ mb: 3 }}>
                     <CardContent>
@@ -672,7 +855,6 @@ const Reports = () => {
                               <TableCell sx={{ fontFamily: "Cairo", color: 'white', fontWeight: 'bold' }}>النوع</TableCell>
                               <TableCell sx={{ fontFamily: "Cairo", color: 'white', fontWeight: 'bold' }}>المبلغ</TableCell>
                               <TableCell sx={{ fontFamily: "Cairo", color: 'white', fontWeight: 'bold' }}>سنة الأرباح</TableCell>
-                              <TableCell sx={{ fontFamily: "Cairo", color: 'white', fontWeight: 'bold' }}>الوصف</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
@@ -684,9 +866,9 @@ const Reports = () => {
                                 <TableCell>
                                   <Chip 
                                     label={
-                                      transaction.type === 'deposit' ? 'إيداع' : 
-                                      transaction.type === 'withdrawal' ? 'سحب' :
-                                      transaction.type === 'profit' ? 'أرباح' : transaction.type
+                                      transaction.type === 'deposit' ? 'deposit' : 
+                                      transaction.type === 'withdrawal' ? 'withdrawl' :
+                                      transaction.type === 'profit' ? 'profit' : transaction.type
                                     } 
                                     color={
                                       transaction.type === 'deposit' ? "success" : 
@@ -704,10 +886,7 @@ const Reports = () => {
                                     <span style={{ color: '#28a745', fontWeight: 'bold' }}>
                                       {transaction.profitYear}
                                     </span>
-                                  ) : '-'}
-                                </TableCell>
-                                <TableCell sx={{ fontFamily: "Cairo" }}>
-                                  {transaction.description || transaction.notes || '-'}
+                                  ) : 'لا يوجد'}
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -718,7 +897,6 @@ const Reports = () => {
                   </Card>
                 )}
 
-                {/* Profit Distributions Section */}
                 <Card sx={{ mb: 3 }}>
                   <CardContent>
                     <Typography variant="h6" sx={{ fontFamily: "Cairo", mb: 2 }}>
@@ -737,39 +915,47 @@ const Reports = () => {
                         </TableHead>
                         <TableBody>
                           {individualReportData.profits.length > 0 ? (
-                            individualReportData.profits.map((profit, index) => (
-                              <TableRow key={index}>
-                                <TableCell sx={{ fontFamily: "Cairo", fontWeight: 'bold', color: '#28a745' }}>
-                                  {profit.year}
-                                </TableCell>
-                                <TableCell sx={{ fontFamily: "Cairo" }}>
-                                  {formatAmount(profit.investmentAmount, profit.currency)}
-                                </TableCell>
-                                <TableCell sx={{ fontFamily: "Cairo" }}>
-                                  {profit.calculatedProfit.totalDays} يوم
-                                </TableCell>
-                                <TableCell sx={{ fontFamily: "Cairo", fontWeight: 'bold', color: '#28a745' }}>
-                                  {formatAmount(profit.calculatedProfit, profit.currency)}
-                                </TableCell>
-                                <TableCell>
-                                  <Chip 
-                                    label={
-                                      profit.status === 'calculated' ? 'محسوب' :
-                                      profit.status === 'approved' ? 'موافق عليه' :
-                                      profit.status === 'distributed' ? 'موزع' :
-                                      profit.status === 'pending' ? 'قيد الانتظار' : profit.status
-                                    } 
-                                    color={
-                                      profit.status === 'calculated' ? "info" :
-                                      profit.status === 'approved' ? "warning" :
-                                      profit.status === 'distributed' ? "success" :
-                                      profit.status === 'pending' ? "default" : "default"
-                                    } 
-                                    size="small" 
-                                  />
-                                </TableCell>
-                              </TableRow>
-                            ))
+                            individualReportData.profits.map((profit, index) => {
+                              const startDate = new Date(profit.year.startDate);
+                              const endDate = new Date(profit.year.endDate);
+                              const today = new Date();
+                              const actualEndDate = today < endDate ? today : endDate;
+                              const daysPassed = Math.floor((actualEndDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                              
+                              return (
+                                <TableRow key={index}>
+                                  <TableCell sx={{ fontFamily: "Cairo", fontWeight: 'bold', color: '#28a745' }}>
+                                    {profit.year.year}
+                                  </TableCell>
+                                  <TableCell sx={{ fontFamily: "Cairo" }}>
+                                    {formatAmount(profit.investmentAmount, profit.currency)}
+                                  </TableCell>
+                                  <TableCell sx={{ fontFamily: "Cairo" }}>
+                                    {daysPassed} يوم
+                                  </TableCell>
+                                  <TableCell sx={{ fontFamily: "Cairo", fontWeight: 'bold', color: '#28a745' }}>
+                                    {formatAmount(profit.calculatedProfit, profit.currency)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Chip 
+                                      label={
+                                        profit.status === 'calculated' ? 'محسوب' :
+                                        profit.status === 'approved' ? 'موافق عليه' :
+                                        profit.status === 'distributed' ? 'موزع' :
+                                        profit.status === 'pending' ? 'قيد الانتظار' : profit.status
+                                      } 
+                                      color={
+                                        profit.status === 'calculated' ? "info" :
+                                        profit.status === 'approved' ? "warning" :
+                                        profit.status === 'distributed' ? "success" :
+                                        profit.status === 'pending' ? "default" : "default"
+                                      } 
+                                      size="small" 
+                                    />
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })
                           ) : (
                             <TableRow>
                               <TableCell colSpan={5} sx={{ textAlign: 'center', fontFamily: "Cairo" }}>
@@ -801,7 +987,6 @@ const Reports = () => {
       mx: 'auto',
       width: '100%',
     }}>
-      {/* Header Section */}
       <Box sx={{
         mb: 4,
         display: 'flex',
@@ -828,9 +1013,8 @@ const Reports = () => {
         </Typography>
           </Box>
 
-      {/* Quick Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }} justifyContent="center">
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid  xs={12} sm={6} md={3}>
           <Card sx={{
             height: '100%',
             background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
@@ -860,7 +1044,7 @@ const Reports = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid  xs={12} sm={6} md={3}>
           <Card sx={{
             height: '100%',
             background: 'linear-gradient(135deg, #2196f3 0%, #03a9f4 100%)',
@@ -883,14 +1067,14 @@ const Reports = () => {
             }}>
               <AccountBalance sx={{ fontSize: 48 }} />
               <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
-                {formatAmount(quickStats.totalCapital)}
+                {formatAmount(quickStats.totalCapital*100)}
               </Typography>
               <Typography variant="h6" sx={{ textAlign: 'center' }}>إجمالي رأس المال</Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid  xs={12} sm={6} md={3}>
           <Card sx={{
             height: '100%',
             background: 'linear-gradient(135deg, #ff9800 0%, #ffc107 100%)',
@@ -920,7 +1104,7 @@ const Reports = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid  xs={12} sm={6} md={3}>
           <Card sx={{
             height: '100%',
             background: 'linear-gradient(135deg, #673ab7 0%, #9c27b0 100%)',
@@ -943,7 +1127,7 @@ const Reports = () => {
             }}>
               <Assessment sx={{ fontSize: 48 }} />
               <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
-                {formatAmount(quickStats.totalProfits)}
+                {formatAmount(quickStats.totalProfits*100)}
               </Typography>
               <Typography variant="h6" sx={{ textAlign: 'center' }}>إجمالي الأرباح</Typography>
             </CardContent>
@@ -951,7 +1135,6 @@ const Reports = () => {
         </Grid>
       </Grid>
 
-      {/* Report Selection Section */}
       <Card sx={{ mb: 4, boxShadow: '0 4px 20px 0 rgba(0, 0, 0, 0.05)' }}>
         <CardContent>
           <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#2c3e50', textAlign: 'center' }}>
@@ -960,7 +1143,7 @@ const Reports = () => {
           
           <Grid container spacing={3} justifyContent="center">
             {reportTypes.map((report) => (
-              <Grid item xs={12} sm={6} md={3} key={report.id}>
+              <Grid  xs={12} sm={6} md={3} key={report.id}>
                 <Card 
                   onClick={() => setSelectedReport(report.id)}
                   sx={{
@@ -998,16 +1181,15 @@ const Reports = () => {
         </CardContent>
       </Card>
 
-      {/* Date Range and Controls */}
-      {selectedReport && selectedReport !== "individual_investor" && (
+      {selectedReport && selectedReport !== "individual_investor" && selectedReport !== "financial_year" && (
         <Card sx={{ mb: 4, boxShadow: '0 4px 20px 0 rgba(0, 0, 0, 0.05)' }}>
           <CardContent>
             <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#2c3e50', textAlign: 'center' }}>
-              تحديد الفترة الزمنية
+              تحديد الفترة الزمنية {selectedReport === "investors_summary" ? "(اختياري)" : "(مطلوب)"}
             </Typography>
             
             <Grid container spacing={3} alignItems="center" justifyContent="center">
-              <Grid item xs={12} sm={4}>
+              <Grid  xs={12} sm={4}>
                 <TextField
                   fullWidth
                   type="date"
@@ -1018,7 +1200,7 @@ const Reports = () => {
                 />
               </Grid>
               
-              <Grid item xs={12} sm={4}>
+              <Grid  xs={12} sm={4}>
                 <TextField
                   fullWidth
                   type="date"
@@ -1029,12 +1211,12 @@ const Reports = () => {
                 />
               </Grid>
               
-              <Grid item xs={12} sm={4}>
+              <Grid  xs={12} sm={4}>
           <Button 
                   fullWidth
                   variant="contained"
                   onClick={handleGenerateReport}
-                  disabled={reportGenerating || !dateFrom || !dateTo}
+                  disabled={reportGenerating || (selectedReport !== "investors_summary" && (!dateFrom || !dateTo))}
                   sx={{
                     py: 2,
                     backgroundColor: '#28a745',
@@ -1050,7 +1232,6 @@ const Reports = () => {
         </Card>
       )}
 
-      {/* Individual Investor Selection */}
       {selectedReport === "individual_investor" && (
         <Card sx={{ mb: 4, boxShadow: '0 4px 20px 0 rgba(0, 0, 0, 0.05)', width: '100%', mx: 'auto' }}>
           <CardContent>
@@ -1059,7 +1240,7 @@ const Reports = () => {
             </Typography>
             
             <Grid container spacing={3} alignItems="center" justifyContent="center">
-              <Grid item xs={12} sm={6}>
+              <Grid  xs={12} sm={6}>
                 <Autocomplete
                   options={investors}
                   getOptionLabel={(option) => option.fullName || ''}
@@ -1077,7 +1258,7 @@ const Reports = () => {
                 />
               </Grid>
               
-              <Grid item xs={12} sm={6}>
+              <Grid  xs={12} sm={6}>
             <Button 
                   fullWidth
               variant="contained"
@@ -1101,8 +1282,54 @@ const Reports = () => {
         </Card>
       )}
 
-      {/* Report Preview */}
-      {reportData && (
+      {selectedReport === "financial_year" && (
+        <Card sx={{ mb: 4, boxShadow: '0 4px 20px 0 rgba(0, 0, 0, 0.05)' }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: '#2c3e50', textAlign: 'center' }}>
+              اختيار السنة المالية
+            </Typography>
+            
+            <Grid container spacing={3} alignItems="center" justifyContent="center">
+              <Grid  xs={12} md={8}>
+                <Autocomplete
+                  options={financialYears}
+                  getOptionLabel={(option) => ` ${option.year}`}
+                  value={selectedFinancialYear}
+                  onChange={(event, newValue) => setSelectedFinancialYear(newValue)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="اختر السنة المالية"
+                      fullWidth
+                      sx={{ minWidth: '150px' }}
+                    />
+                  )}
+                  sx={{ minWidth: '100px' }}
+                />
+              </Grid>
+              
+                <Grid  xs={12} md={4}>
+                <Button 
+                  fullWidth
+                  variant="contained"
+                  onClick={handleGenerateReport}
+                  disabled={!selectedFinancialYear || financialYearReportLoading}
+                  sx={{
+                    py: 2,
+                    backgroundColor: '#28a745',
+                    '&:hover': { backgroundColor: '#218838' }
+                  }}
+                  startIcon={financialYearReportLoading ? <CircularProgress size={20} color="inherit" /> : <TableChart />}
+                >
+                  {financialYearReportLoading ? 'جاري إنشاء التقرير...' : 'إنشاء التقرير'}
+                </Button>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
+
+      {(reportData || financialYearReportData) && (
         <Card sx={{ boxShadow: '0 4px 20px 0 rgba(0, 0, 0, 0.05)' }}>
           <CardContent>
             <Box sx={{ 
@@ -1150,11 +1377,9 @@ const Reports = () => {
         </Card>
       )}
 
-      {/* Loading and Error States */}
       {loading && <PageLoadingSpinner />}
       {error && <ErrorAlert message={error} />}
 
-      {/* Individual Report Dialog */}
       {individualReportOpen && (
         <Dialog
           open={individualReportOpen}
@@ -1172,6 +1397,13 @@ const Reports = () => {
                   startIcon={<PictureAsPdf />}
                 >
                   PDF
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => handleDownloadExcel()}
+                  startIcon={<Download />}
+                >
+                  Excel
                 </Button>
                 <Button
                   size="small"

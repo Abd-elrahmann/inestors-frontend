@@ -33,12 +33,12 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     year: new Date().getFullYear(),
     periodType: "custom",
-    startDate: new Date(new Date().getFullYear(), 0, 1), // January 1st
-    endDate: new Date(new Date().getFullYear(), 11, 31), // December 31st
+    startDate: new Date(new Date().getFullYear(), 0, 1), 
+    endDate: new Date(new Date().getFullYear(), 11, 31), 
     totalProfit: "",
     currency: "IQD",
     rolloverSettings: {
-      enabled: false, // زر تفعيل التدوير
+      enabled: false, 
       percentage: 100,
       autoRollover: false,
       autoRolloverDate: null,
@@ -53,7 +53,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
       [field]: value,
     }));
 
-    // Clear error when user starts typing
+    
     if (errors[field]) {
       setErrors((prev) => ({
         ...prev,
@@ -95,7 +95,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
       newErrors.endDate = "تاريخ النهاية يجب أن يكون بعد تاريخ البداية";
     }
 
-    // التحقق من تطابق نوع الفترة مع المدة الفعلية
+    
     if (formData.startDate && formData.endDate) {
       const diffTime = Math.abs(formData.endDate - formData.startDate);
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
@@ -132,7 +132,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
       newErrors.currency = "العملة مطلوبة";
     }
 
-    // التحقق من نسبة التدوير فقط إذا كان التدوير مفعل
+    
     if (formData.rolloverSettings.enabled) {
       if (
         formData.rolloverSettings.percentage < 0 ||
@@ -170,7 +170,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
               autoRolloverDate: formData.rolloverSettings.autoRolloverDate,
             }
           : {
-              rolloverPercentage: 0, // تدوير يدوي
+              rolloverPercentage: 0, 
               autoRollover: false,
               autoRolloverDate: null,
             },
@@ -234,7 +234,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
                 width: '60%',
                 mx: 'auto'
               }}>
-                {/* السنة المالية */}
+                
                 <TextField
                   fullWidth
                   label="السنة المالية"
@@ -248,7 +248,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
                   required
                 />
 
-                {/* إجمالي الربح للفترة */}
+                
                 <TextField
                   fullWidth
                   label="إجمالي الربح للفترة"
@@ -262,7 +262,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
                   inputProps={{ min: 0, step: "0.01" }}
                 />
 
-                {/* العملة */}
+                
                 <FormControl fullWidth error={!!errors.currency}>
                   <InputLabel>العملة</InputLabel>
                   <Select
@@ -275,7 +275,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
                   </Select>
                 </FormControl>
 
-                {/* تواريخ الفترة */}
+                
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <DatePicker
                     label="تاريخ بداية الفترة"
@@ -308,7 +308,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
                   />
                 </Box>
 
-                {/* مدة الفترة */}
+                
                 {formData.startDate && formData.endDate ? (
                   <TextField
                     fullWidth
@@ -333,7 +333,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
                   />
                 )}
 
-                {/* قسم التدوير */}
+
                 <Box
                   sx={{
                     p: 2,
