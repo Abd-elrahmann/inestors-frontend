@@ -15,18 +15,25 @@ import {
 import { MdVisibility as Visibility, MdVisibilityOff as VisibilityOff, MdAccountBalance as AccountBalance, MdLogin as LoginIcon } from 'react-icons/md';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { authAPI } from '../services/api';
+import { Formik, Form, Field } from 'formik';
+import * as Yup from 'yup';
+import { Spin } from 'antd';
+import { Helmet } from 'react-helmet-async';
+
+const validationSchema = Yup.object().shape({
+  email: Yup.string().trim()
+    .email('البريد الإلكتروني غير صالح')
+    .required('البريد الإلكتروني مطلوب'),
+  password: Yup.string().trim()
+    .required('كلمة المرور مطلوبة')
+});
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [formData, setFormData] = useState({
-    username: '',
-    password: ''
-  });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (location.state?.message) {
@@ -34,61 +41,6 @@ const Login = () => {
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-    if (error) setError('');
-    if (success) setSuccess('');
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    if (!formData.username || !formData.password) {
-      setError('يرجى ملء جميع الحقول المطلوبة');
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const response = await authAPI.login({
-        username: formData.username.trim(),
-        password: formData.password
-      });
-
-      if (response.success) {
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        
-        setSuccess('تم تسجيل الدخول بنجاح!');
-        
-        setTimeout(() => {
-          navigate('/dashboard', { replace: true });
-        }, 1000);
-      } else {
-        setError(response.message || 'حدث خطأ في تسجيل الدخول');
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      
-      if (err.message.includes('Invalid credentials')) {
-        setError('اسم المستخدم أو كلمة المرور غير صحيحة');
-      } else if (err.message.includes('deactivated')) {
-        setError('تم إيقاف حسابك. يرجى التواصل مع المدير');
-      } else if (err.message.includes('Failed to fetch')) {
-        setError('خطأ في الاتصال بالخادم. يرجى التأكد من تشغيل الخادم');
-      } else {
-        setError(err.message || 'حدث خطأ في تسجيل الدخول. يرجى المحاولة مرة أخرى');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleTogglePassword = () => {
     setShowPassword(!showPassword);
@@ -105,6 +57,10 @@ const Login = () => {
         padding: 2
       }}
     >
+      <Helmet>
+        <title>تسجيل الدخول</title>
+        <meta name="description" content="تسجيل الدخول لنظام إدارة المساهمين" />
+      </Helmet>
       <Card 
         sx={{ 
           maxWidth: 450,
@@ -175,97 +131,142 @@ const Login = () => {
             </Alert>
           )}
 
+          <Formik
+            initialValues={{
+              email: '',
+              password: ''
+            }}
+            validationSchema={validationSchema}
+            onSubmit={async (values, { setSubmitting }) => {
+              setError('');
+              try {
+                const response = await authAPI.login({
+                  email: values.email.trim(),
+                  password: values.password
+                });
 
-          <Box 
-            component="form" 
-            onSubmit={handleSubmit}
-            sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}
+                if (response.success) {
+                  localStorage.setItem('token', response.token);
+                  localStorage.setItem('user', JSON.stringify(response.user));
+                  
+                  setSuccess('تم تسجيل الدخول بنجاح!');
+                  
+                  setTimeout(() => {
+                    navigate('/dashboard', { replace: true });
+                  }, 1000);
+                } else {
+                  setError(response.message || 'حدث خطأ في تسجيل الدخول');
+                }
+              } catch (err) {
+                console.error('Login error:', err);
+                
+                if (err.message.includes('Invalid credentials')) {
+                  setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+                } else {
+                  setError(err.message || 'حدث خطأ في تسجيل الدخول. يرجى المحاولة مرة أخرى');
+                }
+              } finally {
+                setSubmitting(false);
+              }
+            }}
           >
-            <TextField
-              fullWidth
-              label="اسم المستخدم"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              variant="outlined"
-              disabled={isLoading}
-              autoComplete="username"
-              sx={{
-                '& .MuiInputLabel-root': {
-                  fontFamily: 'Cairo',
-                  right: '14px',
-                  left: 'auto',
-                  transformOrigin: 'top right'
-                },
-                '& .MuiInputBase-input': {
-                  textAlign: 'right',
-                  fontFamily: 'Cairo'
-                }
-              }}
-            />
+            {({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
+              <Form onSubmit={handleSubmit}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <TextField
+                    fullWidth
+                    label="البريد الإلكتروني"
+                    name="email"
+                    value={values.email}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.email && Boolean(errors.email)}
+                    helperText={touched.email && errors.email}
+                    variant="outlined"
+                    disabled={isSubmitting}
+                    autoComplete="username"
+                    sx={{
+                      '& .MuiInputLabel-root': {
+                        fontFamily: 'Cairo',
+                        right: '14px',
+                        left: 'auto',
+                        transformOrigin: 'top right'
+                      },
+                      '& .MuiInputBase-input': {
+                        textAlign: 'right',
+                        fontFamily: 'Cairo'
+                      }
+                    }}
+                  />
 
-            <TextField
-              fullWidth
-              label="كلمة المرور"
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              value={formData.password}
-              onChange={handleChange}
-              variant="outlined"
-              disabled={isLoading}
-              autoComplete="current-password"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label="toggle password visibility"
-                      onClick={handleTogglePassword}
-                      edge="end"
-                      disabled={isLoading}
-                    >
-                      {showPassword ? <VisibilityOff size={40} /> : <Visibility size={40} />}
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }}
-              sx={{
-                '& .MuiInputLabel-root': {
-                  fontFamily: 'Cairo',
-                  right: '14px',
-                  left: 'auto',
-                  transformOrigin: 'top right'
-                },
-                '& .MuiInputBase-input': {
-                  textAlign: 'right',
-                  fontFamily: 'Cairo'
-                }
-              }}
-            />
+                  <TextField
+                    fullWidth
+                    label="كلمة المرور"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={values.password}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={touched.password && Boolean(errors.password)}
+                    helperText={touched.password && errors.password}
+                    variant="outlined"
+                    disabled={isSubmitting}
+                    autoComplete="current-password"
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label="toggle password visibility"
+                            onClick={handleTogglePassword}
+                            edge="end"
+                            disabled={isSubmitting}
+                          >
+                            {showPassword ? <VisibilityOff size={40} /> : <Visibility size={40} />}
+                          </IconButton>
+                        </InputAdornment>
+                      )
+                    }}
+                    sx={{
+                      '& .MuiInputLabel-root': {
+                        fontFamily: 'Cairo',
+                        right: '14px',
+                        left: 'auto',
+                        transformOrigin: 'top right'
+                      },
+                      '& .MuiInputBase-input': {
+                        textAlign: 'right',
+                        fontFamily: 'Cairo'
+                      }
+                    }}
+                  />
 
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{
-                py: 1.5,
-                backgroundColor: '#28a745',
-                fontFamily: 'Cairo',
-                fontWeight: 500,
-                fontSize: '1.1rem',
-                '&:hover': {
-                  backgroundColor: '#218838'
-                },
-              }}
-            >
-              {isLoading ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CircularProgress size={20} sx={{ color: '#ffffff' }} />
-                  <span>جاري تسجيل الدخول...</span>
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    disabled={isSubmitting}
+                    sx={{
+                      py: 1.5,
+                      backgroundColor: '#28a745',
+                      fontFamily: 'Cairo',
+                      fontWeight: 500,
+                      fontSize: '1.1rem',
+                      '&:hover': {
+                        backgroundColor: '#218838'
+                      },
+                    }}
+                  >
+                    {isSubmitting ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Spin size="small" />
+                        <span>جاري تسجيل الدخول...</span>
+                      </Box>
+                    ) : 'تسجيل الدخول'}
+                  </Button>
                 </Box>
-              ) : 'تسجيل الدخول'}
-            </Button>
-          </Box>
-
+              </Form>
+            )}
+          </Formik>
               
           <Box sx={{ textAlign: 'center', mt: 3 }}>
             <Typography variant="body2" sx={{ fontFamily: 'Cairo', color: 'text.secondary' }}>
@@ -278,4 +279,4 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;

@@ -29,7 +29,7 @@ import {
 } from '@mui/icons-material';
 import { MdVisibility as Visibility, MdVisibilityOff as VisibilityOff } from 'react-icons/md';
 import { usersAPI } from '../services/apiHelpers';
-import {  showErrorAlert } from '../utils/sweetAlert';
+import {  showErrorAlert, showSuccessAlert } from '../utils/sweetAlert';
 
 const EditUserModal = ({ open, onClose, onSuccess, user }) => {
   const [loading, setLoading] = useState(false);
@@ -52,7 +52,6 @@ const EditUserModal = ({ open, onClose, onSuccess, user }) => {
     { value: 'user', label: 'مستخدم' }
   ];
 
-  // Load user data when modal opens
   useEffect(() => {
     if (open && user) {
       setFormData({
@@ -72,35 +71,24 @@ const EditUserModal = ({ open, onClose, onSuccess, user }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    // Full name validation
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'الاسم الكامل مطلوب';
     } else if (formData.fullName.trim().length < 2) {
       newErrors.fullName = 'الاسم الكامل يجب أن يكون على الأقل حرفان';
     }
 
-    // Username validation
     if (!formData.username.trim()) {
       newErrors.username = 'اسم المستخدم مطلوب';
     } else if (formData.username.trim().length < 3) {
       newErrors.username = 'اسم المستخدم يجب أن يكون على الأقل 3 أحرف';
     }
 
-    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = 'البريد الإلكتروني مطلوب';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'البريد الإلكتروني غير صحيح';
     }
 
-    // National ID validation
-    if (!formData.nationalId.trim()) {
-      newErrors.nationalId = 'رقم الهوية مطلوب';
-    } else if (!/^\d{10,14}$/.test(formData.nationalId)) {
-      newErrors.nationalId = 'رقم الهوية يجب أن يكون من 10 إلى 14 رقم';
-    }
-
-    // Password validation (only if changing password)
     if (changePassword) {
       if (!formData.password) {
         newErrors.password = 'كلمة المرور مطلوبة';
@@ -120,7 +108,6 @@ const EditUserModal = ({ open, onClose, onSuccess, user }) => {
   };
 
   const handleInputChange = (field, value) => {
-    // Special handling for nationalId to allow only numbers
     if (field === 'nationalId') {
       const numericValue = value.replace(/[^0-9]/g, '');
       setFormData(prev => ({
@@ -134,7 +121,6 @@ const EditUserModal = ({ open, onClose, onSuccess, user }) => {
       }));
     }
 
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -153,7 +139,6 @@ const EditUserModal = ({ open, onClose, onSuccess, user }) => {
     try {
       setLoading(true);
 
-      // Prepare data for API
       const updateData = {
         fullName: formData.fullName.trim(),
         username: formData.username.trim(),
@@ -162,12 +147,12 @@ const EditUserModal = ({ open, onClose, onSuccess, user }) => {
         role: formData.role
       };
 
-      // Add password if changing
       if (changePassword && formData.password) {
         updateData.password = formData.password;
       }
 
       const response = await usersAPI.update(user.id, updateData);
+      showSuccessAlert('تم تعديل المستخدم بنجاح');
 
       if (response.success) {
         onSuccess();
@@ -178,7 +163,6 @@ const EditUserModal = ({ open, onClose, onSuccess, user }) => {
     } catch (error) {
       console.error('Error updating user:', error);
       
-      // Handle specific errors
       if (error.message.includes('duplicate') || error.message.includes('already exists')) {
         if (error.message.includes('username')) {
           setErrors({ username: 'اسم المستخدم مستخدم بالفعل' });
@@ -410,6 +394,7 @@ const EditUserModal = ({ open, onClose, onSuccess, user }) => {
                   helperText={errors.nationalId}
                   disabled={loading}
                   inputProps={{ maxLength: 14 }}
+                  required={false}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">

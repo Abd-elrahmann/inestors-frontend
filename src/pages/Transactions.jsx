@@ -1,45 +1,74 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Box } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { 
+  Box, 
+  Button, 
+  Stack,
+  Table,
+  TableBody,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TablePagination,
+  IconButton,
+  Chip,
+  InputBase
+} from '@mui/material';
 import { toast } from 'react-toastify';
-import TableComponent from '../components/shared/TableComponent';
+import { Spin } from 'antd';
+import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import AddTransactionModal from '../modals/AddTransactionModal';
 import EditTransactionModal from '../modals/EditTransactionModal';
-import { PageLoadingSpinner, ErrorAlert } from '../components/shared/LoadingComponents';
-import { 
-  getCurrencyCell, 
-  columnWidths
-} from '../styles/tableStyles';
+import { StyledTableCell, StyledTableRow } from '../styles/TableLayout';
 import { transactionsAPI, transformers, handleApiError } from '../services/apiHelpers';
 import { showDeleteConfirmation, showSuccessAlert } from '../utils/sweetAlert';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
-  
+import { Helmet } from 'react-helmet-async';
+
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
-  
-  
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [searchQuery, setSearchQuery] = useState('');
+  // eslint-disable-next-line no-unused-vars
+  const [filteredTransactions, setFilteredTransactions] = useState([]);
+
   const { formatAmount, currentCurrency } = useCurrencyManager();
 
   useEffect(() => {
     fetchTransactions();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  
+  useEffect(() => {
+    const filtered = transactions.filter(transaction => 
+      transaction.investorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      transaction.type.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredTransactions(filtered);
+  }, [transactions, searchQuery]);
+
   const fetchTransactions = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await transactionsAPI.getAll();
+      const response = await transactionsAPI.getAll({
+        page: page,
+        limit: rowsPerPage,
+        search: searchQuery
+      });
       
       if (response.data && response.data.transactions) {
-        
         const transformedTransactions = response.data.transactions.map(transformers.transaction);
         setTransactions(transformedTransactions);
+        setFilteredTransactions(transformedTransactions);
       } else {
         throw new Error('تنسيق البيانات غير صحيح');
       }
@@ -50,67 +79,6 @@ const Transactions = () => {
       setLoading(false);
     }
   };
-
-  
-
-  const columns = useMemo(() => [
-    {
-      field: 'investorName',
-      headerName: 'اسم المساهم',
-      width: columnWidths.large,
-      sortable: true,
-      filterable: true,
-    },
-    {
-      field: 'type',
-      headerName: 'نوع المعاملة',
-      width: columnWidths.medium,
-      sortable: true,
-      filterable: true,
-    },
-    {
-      field: 'amount',
-      headerName: `المبلغ (${currentCurrency})`,
-      width: columnWidths.currency,
-      sortable: true,
-      filterable: true,
-      type: 'number',
-      renderCell: (params) => (
-        <span style={getCurrencyCell()}>
-          {formatAmount(params.value, params.row.originalCurrency || 'IQD')}
-        </span>
-      )
-    },
-    {
-      field: 'date',
-      headerName: 'التاريخ',
-      width: columnWidths.medium,
-      headerAlign: 'center',
-      align: 'center',
-      sortable: true,
-      filterable: true,
-      renderCell: (params) => (
-        <span>
-          {params.value ? new Date(params.value).toLocaleDateString('en-US') : ''}
-        </span>
-      )
-    },
-    {
-      field: 'financialYear',
-      headerName: 'السنة المالية',
-      width: columnWidths.medium,
-      headerAlign: 'center',
-      align: 'center',
-      sortable: true,
-      filterable: true,
-      renderCell: (params) => (
-        <span>
-          {params.row.profitYear || 'غير محدد'}
-        </span>
-      )
-    },
-  
-  ], [currentCurrency, formatAmount]);
 
   const handleAddTransaction = () => {
     setAddModalOpen(true);
@@ -123,7 +91,7 @@ const Transactions = () => {
 
   const handleDeleteTransaction = async (transaction) => {
     const confirmed = await showDeleteConfirmation(
-      `${transaction.type} - ${transaction.amount.toFixed(2)} ريال`, 
+      `${transaction.type} - ${transaction.amount.toFixed(2)} ريال`,
       'العملية المالية'
     );
     
@@ -131,7 +99,7 @@ const Transactions = () => {
       try {
         await transactionsAPI.delete(transaction.id);
         showSuccessAlert('تم حذف العملية المالية بنجاح');
-        fetchTransactions(); 
+        fetchTransactions();
       } catch (error) {
         console.error('Error deleting transaction:', error);
         toast.error(`خطأ في حذف العملية المالية: ${error.message}`);
@@ -140,50 +108,139 @@ const Transactions = () => {
   };
 
   const handleAddSuccess = () => {
-    fetchTransactions(); 
+    fetchTransactions();
   };
 
   const handleEditSuccess = () => {
-    fetchTransactions(); 
+    fetchTransactions();
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(1);
   };
 
   return (
+    <>
+    <Helmet>
+      <title>المعاملات</title>
+      <meta name="description" content="المعاملات في نظام إدارة المساهمين" />
+    </Helmet>
     <Box className="content-area">
-      {loading ? (
-        <PageLoadingSpinner message="جاري تحميل بيانات العمليات المالية..." />
-      ) : error ? (
-        <ErrorAlert error={error} onRetry={fetchTransactions} />
-      ) : (
-        <>
-          <TableComponent
-            title="سجل العمليات المالية"
-            data={transactions}
-            columns={columns}
-            onAdd={handleAddTransaction}
-            onEdit={handleEditTransaction}
-            onDelete={handleDeleteTransaction}
-            addButtonText="إضافة عملية جديدة"
-            searchPlaceholder="البحث في العمليات..."
-          />
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3} mr={1} mt={2} spacing={2}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleAddTransaction}
+          startIcon={<PlusOutlined style={{marginLeft: '10px'}} />}
+        >
+          إضافة عملية جديدة
+        </Button>
+        <InputBase
+          placeholder="ابحث عن عملية..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          sx={{ width: 200 }}
+        />
+      </Stack>
 
-          
-          <AddTransactionModal
-            open={addModalOpen}
-            onClose={() => setAddModalOpen(false)}
-            onSuccess={handleAddSuccess}
-          />
+      <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
+        <Table stickyHeader>
+          <TableHead>
+            <TableRow>
+              <StyledTableCell align="center">اسم المساهم</StyledTableCell>
+              <StyledTableCell align="center">نوع المعاملة</StyledTableCell>
+              <StyledTableCell align="center">المبلغ ({currentCurrency})</StyledTableCell>
+              <StyledTableCell align="center">التاريخ</StyledTableCell>
+              <StyledTableCell align="center">السنة المالية</StyledTableCell>
+              <StyledTableCell align="center">تعديل</StyledTableCell>
+              <StyledTableCell align="center">حذف</StyledTableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <StyledTableRow>
+                <StyledTableCell colSpan={7} align="center">
+                  <Spin size="large" />
+                </StyledTableCell>
+              </StyledTableRow>
+            ) : !transactions || transactions.length === 0 ? (
+              <StyledTableRow>
+                <StyledTableCell colSpan={7} align="center">
+                  لا توجد معاملات
+                </StyledTableCell>
+              </StyledTableRow>
+            ) : (
+              transactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((transaction) => (
+                <StyledTableRow key={transaction.id}>
+                  <StyledTableCell align="center">{transaction.investorName}</StyledTableCell>
+                  <StyledTableCell align="center">
+                    <Chip
+                      label={transaction.type}
+                      variant="outlined"
+                      sx={{
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                      }}
+                    />
+                  </StyledTableCell>
+                  <StyledTableCell align="center">
+                    {formatAmount(transaction.amount / (currentCurrency === 'IQD' ? 1 : 1).toFixed(5), transaction.originalCurrency || 'IQD')}
+                  </StyledTableCell>
+                  <StyledTableCell align="center">
+                    {transaction.date ? new Date(transaction.date).toLocaleDateString('en-US') : ''}
+                  </StyledTableCell>
+                  <StyledTableCell align="center">{transaction.profitYear || 'غير محدد'}</StyledTableCell>
+                  <StyledTableCell align="center">
+                    <IconButton
+                      size="small"
+                      color="warning"
+                      onClick={() => handleEditTransaction(transaction)}
+                    >
+                      <EditOutlined />
+                    </IconButton>
+                  </StyledTableCell>
+                  <StyledTableCell align="center">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleDeleteTransaction(transaction)}
+                    >
+                      <DeleteOutlined />
+                    </IconButton>
+                  </StyledTableCell>
+                </StyledTableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+        <TablePagination
+          component="div"
+          count={transactions.length}
+          page={page}
+          onPageChange={(e, newPage) => setPage(newPage)}
+          rowsPerPage={rowsPerPage}
+          rowsPerPageOptions={[5, 10, 20]}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          labelRowsPerPage="عدد الصفوف في الصفحة"
+        />
+      </TableContainer>
 
-          
-          <EditTransactionModal
-            open={editModalOpen}
-            onClose={() => setEditModalOpen(false)}
-            onSuccess={handleEditSuccess}
-            transaction={selectedTransaction}
-          />
-        </>
-      )}
+      <AddTransactionModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSuccess={handleAddSuccess}
+      />
+
+      <EditTransactionModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        onSuccess={handleEditSuccess}
+        transaction={selectedTransaction}
+      />
     </Box>
+    </>
   );
 };
 
-export default Transactions; 
+export default Transactions;

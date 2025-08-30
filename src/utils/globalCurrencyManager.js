@@ -65,17 +65,17 @@ class GlobalCurrencyManager {
     return 1;
   }
 
-  convertAmount(amount, fromCurrency, toCurrency = null) {
-    if (!amount || isNaN(amount)) return 0;
+ convertAmount(amount, fromCurrency, toCurrency = null) {
+  if (!amount || isNaN(amount)) return 0;
 
-    const targetCurrency = toCurrency || this.getCurrentDisplayCurrency();
-    
-    if (fromCurrency === targetCurrency) return Number(amount);
+  const targetCurrency = toCurrency || this.getCurrentDisplayCurrency();
+  
+  if (fromCurrency === targetCurrency) return Number(amount);
 
-    const rate = this.getExchangeRate(fromCurrency, targetCurrency);
-    // Convert to decimal if USD is target currency
-    return targetCurrency === 'USD' ? Number(amount) * rate / 100 : Number(amount) * rate;
-  }
+  const rate = this.getExchangeRate(fromCurrency, targetCurrency);
+  return Number(amount) * rate; 
+}
+
 
   formatAmount(amount, originalCurrency = 'IQD', targetCurrency = null) {
     const displayCurrency = targetCurrency || this.getCurrentDisplayCurrency();

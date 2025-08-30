@@ -101,8 +101,12 @@ class ApiService {
   }
 
   async getInvestors(params = {}) {
-    const queryString = new URLSearchParams(params).toString();
-    return this.request(`/investors${queryString ? `?${queryString}` : ''}`);
+    return this.request(`/investors/${params.page}/${params.limit}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
   }
 
   async createInvestor(investorData) {
@@ -186,7 +190,7 @@ export const authAPI = {
 };
 
 export const investorsAPI = {
-  getAll: () => apiService.request('/investors'),
+  getAll: (params) => apiService.getInvestors(params),
   getById: (id) => apiService.request(`/investors/${id}`),
   create: (data) => apiService.request('/investors', {
     method: 'POST',

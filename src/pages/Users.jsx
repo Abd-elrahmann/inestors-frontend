@@ -1,39 +1,76 @@
 import React, { useState, useEffect } from 'react';
-import { Box } from '@mui/material';
+import {
+  Box,
+  Table,
+  TableBody,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TablePagination,
+  IconButton,
+  Button,
+  Stack,
+  InputBase,
+  Chip
+} from '@mui/material';
+import {
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
+import { Spin } from 'antd';
 import { toast } from 'react-toastify';
-import TableComponent from '../components/shared/TableComponent';
+import { StyledTableCell, StyledTableRow } from '../styles/TableLayout';
 import AddUserModal from '../modals/AddUserModal';
 import EditUserModal from '../modals/EditUserModal';
-import { PageLoadingSpinner, ErrorAlert } from '../components/shared/LoadingComponents';
-import { 
-  // eslint-disable-next-line no-unused-vars
-  columnWidths 
-} from '../styles/tableStyles';
 import { usersAPI, transformers, handleApiError } from '../services/apiHelpers';
 import { showDeleteConfirmation, showSuccessAlert } from '../utils/sweetAlert';
+import { Helmet } from 'react-helmet-async';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredUsers, setFilteredUsers] = useState([]);
 
   useEffect(() => {
     fetchUsers();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const filtered = users.filter(user => 
+      user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredUsers(filtered);
+  }, [users, searchQuery]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await usersAPI.getAll();
+      const response = await usersAPI.getAll({
+        page: page,
+        limit: rowsPerPage, 
+        search: searchQuery
+      });
       
       if (response.data && response.data.users) {
         const transformedUsers = response.data.users.map(transformers.user);
         setUsers(transformedUsers);
+        setFilteredUsers(transformedUsers);
       } else {
         throw new Error('تنسيق البيانات غير صحيح');
       }
@@ -44,82 +81,6 @@ const Users = () => {
       setLoading(false);
     }
   };
-
-  const columns = [
-    {
-      field: 'fullName',
-      headerName: 'الاسم الكامل',
-      minWidth: 250,
-      headerAlign: 'center',
-      align: 'center',
-      sortable: true,
-      filterable: true
-    },
-    {
-      field: 'username',
-      headerName: 'اسم المستخدم',
-      minWidth: 180,
-      headerAlign: 'center',
-      align: 'center',
-      sortable: true,
-      filterable: true
-    },
-    {
-      field: 'email',
-      headerName: 'البريد الإلكتروني',
-      minWidth: 200,
-      headerAlign: 'center',
-      align: 'center',
-      sortable: true,
-      filterable: true
-    },
-    {
-      field: 'nationalId',
-      headerName: 'رقم الهوية',
-      minWidth: 160,
-      headerAlign: 'center',
-      align: 'center',
-      sortable: true,
-      filterable: true
-    },
-    {
-      field: 'role',
-      headerName: 'الدور',
-      minWidth: 160,
-      headerAlign: 'center',
-      align: 'center',
-      sortable: true,
-      filterable: true,
-      renderCell: (params) => {
-        const getRoleStyle = (role) => {
-          if (role === 'مدير') {
-            return { 
-              backgroundColor: '#ffc107', 
-              color: '#212529',
-              padding: '6px 12px',
-              borderRadius: '20px',
-              fontSize: '12px',
-              fontWeight: 500
-            };
-          }
-          return { 
-            backgroundColor: '#6c757d', 
-            color: 'white',
-            padding: '6px 12px',
-            borderRadius: '20px',
-            fontSize: '12px',
-            fontWeight: 500
-          };
-        };
-        return (
-          <span style={getRoleStyle(params.value)}>
-            {params.value}
-          </span>
-        );
-      }
-    },
-  
-  ];
 
   const handleAddUser = () => {
     setAddModalOpen(true);
@@ -153,41 +114,139 @@ const Users = () => {
     fetchUsers();
   };
 
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(1);
+  };
+
   return (
+    <>
+    <Helmet>
+      <title>المستخدمين</title>
+      <meta name="description" content="المستخدمين في نظام إدارة المساهمين" />
+    </Helmet>
     <Box className="content-area">
-      {loading ? (
-        <PageLoadingSpinner message="جاري تحميل بيانات المستخدمين..." />
-      ) : error ? (
-        <ErrorAlert error={error} onRetry={fetchUsers} />
-      ) : (
-        <>
-          <TableComponent
-            title="قائمة المستخدمين"
-            data={users}
-            columns={columns}
-            onAdd={handleAddUser}
-            onEdit={handleEditUser}
-            onDelete={handleDeleteUser}
-            addButtonText="إضافة مستخدم جديد"
-            searchPlaceholder="البحث عن مستخدم..."
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3} mr={1} mt={2} spacing={2}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleAddUser}
+          startIcon={<PlusOutlined style={{marginLeft: '10px'}} />}
+        >
+          إضافة مستخدم
+        </Button>
+        <Box sx={{ position: 'relative' }}>
+          <InputBase
+            placeholder="البحث عن مستخدم..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            sx={{
+              width: '250px',
+              pr: '35px'
+            }}
           />
+          <SearchOutlined style={{
+            position: 'absolute',
+            right: '8px',
+            color: '#666'
+          }} />
+        </Box>
+      </Stack>
 
-          <AddUserModal
-            open={addModalOpen}
-            onClose={() => setAddModalOpen(false)}
-            onSuccess={handleAddSuccess}
-          />
+      <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
+        <Table stickyHeader>
+          <TableHead>
+            <TableRow>
+              <StyledTableCell align="center">الاسم الكامل</StyledTableCell>
+              <StyledTableCell align="center">اسم المستخدم</StyledTableCell>
+              <StyledTableCell align="center">البريد الإلكتروني</StyledTableCell>
+              <StyledTableCell align="center">رقم الهوية</StyledTableCell>
+              <StyledTableCell align="center">الدور</StyledTableCell>
+              <StyledTableCell align="center">تعديل</StyledTableCell>
+              <StyledTableCell align="center">حذف</StyledTableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <StyledTableRow>
+                <StyledTableCell colSpan={7} align="center">
+                  <Spin size="large" />
+                </StyledTableCell>
+              </StyledTableRow>
+            ) : !filteredUsers || filteredUsers.length === 0 ? (
+              <StyledTableRow>
+                <StyledTableCell colSpan={7} align="center">
+                  لا يوجد مستخدمين
+                </StyledTableCell>
+              </StyledTableRow>
+            ) : (
+              filteredUsers.slice(0, rowsPerPage).map((user) => (
+                <StyledTableRow key={user.id}>
+                  <StyledTableCell align="center">{user.fullName}</StyledTableCell>
+                  <StyledTableCell align="center">{user.username}</StyledTableCell>
+                  <StyledTableCell align="center">{user.email}</StyledTableCell>
+                  <StyledTableCell align="center">{user.nationalId}</StyledTableCell>
+                  <StyledTableCell align="center">
+                    <Chip
+                      label={user.role}
+                      variant="outlined"
+                      sx={{
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        color: user.role === 'مدير' ? '#ffc107' : '#6c757d'
+                      }}
+                    />
+                  </StyledTableCell>
+                  <StyledTableCell align="center">
+                    <IconButton
+                      size="small"
+                      color="warning"
+                      onClick={() => handleEditUser(user)}
+                    >
+                      <EditOutlined />
+                    </IconButton>
+                  </StyledTableCell>
+                  <StyledTableCell align="center">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleDeleteUser(user)}
+                    >
+                      <DeleteOutlined />
+                    </IconButton>
+                  </StyledTableCell>
+                </StyledTableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+        <TablePagination
+          component="div"
+          count={filteredUsers.length}
+          page={page - 1}
+          onPageChange={(e, newPage) => setPage(newPage + 1)}
+          rowsPerPage={rowsPerPage}
+          rowsPerPageOptions={[5, 10, 20]}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          labelRowsPerPage="عدد الصفوف في الصفحة"
+        />
+      </TableContainer>
 
-          <EditUserModal
-            open={editModalOpen}
-            onClose={() => setEditModalOpen(false)}
-            onSuccess={handleEditSuccess}
-            user={selectedUser}
-          />
-        </>
-      )}
+      <AddUserModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSuccess={handleAddSuccess}
+      />
+
+      <EditUserModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        onSuccess={handleEditSuccess}
+        user={selectedUser}
+      />
     </Box>
+    </>
   );
 };
 
-export default Users; 
+export default Users;

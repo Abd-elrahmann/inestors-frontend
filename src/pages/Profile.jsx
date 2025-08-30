@@ -1,43 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
   Card,
-  CardContent,
-  TextField,
+  Form,
+  Input,
   Button,
   Typography,
   Alert,
   Avatar,
   Divider,
-  Grid,
-  Paper,
-  Chip
-} from '@mui/material';
+  Row,
+  Col,
+  Space,
+  Spin,
+  Layout,
+  Tag,
+  Grid
+} from 'antd';
 import {
-  MdPerson as Person,
-  MdEdit as Edit,
-  MdSave as Save,
-  MdCancel as Cancel,
-  MdEmail as Email,
-  MdBadge as Badge,
-  MdAccountCircle as AccountCircle
-} from 'react-icons/md';
+  UserOutlined,
+  EditOutlined,
+  SaveOutlined,
+  CloseOutlined,
+  MailOutlined,
+  IdcardOutlined,
+  SafetyCertificateOutlined
+} from '@ant-design/icons';
 import { authAPI } from '../services/api';
+import { Helmet } from 'react-helmet-async';
+
+const { Title, Text } = Typography;
+const { Content } = Layout;
+const { useBreakpoint } = Grid;
 
 const Profile = () => {
   const [user, setUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
+  // eslint-disable-next-line no-unused-vars
   const [formData, setFormData] = useState({
     fullName: '',
     username: ''
   });
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
+  // eslint-disable-next-line no-unused-vars
+  const screens = useBreakpoint();
+  const [form] = Form.useForm();
 
   useEffect(() => {
     loadUserData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadUserData = async () => {
@@ -61,6 +74,10 @@ const Profile = () => {
             fullName: userData.fullName || '',
             username: userData.username || ''
           });
+          form.setFieldsValue({
+            fullName: userData.fullName || '',
+            username: userData.username || ''
+          });
           setIsPageLoading(false);
         } catch (parseError) {
           console.error('Error parsing localStorage user data:', parseError);
@@ -77,7 +94,11 @@ const Profile = () => {
           setFormData({
             fullName: apiUser.fullName || '',
             username: apiUser.username || ''
-          }); 
+          });
+          form.setFieldsValue({
+            fullName: apiUser.fullName || '',
+            username: apiUser.username || ''
+          });
           localStorage.setItem('user', JSON.stringify(apiUser));
         } else {
           console.warn('API response format unexpected:', response);
@@ -105,55 +126,19 @@ const Profile = () => {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = 'الاسم الكامل مطلوب';
-    }
-
-    if (!formData.username.trim()) {
-      newErrors.username = 'اسم المستخدم مطلوب';
-    } else if (formData.username.length < 3) {
-      newErrors.username = 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSave = async () => {
-    if (!validateForm()) {
-      return;
-    }
-
+  const handleSave = async (values) => {
     setIsLoading(true);
     setErrors({});
     setSuccessMessage('');
 
     try {
       const response = await authAPI.updateProfile({
-        fullName: formData.fullName.trim(),
-        username: formData.username.trim()
+        fullName: values.fullName.trim(),
+        username: values.username.trim()
       });
 
       if (response.success) {
-        const updatedUser = response.data?.user || { ...user, fullName: formData.fullName, username: formData.username };
+        const updatedUser = response.data?.user || { ...user, fullName: values.fullName, username: values.username };
         setUser(updatedUser);
         
         localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -175,6 +160,10 @@ const Profile = () => {
       
       if (error.message.includes('duplicate') || error.message.includes('already exists')) {
         setErrors({ username: 'اسم المستخدم مستخدم بالفعل' });
+        form.setFields([{
+          name: 'username',
+          errors: ['اسم المستخدم مستخدم بالفعل']
+        }]);
       } else {
         setErrors({ submit: error.message || 'حدث خطأ في تحديث البيانات' });
       }
@@ -184,7 +173,7 @@ const Profile = () => {
   };
 
   const handleCancel = () => {  
-    setFormData({
+    form.setFieldsValue({
       fullName: user?.fullName || '',
       username: user?.username || ''
     });
@@ -194,205 +183,205 @@ const Profile = () => {
 
   if (isPageLoading) {
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '400px', gap: 2 }}>
-        <Typography variant="h6" sx={{ fontFamily: 'Cairo', color: '#666' }}>
-          جاري تحميل البيانات...
-        </Typography>
-        <Typography variant="body2" sx={{ fontFamily: 'Cairo', color: '#999' }}>
-          يرجى الانتظار قليلاً
-        </Typography>
-      </Box>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Spin size="large" />
+      </div>
     );
   }
 
   if (!user) {
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '400px', gap: 2 }}>
-        <Typography variant="h6" sx={{ fontFamily: 'Cairo', color: '#dc3545' }}>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '400px', 
+        gap: '16px' 
+      }}>
+        <Title level={4} style={{ color: '#ff4d4f' }}>
           فشل في تحميل بيانات المستخدم
-        </Typography>
-        <Typography variant="body2" sx={{ fontFamily: 'Cairo', color: '#666', textAlign: 'center' }}>
+        </Title>
+        <Text type="secondary" style={{ textAlign: 'center' }}>
           حدث خطأ في تحميل بياناتك الشخصية. يرجى المحاولة مرة أخرى.
-        </Typography>
+        </Text>
         <Button 
-          variant="contained" 
+          type="primary" 
           onClick={loadUserData}
-          sx={{ 
-            fontFamily: 'Cairo',
-            backgroundColor: '#28a745',
-            '&:hover': { backgroundColor: '#218838' }
-          }}
+          style={{ backgroundColor: '#28a745', borderColor: '#28a745' }}
         >
           إعادة المحاولة
         </Button>
-      </Box>
+      </div>
     );
   }
 
   return (
-    <Box sx={{ maxWidth: '500px', mx: 'auto', p: 2 }}>
-      <Paper elevation={1} sx={{ p: 3, mb: 3, textAlign: 'center' }}>
-        <Avatar
-          sx={{
-            width: 100,
-            height: 100,
-            fontSize: '3rem',
-            fontFamily: 'Cairo',
-            bgcolor: '#28a745',
-            mx: 'auto',
-            mb: 2
-          }}
+    <>
+      <Helmet>
+        <title>الملف الشخصي</title>
+        <meta name="description" content="الملف الشخصي في نظام إدارة المساهمين" />
+      </Helmet>
+      <Content style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
+        <Card style={{ marginBottom: '24px', textAlign: 'center' }}>
+          <Avatar
+            size={100}
+            style={{ 
+              backgroundColor: '#28a745',
+              fontSize: '40px',
+              marginBottom: '16px'
+            }}
+            icon={<UserOutlined />}
+          />
+          <Title level={2} style={{ color: '#28a745', marginBottom: '8px' }}>
+            الملف الشخصي
+          </Title>
+          <Text type="secondary">
+            إدارة معلوماتك الشخصية
+          </Text>
+        </Card>
+
+        {successMessage && (
+          <Alert 
+            message={successMessage} 
+            type="success" 
+            showIcon 
+            style={{ marginBottom: '24px' }}
+          />
+        )}
+
+        {errors.submit && (
+          <Alert 
+            message={errors.submit} 
+            type="error" 
+            showIcon 
+            style={{ marginBottom: '24px' }}
+          />
+        )}
+
+        <Card
+          title="المعلومات الشخصية"
+          extra={
+            !isEditing ? (
+              <Button
+                icon={<EditOutlined />}
+                onClick={() => setIsEditing(true)}
+              >
+                تعديل
+              </Button>
+            ) : (
+              <Space>
+                <Button
+                  icon={<SaveOutlined />}
+                  type="primary"
+                  onClick={() => form.submit()}
+                  loading={isLoading}
+                  style={{ backgroundColor: '#28a745', borderColor: '#28a745' }}
+                >
+                  حفظ
+                </Button>
+                <Button
+                  icon={<CloseOutlined />}
+                  onClick={handleCancel}
+                  disabled={isLoading}
+                >
+                  إلغاء
+                </Button>
+              </Space>
+            )
+          }
         >
-          {user.fullName ? user.fullName.charAt(0) : user.username.charAt(0)}
-        </Avatar>
-        <Typography variant="h4" sx={{ fontFamily: 'Cairo', fontWeight: 600, color: '#28a745', mb: 1 }}>
-          الملف الشخصي
-        </Typography>
-        <Typography variant="body1" sx={{ fontFamily: 'Cairo', color: '#666' }}>
-          إدارة معلوماتك الشخصية
-        </Typography>
-      </Paper>
+          <Divider />
 
-      {successMessage && (
-        <Alert severity="success" sx={{ mb: 3, fontFamily: 'Cairo' }}>
-          {successMessage}
-        </Alert>
-      )}
-
-      {errors.submit && (
-        <Alert severity="error" sx={{ mb: 3, fontFamily: 'Cairo' }}>
-          {errors.submit}
-        </Alert>
-      )}
-
-      <Grid container spacing={3} justifyContent="center">
-        <Grid item xs={12} md={12}>
-          <Card sx={{ width: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Typography variant="h6" sx={{ fontFamily: 'Cairo', fontWeight: 600 }}>
-                  المعلومات الشخصية
-                </Typography>
-                {!isEditing ? (
-                  <Button
-                    startIcon={<Edit />}
-                    onClick={() => setIsEditing(true)}
-                    sx={{ fontFamily: 'Cairo' }}
-                  >
-                    تعديل
-                  </Button>
-                ) : (
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                      startIcon={<Save />}
-                      variant="contained"
-                      onClick={handleSave}
-                      disabled={isLoading}
-                      sx={{ 
-                        fontFamily: 'Cairo',
-                        backgroundColor: '#28a745',
-                        '&:hover': { backgroundColor: '#218838' }
-                      }}
-                    >
-                      {isLoading ? 'جاري الحفظ...' : 'حفظ'}
-                    </Button>
-                    <Button
-                      startIcon={<Cancel />}
-                      onClick={handleCancel}
-                      disabled={isLoading}
-                      sx={{ fontFamily: 'Cairo' }}
-                    >
-                      إلغاء
-                    </Button>
-                  </Box>
-                )}
-              </Box>
-
-              <Divider sx={{ mb: 3 }} />
-
-              <Grid container spacing={3} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="الاسم الكامل"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleInputChange}
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSave}
+            initialValues={{
+              fullName: user.fullName || '',
+              username: user.username || ''
+            }}
+          >
+            <Row gutter={[16, 0]}>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="الاسم الكامل"
+                  name="fullName"
+                  rules={[
+                    { required: true, message: 'الاسم الكامل مطلوب' }
+                  ]}
+                >
+                  <Input 
+                    prefix={<UserOutlined style={{ color: '#28a745' }} />}
                     disabled={!isEditing || isLoading}
-                    error={!!errors.fullName}
-                    helperText={errors.fullName}
-                    InputProps={{
-                      startAdornment: <Person sx={{ color: '#28a745', mr: 1 }} />
-                    }}
-                    sx={{
-                      '& .MuiInputLabel-root': { fontFamily: 'Cairo' },
-                      '& .MuiInputBase-input': { fontFamily: 'Cairo', textAlign: 'right' },
-                      '& .MuiFormHelperText-root': { fontFamily: 'Cairo' }
-                    }}
+                    placeholder="أدخل الاسم الكامل"
                   />
-                </Grid>
+                </Form.Item>
+              </Col>
 
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="اسم المستخدم"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleInputChange}
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="اسم المستخدم"
+                  name="username"
+                  rules={[
+                    { required: true, message: 'اسم المستخدم مطلوب' },
+                    { min: 3, message: 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل' }
+                  ]}
+                >
+                  <Input 
+                    prefix={<UserOutlined style={{ color: '#28a745' }} />}
                     disabled={!isEditing || isLoading}
-                    error={!!errors.username}
-                    helperText={errors.username}
-                    InputProps={{
-                      startAdornment: <AccountCircle sx={{ color: '#28a745', mr: 1 }} />
-                    }}
-                    sx={{
-                      '& .MuiInputLabel-root': { fontFamily: 'Cairo' },
-                      '& .MuiInputBase-input': { fontFamily: 'Cairo', textAlign: 'right' },
-                      '& .MuiFormHelperText-root': { fontFamily: 'Cairo' }
-                    }}
+                    placeholder="أدخل اسم المستخدم"
                   />
-                </Grid>
-              </Grid>
+                </Form.Item>
+              </Col>
+            </Row>
 
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="البريد الإلكتروني"
+            <Row gutter={[16, 0]}>
+              <Col xs={24} md={12}>
+                <Form.Item label="البريد الإلكتروني">
+                  <Input 
                     value={user.email || 'غير محدد'}
                     disabled
-                    InputProps={{
-                      startAdornment: <Email sx={{ color: '#666', mr: 1 }} />
-                    }}
-                    sx={{
-                      '& .MuiInputLabel-root': { fontFamily: 'Cairo' },
-                      '& .MuiInputBase-input': { fontFamily: 'Cairo', textAlign: 'right' }
-                    }}
+                    prefix={<MailOutlined style={{ color: '#666' }} />}
                   />
-                </Grid>
+                </Form.Item>
+              </Col>
 
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="الدور الوظيفي"
+              <Col xs={24} md={12}>
+                <Form.Item label="الدور الوظيفي">
+                  <Input 
                     value={user.role === 'admin' ? 'مدير النظام' : 'مستخدم عادي'}
                     disabled
-                    InputProps={{
-                      startAdornment: <Badge sx={{ color: '#666', mr: 1 }} />
-                    }}
-                    sx={{
-                      '& .MuiInputLabel-root': { fontFamily: 'Cairo' },
-                      '& .MuiInputBase-input': { fontFamily: 'Cairo', textAlign: 'right' }
-                    }}
+                    prefix={<SafetyCertificateOutlined style={{ color: '#666' }} />}
                   />
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Box>
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form>
+        </Card>
+
+        <Card title="معلومات إضافية" style={{ marginTop: '24px' }}>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={12}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <IdcardOutlined style={{ color: '#666' }} />
+                <Text strong>حالة الحساب: </Text>
+                <Tag color="green">نشط</Tag>
+              </div>
+            </Col>
+            <Col xs={24} md={12}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <SafetyCertificateOutlined style={{ color: '#666' }} />
+                <Text strong>تاريخ الإنشاء: </Text>
+                <Text>{user.createdAt ? new Date(user.createdAt).toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' }) : 'غير محدد'}</Text>
+              </div>
+            </Col>
+          </Row>
+        </Card>
+      </Content>
+    </>
   );
 };
 
-export default Profile; 
+export default Profile;

@@ -14,12 +14,12 @@ import {
   DialogActions,
   TextField,
   Alert,
-  CircularProgress,
   Menu,
   MenuItem,
   Divider,
   LinearProgress
 } from '@mui/material';
+import { columnWidths, getCurrencyCell } from '../styles/tableStyles';
 import {
   Add as AddIcon,
   Calculate as CalculateIcon,
@@ -44,9 +44,9 @@ import AddFinancialYearModal from '../modals/AddFinancialYearModal';
 import EditFinancialYearModal from '../modals/EditFinancialYearModal';
 import ProfitDistributionsModal from '../modals/ProfitDistributionsModal';
 import TableComponent from '../components/shared/TableComponent';
-import { PageLoader, QuickLoader, FullScreenLoader } from '../components/shared/LoadingComponents';
-import { getCurrencyCell, columnWidths } from '../styles/tableStyles';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
+import { Spin } from 'antd';
+import { Helmet } from 'react-helmet-async';
 
 const FinancialYears = () => {
   const [financialYears, setFinancialYears] = useState([]);
@@ -599,6 +599,7 @@ const FinancialYears = () => {
 
   
   const columns = useMemo(() => [
+
     {
       field: 'year',
       headerName: 'السنة المالية',
@@ -615,7 +616,7 @@ const FinancialYears = () => {
       type: 'number',
       renderCell: (params) => (
         <span style={getCurrencyCell()}>
-          {formatAmount(params.value, params.row.currency || 'IQD')}
+          {formatAmount(params.value / (currentCurrency === 'IQD' ? 1 : 1).toFixed(5), params.row.currency || 'IQD')}
         </span>
       )
     },
@@ -857,13 +858,18 @@ const FinancialYears = () => {
     return (
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-          <CircularProgress size={60} />
+          <Spin size="large" />
         </Box>
       </Container>
     );
   }
 
   return (
+    <>
+     <Helmet>
+      <title>السنوات المالية</title>
+      <meta name="description" content="السنوات المالية في نظام إدارة المساهمين" />
+    </Helmet>
     <Container 
       maxWidth={false} 
       sx={{ 
@@ -928,7 +934,7 @@ const FinancialYears = () => {
           boxShadow: 3
         }}
       >
-        <PageLoader loading={loading} skeletonType="table">
+        <Spin spinning={loading}>
           <TableComponent
             title="السنوات المالية"
             data={financialYears.map(year => ({
@@ -962,7 +968,7 @@ const FinancialYears = () => {
               </Button>
             }
           />
-        </PageLoader>
+        </Spin>
       </Paper>
 
       <Menu
@@ -1096,6 +1102,7 @@ const FinancialYears = () => {
         financialYear={selectedYear}
       />
     </Container>
+    </>
   );
 };
 

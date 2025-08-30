@@ -107,8 +107,8 @@ export const apiRequest = async (endpoint, options = {}) => {
 export const investorsAPI = {
   getAll: (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    const endpoint = `/investors${queryString ? `?${queryString}` : ''}`;
-    return apiRequest(endpoint);
+      const endpoint = `/investors?${queryString}`;   
+    return apiRequest(endpoint);  
   },
 
   getById: (id) => apiRequest(`/investors/${id}`),
@@ -156,7 +156,7 @@ export const investorsAPI = {
 export const transactionsAPI = {
   getAll: (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    const endpoint = `/transactions${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/transactions?${queryString}`;
     return apiRequest(endpoint);
   },
 
@@ -208,7 +208,7 @@ export const profitsAPI = {
 export const usersAPI = {
   getAll: (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
-    const endpoint = `/users${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/users?${queryString}`;
     return apiRequest(endpoint);
   },
 
@@ -338,7 +338,7 @@ export const transformers = {
         day: '2-digit'
       }) : 'غير محدد',
       sharePercentage: investor.sharePercentage ? 
-        `${investor.sharePercentage.toFixed(2)}%` : '0%'
+        Number(investor.sharePercentage.toFixed(2)) : 0
     };
   },
 

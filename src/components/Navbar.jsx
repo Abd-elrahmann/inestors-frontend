@@ -230,7 +230,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                       color: '#28a745'
                     }}
                   >
-                    {user.username}
+                    {user.email.split('@')[0]}
                   </Typography>
                 </Box>
                 <IconButton
@@ -246,7 +246,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                       fontFamily: 'Cairo'
                     }}
                   >
-                    {user.fullName ? user.fullName.charAt(0) : user.username.charAt(0)}
+                    {user.fullName ? user.fullName.charAt(0) : user.email.split('@')[0].charAt(0)}
                   </Avatar>
                 </IconButton>
 

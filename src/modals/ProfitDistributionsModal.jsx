@@ -138,7 +138,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
   };
 
   const formatCurrency = (amount, currency) => {
-    return globalCurrencyManager.formatAmount(amount, currency);
+    return globalCurrencyManager.formatAmount(amount / (globalCurrencyManager.getCurrentDisplayCurrency() === 'IQD' ? 1 : 1).toFixed(5), currency);
   };
 
   const formatDate = (date) => {
@@ -200,7 +200,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
               <div style="text-align: right; direction: rtl">
                 <p>${calculationMessage}</p>
                 <p>الأيام المحسوبة: ${elapsedDays} من ${totalDays} يوم</p>
-                <p>إجمالي الربح المحسوب: ${formatCurrency(summary.totalCalculatedProfit, financialYear.currency)}</p>
+                <p>إجمالي الربح المحسوب: ${formatCurrency(summary.totalCalculatedProfit, financialYear.currency, true)}</p>
               </div>
             `,
             icon: 'success',
@@ -329,7 +329,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2" fontWeight="bold" color="primary.main">
-                        {formatCurrency(investmentAmount, financialYear.currency)}
+                        {formatCurrency(investmentAmount, financialYear.currency, true)}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
@@ -353,7 +353,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
                     <TableCell align="right">
                       <Box>
                         <Typography variant="body2" fontWeight="bold" color={distribution.rolloverSettings?.isRolledOver ? "warning.main" : "success.main"}>
-                          {formatCurrency(calculatedProfit, financialYear.currency)}
+                          {formatCurrency(calculatedProfit, financialYear.currency, true)}
                         </Typography>
                         {distribution.rolloverSettings?.isRolledOver && (
                           <>
@@ -458,7 +458,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
               
               <strong>📈 بيانات السنة المالية:</strong>
               <br />
-              • إجمالي الأرباح: <strong>{financialYear.totalProfit?.toLocaleString()} {financialYear.currency}</strong>
+              • إجمالي الأرباح: <strong>{formatCurrency(financialYear.totalProfit, financialYear.currency, true)}</strong>
               <br />
               • إجمالي الأيام: <strong>{financialYear.totalDaysCalculated || financialYear.totalDays} يوم</strong>
               <br />
@@ -584,7 +584,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
                     إجمالي الربح للفترة
                   </Typography>
                   <Typography variant="body1">
-                    {formatCurrency(financialYear.totalProfit, financialYear.currency)}
+                    {formatCurrency(financialYear.totalProfit, financialYear.currency, true)}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
