@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -10,10 +10,6 @@ import {
   Grid,
   Typography,
   IconButton,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   InputAdornment,
   CircularProgress
 } from '@mui/material';
@@ -21,32 +17,37 @@ import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import BadgeIcon from '@mui/icons-material/Badge';
 import LockIcon from '@mui/icons-material/Lock';
 import { MdVisibility as Visibility, MdVisibilityOff as VisibilityOff } from 'react-icons/md';
-import { toast } from 'react-toastify';
-import { usersAPI } from '../services/apiHelpers';
-
-const AddUserModal = ({ open, onClose, onSuccess }) => {
+import Api from '../services/api';
+import toast from 'react-hot-toast';
+import { useQueryClient } from 'react-query';
+const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     fullName: '',
-    username: '',
+    userName: '',
     email: '',
-    nationalId: '',
     password: '',
-    confirmPassword: '',
-    role: 'user'
+    confirmPassword: ''
   });
 
-  const [errors, setErrors] = useState({});
+  useEffect(() => {
+    if (mode === 'edit' && user) {
+      setFormData({
+        fullName: user.fullName || '',
+        userName: user.userName || '',
+        email: user.email || '',
+        password: '',
+        confirmPassword: ''
+      });
+    }
+  }, [mode, user]);
 
-  const roles = [
-    { value: 'admin', label: 'مدير' },
-    { value: 'user', label: 'مستخدم' }
-  ];
+  const [errors, setErrors] = useState({});
 
   const validateForm = () => {
     const newErrors = {};
@@ -57,60 +58,34 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
       newErrors.fullName = 'الاسم الكامل يجب أن يكون على الأقل حرفان';
     }
 
-    if (!formData.username.trim()) {
-      newErrors.username = 'اسم المستخدم مطلوب';
-    } else if (formData.username.trim().length < 3) {
-      newErrors.username = 'اسم المستخدم يجب أن يكون على الأقل 3 أحرف';
-    }
+    if (mode === 'add') {
+      if (!formData.userName.trim()) {
+        newErrors.userName = 'اسم المستخدم مطلوب';
+      } else if (formData.userName.trim().length < 3) {
+        newErrors.userName = 'اسم المستخدم يجب أن يكون على الأقل 3 أحرف';
+      }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'البريد الإلكتروني مطلوب';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'البريد الإلكتروني غير صحيح';
-    }
+      if (!formData.email.trim()) {
+        newErrors.email = 'البريد الإلكتروني مطلوب';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        newErrors.email = 'البريد الإلكتروني غير صحيح';
+      }
 
-    if (!formData.nationalId.trim()) {
-      newErrors.nationalId = 'رقم الهوية مطلوب';
-    } else if (!/^\d{10,14}$/.test(formData.nationalId)) {
-      newErrors.nationalId = 'رقم الهوية يجب أن يكون من 10 إلى 14 رقم';
-    }
+      if (!formData.password) {
+        newErrors.password = 'كلمة المرور مطلوبة';
+      } else if (formData.password.length < 6) {
+        newErrors.password = 'كلمة المرور يجب أن تكون على الأقل 6 أحرف';
+      }
 
-    if (!formData.password) {
-      newErrors.password = 'كلمة المرور مطلوبة';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'كلمة المرور يجب أن تكون على الأقل 6 أحرف';
-    }
-
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'تأكيد كلمة المرور مطلوب';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'كلمة المرور غير متطابقة';
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = 'تأكيد كلمة المرور مطلوب';
+      } else if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = 'كلمة المرور غير متطابقة';
+      }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const handleInputChange = (field, value) => {
-    if (field === 'nationalId') {
-      const numericValue = value.replace(/[^0-9]/g, '');
-      setFormData(prev => ({
-        ...prev,
-        [field]: numericValue
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [field]: value
-      }));
-    }
-
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -123,50 +98,35 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
     setLoading(true);
     
     try {
-      const userData = {
-        username: formData.username.trim(),
-        password: formData.password,
-        fullName: formData.fullName.trim(),
-        email: formData.email.trim().toLowerCase(),
-        nationalId: formData.nationalId.trim(),
-        role: formData.role
-      };
+      let result;
+      
+      if (mode === 'add') {
+        const userData = {
+          fullName: formData.fullName.trim(),
+          userName: formData.userName.trim(),
+          email: formData.email.trim().toLowerCase(),
+          password: formData.password
+        };
+        result = await Api.post('/api/users', userData);
+        toast.success('تم إضافة المستخدم بنجاح');
+        queryClient.invalidateQueries('users');
+      } else {
+        const updateData = {
+          fullName: formData.fullName.trim()
+        };
+        result = await Api.put(`/api/users/${user.id}`, updateData);
+        toast.success('تم تحديث المستخدم بنجاح');
+        queryClient.invalidateQueries('users');
+      }
 
-      const result = await usersAPI.create(userData);
-      
-      toast.success('تم إضافة المستخدم بنجاح');
-      
-      setFormData({
-        fullName: '',
-        username: '',
-        email: '',
-        nationalId: '',
-        password: '',
-        confirmPassword: '',
-        role: 'user'
-      });
-      
-      onClose();
+      handleClose();
       if (onSuccess) {
         onSuccess(result.data);
       }
       
     } catch (error) {
-      console.error('Error adding user:', error);
-      
-      if (error.message.includes('duplicate') || error.message.includes('already exists')) {
-        if (error.message.includes('username')) {
-          setErrors({ username: 'اسم المستخدم مستخدم بالفعل' });
-        } else if (error.message.includes('email')) {
-          setErrors({ email: 'البريد الإلكتروني مستخدم بالفعل' });
-        } else if (error.message.includes('nationalId')) {
-          setErrors({ nationalId: 'رقم الهوية مستخدم بالفعل' });
-        } else {
-          toast.error('اسم المستخدم أو البريد الإلكتروني أو رقم الهوية مستخدم بالفعل');
-        }
-      } else {
-        toast.error(error.message || 'حدث خطأ أثناء إضافة المستخدم');
-      }
+      console.error('Error:', error);
+      toast.error(error.message || 'حدث خطأ أثناء العملية');
     } finally {
       setLoading(false);
     }
@@ -176,12 +136,10 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
     if (!loading) {
       setFormData({
         fullName: '',
-        username: '',
+        userName: '',
         email: '',
-        nationalId: '',
         password: '',
-        confirmPassword: '',
-        role: 'user'
+        confirmPassword: ''
       });
       setErrors({});
       onClose();
@@ -196,66 +154,73 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
+  const handleInputChange = (field, value) => {
+    setFormData(prevData => ({
+      ...prevData,
+      [field]: value
+    }));
+  };
+
+  // Use the same color for both modes
+  const primaryColor = '#28a745';
+
   return (
     <Dialog 
       open={open} 
       onClose={handleClose}
-      maxWidth="sm"
+      maxWidth="xs"
       fullWidth
       PaperProps={{
         sx: {
           borderRadius: 3,
-          minHeight: '70vh',
+          minHeight: mode === 'add' ? '30vh' : '40vh',
           width: '50%',
-          scrollbarWidth: 'none'
+          scrollbarWidth: 'none',
         }
       }}
+      dir={'rtl'}
     >
       <DialogTitle sx={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
-        backgroundColor: '#28a745',
-        color: 'white',
+        color: 'black',
         fontFamily: 'Cairo',
         fontSize: '1.2rem',
-        fontWeight: 600
+        fontWeight: 500
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <PersonAddIcon />
-          <span >إضافة مستخدم جديد</span>
+          <span>{mode === 'add' ? 'إضافة مستخدم جديد' : 'تعديل المستخدم'}</span>
         </Box>
         <IconButton 
           onClick={handleClose}
           disabled={loading}
-          sx={{ color: 'white' }}
+          sx={{ color: 'black' }}
         >
           <CloseIcon />
         </IconButton>
       </DialogTitle>
 
       <form onSubmit={handleSubmit}>
-        <DialogContent sx={{ mt: 2, px: 3 }}>
-         
+        <DialogContent sx={{ mt: 1, px: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
           <Typography variant="h6" sx={{ 
             fontFamily: 'Cairo', 
             fontWeight: 600, 
             mb: 3, 
-            color: '#28a745',
-            borderBottom: '2px solid #28a745',
+            color: primaryColor,
+            borderBottom: `2px solid ${primaryColor}`,
             pb: 1,
             textAlign: 'center'
           }}>
             البيانات الأساسية
           </Typography>
           
-          <Grid container spacing={6} sx={{ mb: 4 }}>
-           
+          <Grid container spacing={6} sx={{ mb: 4, justifyContent: 'center',flexDirection: 'column', alignItems: 'center' }}>
             <Grid item xs={12} md={6}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-               
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
                 <TextField
-                  fullWidth
+                  sx={{width:'300px'}}
                   label="الاسم الكامل"
                   value={formData.fullName}
                   onChange={(e) => handleInputChange('fullName', e.target.value)}
@@ -265,240 +230,141 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <PersonIcon sx={{ color: '#28a745' }} />
+                        <PersonIcon sx={{ color: primaryColor }} />
                       </InputAdornment>
                     ),
                   }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      fontFamily: 'Cairo'
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontFamily: 'Cairo'
-                    }
+                />
+                 <Grid item xs={12} md={6}>
+                <TextField
+                  sx={{width:'300px'}}
+                  label="اسم المستخدم"
+                  value={formData.userName}
+                  onChange={(e) => handleInputChange('userName', e.target.value)}
+                  error={!!errors.userName}
+                  helperText={errors.userName}
+                  disabled={mode === 'edit' || loading}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonIcon sx={{ color: primaryColor }} />
+                      </InputAdornment>
+                    ),
                   }}
                 />
+            </Grid>
 
-                
                 <TextField
-                  fullWidth
+                  sx={{width:'300px'}}
                   type="email"
                   label="البريد الإلكتروني"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   error={!!errors.email}
                   helperText={errors.email}
-                  disabled={loading}
+                  disabled={mode === 'edit' || loading}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <EmailIcon sx={{ color: '#28a745' }} />
+                        <EmailIcon sx={{ color: primaryColor }} />
                       </InputAdornment>
                     ),
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      fontFamily: 'Cairo'
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontFamily: 'Cairo'
-                    }
                   }}
                 />
               </Box>
             </Grid>
 
            
-            <Grid item xs={12} md={6}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-               
-                <TextField
-                  fullWidth
-                  label="اسم المستخدم"
-                  value={formData.username}
-                  onChange={(e) => handleInputChange('username', e.target.value)}
-                  error={!!errors.username}
-                  helperText={errors.username}
-                  disabled={loading}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PersonIcon sx={{ color: '#28a745' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      fontFamily: 'Cairo'
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontFamily: 'Cairo'
-                    }
-                  }}
-                />
-
-                
-
-                
-                <TextField
-                  fullWidth
-                  label="رقم الهوية"
-                  value={formData.nationalId}
-                  onChange={(e) => handleInputChange('nationalId', e.target.value)}
-                  error={!!errors.nationalId}
-                  helperText={errors.nationalId}
-                  disabled={loading}
-                  inputProps={{ maxLength: 14 }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <BadgeIcon sx={{ color: '#28a745' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      fontFamily: 'Cairo'
-                    },
-                    '& .MuiInputLabel-root': {
-                      fontFamily: 'Cairo'
-                    }
-                  }}
-                />
-              </Box>
-            </Grid>
-            <Grid container spacing={6} justifyContent={'center'}>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel sx={{ fontFamily: 'Cairo' }}>الدور</InputLabel>
-                <Select
-                  value={formData.role}
-                  label="الدور"
-                  
-                  onChange={(e) => handleInputChange('role', e.target.value)}
-                  disabled={loading}
-                  sx={{
-                    fontFamily: 'Cairo',
-                    width: '220px'
-                  }}
-                >
-                  {roles.map((role) => (
-                    <MenuItem key={role.value} value={role.value} sx={{ fontFamily: 'Cairo' }}>
-                      {role.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
           </Grid>
 
-      
+          {mode === 'add' && (
+            <>
+              <Typography variant="h6" sx={{ 
+                fontFamily: 'Cairo', 
+                fontWeight: 600, 
+                mb: 3, 
+                mt: 2,
+                color: primaryColor,
+                borderBottom: `2px solid ${primaryColor}`,
+                pb: 1,
+                textAlign: 'center'
+              }}>
+                إعدادات كلمة المرور
+              </Typography>
+              
+              <Grid container spacing={6} sx={{ mb: 4, justifyContent: 'center', alignItems: 'center' }}>
+                <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <TextField
+                    sx={{width:'300px'}}
+                    label="كلمة المرور"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    error={!!errors.password}
+                    helperText={errors.password}
+                    disabled={loading}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockIcon sx={{ color: primaryColor, fontSize: '20px' }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label="toggle password visibility"
+                            onClick={handleTogglePassword}
+                            edge="end"
+                            disabled={loading}
+                          >
+                            {showPassword ? <VisibilityOff size={40} /> : <Visibility size={40} />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
 
-          
-          <Typography variant="h6" sx={{ 
-            fontFamily: 'Cairo', 
-            fontWeight: 600, 
-            mb: 3, 
-            mt: 2,
-            color: '#dc3545',
-            borderBottom: '2px solid #dc3545',
-            pb: 1,
-            textAlign: 'center'
-          }}>
-            إعدادات كلمة المرور
-          </Typography>
-          
-          <Grid container spacing={6} sx={{ mb: 4, justifyContent: 'center' }}>
-           
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="كلمة المرور"
-                type={showPassword ? "text" : "password"}
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                error={!!errors.password}
-                helperText={errors.password}
-                disabled={loading}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <LockIcon sx={{ color: '#dc3545' }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="toggle password visibility"
-                        onClick={handleTogglePassword}
-                        edge="end"
-                        disabled={loading}
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    fontFamily: 'Cairo'
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontFamily: 'Cairo'
-                  }
-                }}
-              />
-            </Grid>
-
-                
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="تأكيد كلمة المرور"
-                type={showConfirmPassword ? "text" : "password"}
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                error={!!errors.confirmPassword}
-                helperText={errors.confirmPassword}
-                disabled={loading}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <LockIcon sx={{ color: '#dc3545' }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="toggle confirm password visibility"
-                        onClick={handleToggleConfirmPassword}
-                        edge="end"
-                        disabled={loading}
-                      >
-                        {showConfirmPassword ? <VisibilityOff  /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    fontFamily: 'Cairo'
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontFamily: 'Cairo'
-                  }
-                }}
-              />
-            </Grid>
-          </Grid>
-
+                <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <TextField
+                    sx={{width:'300px'}}
+                    label="تأكيد كلمة المرور"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                    error={!!errors.confirmPassword}
+                    helperText={errors.confirmPassword}
+                    disabled={loading}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockIcon sx={{ color: primaryColor }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label="toggle confirm password visibility"
+                            onClick={handleToggleConfirmPassword}
+                            edge="end"
+                            disabled={loading}
+                          >
+                            {showConfirmPassword ? <VisibilityOff size={40} /> : <Visibility size={40} />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
+              </Grid>
+            </>
+          )}
         </DialogContent>
 
         <DialogActions sx={{ 
           p: 3, 
           gap: 3,
-          justifyContent: 'center',
+          justifyContent: 'space-between',
           display: 'flex',
           alignItems: 'center',
           direction:'ltr'
@@ -511,13 +377,10 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
             sx={{
               fontFamily: 'Cairo',
               fontWeight: 500,
-              color: '#6c757d',
+              color: primaryColor,  
               borderColor: '#6c757d',
-              px: 4,
-              py: 1.5,
-              minWidth: 120,
               '&:hover': {
-                borderColor: '#495057',
+                borderColor: primaryColor,
                 backgroundColor: 'rgba(108, 117, 125, 0.04)'
               }
             }}
@@ -532,13 +395,11 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
             size="large"
             sx={{
               fontFamily: 'Cairo',
-              fontWeight: 600,
-              backgroundColor: '#28a745',
-              px: 4,
-              py: 1.5,
-              minWidth: 140,
+              fontWeight: 500,
+              backgroundColor: primaryColor,
               '&:hover': {
-                backgroundColor: '#218838'
+                backgroundColor: primaryColor,
+                opacity: 0.9
               }
             }}
           >
@@ -548,7 +409,7 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
                 <span>جاري الحفظ...</span>
               </Box>
             ) : (
-              'إضافة المستخدم'
+              mode === 'add' ? 'إضافة المستخدم' : 'تحديث المستخدم'
             )}
           </Button>
         </DialogActions>
@@ -557,4 +418,4 @@ const AddUserModal = ({ open, onClose, onSuccess }) => {
   );
 };
 
-export default AddUserModal; 
+export default AddUserModal;

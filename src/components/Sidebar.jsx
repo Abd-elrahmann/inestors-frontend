@@ -11,11 +11,10 @@ import {
   MdExitToApp as ExitToApp,
   MdSettings as Settings
 } from 'react-icons/md';
-import { authAPI } from '../services/api';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const [userRole, setUserRole] = useState('user');
+  const [userRole, setUserRole] = useState('ADMIN');
 
   useEffect(() => {
     const getUserRole = () => {
@@ -23,17 +22,17 @@ const Sidebar = ({ isOpen, onClose }) => {
         const userData = localStorage.getItem('user');
         if (userData) {
           const user = JSON.parse(userData);
-          setUserRole(user.role || 'user');
+          setUserRole(user.role || 'ADMIN');
         } else {
-          setUserRole('user');
+          setUserRole('ADMIN');
         }
       } catch (error) {
         console.error('Error parsing user data:', error);
-        setUserRole('user');
+        setUserRole('ADMIN');
       }
     };
 
-    setTimeout(getUserRole, 50);
+    getUserRole();
 
     window.addEventListener('storage', getUserRole);
     return () => window.removeEventListener('storage', getUserRole);
@@ -57,43 +56,43 @@ const Sidebar = ({ isOpen, onClose }) => {
         path: '/dashboard',
         label: 'لوحة التحكم',
         icon: <Dashboard size={22} />,
-        roles: ['admin', 'user'] 
+        roles: ['ADMIN', 'USER'] 
       },
       {
         path: '/users',
         label: 'إدارة المستخدمين',
         icon: <Group size={22} />,
-        roles: ['admin'] 
+        roles: ['ADMIN'] 
       },
       {
         path: '/investors',
         label: 'المساهمين',
         icon: <People size={22} />,
-        roles: ['admin', 'user'] 
+        roles: ['ADMIN', 'USER'] 
       },
       {
         path: '/transactions',
-        label: userRole === 'admin' ? 'العمليات المالية' : 'عرض العمليات المالية',
+        label: userRole === 'ADMIN' ? 'العمليات المالية' : 'عرض العمليات المالية',
         icon: <AccountBalance size={22} />,
-        roles: ['admin', 'user'] 
+        roles: ['ADMIN', 'USER'] 
       },
       {
         path: '/financial-years',
-        label: userRole === 'admin' ? 'السنوات المالية' : 'عرض السنوات المالية',
+        label: userRole === 'ADMIN' ? 'السنوات المالية' : 'عرض السنوات المالية',
         icon: <TrendingUp size={22} />,
-        roles: ['admin', 'user']
+        roles: ['ADMIN', 'USER']
       },
       {
         path: '/reports',
         label: 'التقارير',
         icon: <Assessment size={22} />,
-        roles: ['admin'] 
+        roles: ['ADMIN'] 
       },
       {
         path: '/settings',
         label: 'إعدادات النظام',
         icon: <Settings size={22} />,
-        roles: ['admin'] 
+        roles: ['ADMIN'] 
       }
     ];
 
@@ -111,17 +110,11 @@ const Sidebar = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await authAPI.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      
-      navigate('/login', { replace: true });
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('profile');
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -248,4 +241,4 @@ const Sidebar = ({ isOpen, onClose }) => {
   );
 };
 
-export default Sidebar; 
+export default Sidebar;

@@ -14,7 +14,11 @@ import {
   Spin,
   Layout,
   Tag,
-  Grid
+  Grid,
+  Upload,
+  Modal,
+  Dropdown,
+  Menu
 } from 'antd';
 import {
   UserOutlined,
@@ -22,11 +26,16 @@ import {
   SaveOutlined,
   CloseOutlined,
   MailOutlined,
-  IdcardOutlined,
-  SafetyCertificateOutlined
+  IdcardOutlined, 
+  SafetyCertificateOutlined,
+  UploadOutlined,
+  DeleteOutlined,
+  LockOutlined,
+  MoreOutlined
 } from '@ant-design/icons';
-import { authAPI } from '../services/api';
+import Api from '../services/api';
 import { Helmet } from 'react-helmet-async';
+import toast from 'react-hot-toast';
 
 const { Title, Text } = Typography;
 const { Content } = Layout;
@@ -37,16 +46,16 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
+  const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
   // eslint-disable-next-line no-unused-vars
   const [formData, setFormData] = useState({
     fullName: '',
-    username: ''
+    userName: ''
   });
-  const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState('');
   // eslint-disable-next-line no-unused-vars
   const screens = useBreakpoint();
   const [form] = Form.useForm();
+  const [passwordForm] = Form.useForm();
 
   useEffect(() => {
     loadUserData();
@@ -55,72 +64,36 @@ const Profile = () => {
 
   const loadUserData = async () => {
     setIsPageLoading(true);
-    setErrors({});
     
     try {
-      const localUser = localStorage.getItem('user');
-      const token = localStorage.getItem('token');
+      const response = await Api.get('/api/profile');
       
-      if (!token) {
-        window.location.href = '/login';
-        return;
-      }
-
-      if (localUser) {
-        try {
-          const userData = JSON.parse(localUser);
-          setUser(userData);
-          setFormData({
-            fullName: userData.fullName || '',
-            username: userData.username || ''
-          });
-          form.setFieldsValue({
-            fullName: userData.fullName || '',
-            username: userData.username || ''
-          });
-          setIsPageLoading(false);
-        } catch (parseError) {
-          console.error('Error parsing localStorage user data:', parseError);
-          localStorage.removeItem('user');
-        }
-      }
-
-      try {
-        const response = await authAPI.getProfile();
+      if (response.data) {
+        const userData = {
+          fullName: response.data.fullName,
+          userName: response.data.userName,
+          email: response.data.email,
+          role: response.data.role,
+          profileImage: response.data.profileImage
+        };
         
-        if (response.success && response.data && response.data.user) {
-          const apiUser = response.data.user;
-          setUser(apiUser);
-          setFormData({
-            fullName: apiUser.fullName || '',
-            username: apiUser.username || ''
-          });
-          form.setFieldsValue({
-            fullName: apiUser.fullName || '',
-            username: apiUser.username || ''
-          });
-          localStorage.setItem('user', JSON.stringify(apiUser));
-        } else {
-          console.warn('API response format unexpected:', response);
-          if (!localUser) {
-            setErrors({ submit: 'تنسيق البيانات من الخادم غير صحيح' });
-          }
-        }
-      } catch (apiError) {
-        console.error('Error fetching from API:', apiError);
-        if (!localUser) {
-          if (apiError.message.includes('Not authorized')) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
-            return;
-          }
-          setErrors({ submit: 'حدث خطأ في تحميل البيانات من الخادم: ' + apiError.message });
-        }
+        setUser(userData);
+        setFormData({
+          fullName: userData.fullName || '',
+          userName: userData.userName || ''
+        });
+        form.setFieldsValue({
+          fullName: userData.fullName || '',
+          userName: userData.userName || ''
+        });
+        localStorage.setItem('user', JSON.stringify(userData));
       }
     } catch (error) {
       console.error('Error loading user data:', error);
-      setErrors({ submit: 'حدث خطأ غير متوقع في تحميل البيانات' });
+      
+      if (error.response?.status === 401) {
+        toast.error('حدث خطأ في تحميل البيانات');
+      }
     } finally {
       setIsPageLoading(false);
     }
@@ -128,58 +101,108 @@ const Profile = () => {
 
   const handleSave = async (values) => {
     setIsLoading(true);
-    setErrors({});
-    setSuccessMessage('');
 
     try {
-      const response = await authAPI.updateProfile({
-        fullName: values.fullName.trim(),
-        username: values.username.trim()
+      const response = await Api.put('/api/profile/update-name', {
+        fullName: values.fullName.trim()
       });
 
-      if (response.success) {
-        const updatedUser = response.data?.user || { ...user, fullName: values.fullName, username: values.username };
+      if (response) {
+        const updatedUser = { ...user, fullName: values.fullName };
         setUser(updatedUser);
-        
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        
-        setFormData({
-          fullName: updatedUser.fullName || '',
-          username: updatedUser.username || ''
-        });
-        
-        setSuccessMessage('تم تحديث البيانات بنجاح!');
+        toast.success('تم تحديث الاسم بنجاح!');
         setIsEditing(false);
-        
-        setTimeout(() => setSuccessMessage(''), 3000);
-      } else {
-        setErrors({ submit: response.message || 'حدث خطأ في تحديث البيانات' });
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      
-      if (error.message.includes('duplicate') || error.message.includes('already exists')) {
-        setErrors({ username: 'اسم المستخدم مستخدم بالفعل' });
-        form.setFields([{
-          name: 'username',
-          errors: ['اسم المستخدم مستخدم بالفعل']
-        }]);
-      } else {
-        setErrors({ submit: error.message || 'حدث خطأ في تحديث البيانات' });
-      }
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handlePasswordUpdate = async (values) => {
+    try {
+      await Api.put('/api/profile/update-password', {
+        oldPassword: values.oldPassword,
+        newPassword: values.newPassword,
+        confirmPassword: values.confirmPassword
+      });
+      
+      toast.success('تم تحديث كلمة المرور بنجاح');
+      setIsPasswordModalVisible(false);
+      passwordForm.resetFields();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleImageUpload = async (file) => {
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      
+      reader.onload = async () => {
+        const response = await Api.put('/api/profile/upload-image', {
+          image: reader.result
+        });
+        
+        if (response) {
+          setUser({ ...user, profileImage: response.data.profileImage });
+          toast.success('تم رفع الصورة بنجاح');
+          localStorage.setItem('profile', JSON.stringify({ ...user, profileImage: response.data.profileImage }));
+        }
+      };
+    } catch (error) {
+      console.log(error);
+      toast.error('فشل تحميل الصورة');
+    }
+  };
+
+  const handleImageDelete = async () => {
+    try {
+      await Api.delete('/api/profile/delete-image');
+      setUser({ ...user, profileImage: null });
+      toast.success('تم حذف الصورة من الملف الشخصي بنجاح');
+      localStorage.setItem('profile', JSON.stringify({ ...user, profileImage: null }));
+    } catch (error) {
+      console.log(error);
+      toast.error('فشل حذف الصورة');
+    }
+  };
+
   const handleCancel = () => {  
     form.setFieldsValue({
-      fullName: user?.fullName || '',
-      username: user?.username || ''
+      fullName: user?.fullName || ''
     });
-    setErrors({});
     setIsEditing(false);
   };
+
+  const imageMenu = (
+    <Menu>
+      <Menu.Item key="upload" icon={<UploadOutlined />}>
+        <Upload
+          showUploadList={false}
+          beforeUpload={(file) => {
+            handleImageUpload(file);
+            return false;
+          }}
+        >
+          رفع صورة
+        </Upload>
+      </Menu.Item>
+      {user?.profileImage && (
+        <Menu.Item 
+          key="delete" 
+          icon={<DeleteOutlined />} 
+          onClick={handleImageDelete}
+          danger
+        >
+          حذف الصورة
+        </Menu.Item>
+      )}
+    </Menu>
+  );
 
   if (isPageLoading) {
     return (
@@ -224,15 +247,35 @@ const Profile = () => {
       </Helmet>
       <Content style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
         <Card style={{ marginBottom: '24px', textAlign: 'center' }}>
-          <Avatar
-            size={100}
-            style={{ 
-              backgroundColor: '#28a745',
-              fontSize: '40px',
-              marginBottom: '16px'
-            }}
-            icon={<UserOutlined />}
-          />
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <Dropdown overlay={imageMenu} trigger={['click']} placement="bottomRight">
+              <Avatar
+                size={100}
+                src={user.profileImage}
+                style={{ 
+                  backgroundColor: '#28a745',
+                  fontSize: '40px',
+                  marginBottom: '16px',
+                  cursor: 'pointer'
+                }}
+                icon={<UserOutlined />}
+              />
+            </Dropdown>
+            <Dropdown overlay={imageMenu} trigger={['click']} placement="bottomRight">
+              <Button 
+                type="text" 
+                shape="circle" 
+                icon={<MoreOutlined />} 
+                size="small"
+                style={{ 
+                  position: 'absolute', 
+                  bottom: 10, 
+                  right: -10,
+                  backgroundColor: '#f5f5f5'
+                }}
+              />
+            </Dropdown>
+          </div>
           <Title level={2} style={{ color: '#28a745', marginBottom: '8px' }}>
             الملف الشخصي
           </Title>
@@ -241,34 +284,24 @@ const Profile = () => {
           </Text>
         </Card>
 
-        {successMessage && (
-          <Alert 
-            message={successMessage} 
-            type="success" 
-            showIcon 
-            style={{ marginBottom: '24px' }}
-          />
-        )}
-
-        {errors.submit && (
-          <Alert 
-            message={errors.submit} 
-            type="error" 
-            showIcon 
-            style={{ marginBottom: '24px' }}
-          />
-        )}
-
         <Card
           title="المعلومات الشخصية"
           extra={
             !isEditing ? (
-              <Button
-                icon={<EditOutlined />}
-                onClick={() => setIsEditing(true)}
-              >
-                تعديل
-              </Button>
+              <Space>
+                <Button
+                  icon={<EditOutlined />}
+                  onClick={() => setIsEditing(true)}
+                >
+                  تعديل
+                </Button>
+                <Button
+                  icon={<LockOutlined />}
+                  onClick={() => setIsPasswordModalVisible(true)}
+                >
+                  تغيير كلمة المرور
+                </Button>
+              </Space>
             ) : (
               <Space>
                 <Button
@@ -298,12 +331,11 @@ const Profile = () => {
             layout="vertical"
             onFinish={handleSave}
             initialValues={{
-              fullName: user.fullName || '',
-              username: user.username || ''
+              fullName: user.fullName || ''
             }}
           >
-            <Row gutter={[16, 0]}>
-              <Col xs={24} md={12}>
+            <Row gutter={[16, 0]} justify="center">
+              <Col xs={24} md={20}>
                 <Form.Item
                   label="الاسم الكامل"
                   name="fullName"
@@ -312,48 +344,37 @@ const Profile = () => {
                   ]}
                 >
                   <Input 
+                    size="large"
                     prefix={<UserOutlined style={{ color: '#28a745' }} />}
                     disabled={!isEditing || isLoading}
                     placeholder="أدخل الاسم الكامل"
-                  />
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} md={12}>
-                <Form.Item
-                  label="اسم المستخدم"
-                  name="username"
-                  rules={[
-                    { required: true, message: 'اسم المستخدم مطلوب' },
-                    { min: 3, message: 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل' }
-                  ]}
-                >
-                  <Input 
-                    prefix={<UserOutlined style={{ color: '#28a745' }} />}
-                    disabled={!isEditing || isLoading}
-                    placeholder="أدخل اسم المستخدم"
+                    style={{ textAlign: 'center' }}
                   />
                 </Form.Item>
               </Col>
             </Row>
 
-            <Row gutter={[16, 0]}>
-              <Col xs={24} md={12}>
+            <Row gutter={[16, 0]} justify="center">
+              <Col xs={24} md={20}>
                 <Form.Item label="البريد الإلكتروني">
                   <Input 
+                    size="large"
                     value={user.email || 'غير محدد'}
                     disabled
                     prefix={<MailOutlined style={{ color: '#666' }} />}
+                    style={{ textAlign: 'center' }}
                   />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} md={12}>
+              <Col xs={24} md={20}>
                 <Form.Item label="الدور الوظيفي">
                   <Input 
-                    value={user.role === 'admin' ? 'مدير النظام' : 'مستخدم عادي'}
+                    size="large"
+                    value={user.role === 'ADMIN' ? 'مدير النظام' : 'مستخدم عادي'}
                     disabled
                     prefix={<SafetyCertificateOutlined style={{ color: '#666' }} />}
+                    style={{ textAlign: 'center' }}
                   />
                 </Form.Item>
               </Col>
@@ -361,24 +382,71 @@ const Profile = () => {
           </Form>
         </Card>
 
-        <Card title="معلومات إضافية" style={{ marginTop: '24px' }}>
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={12}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <IdcardOutlined style={{ color: '#666' }} />
-                <Text strong>حالة الحساب: </Text>
-                <Tag color="green">نشط</Tag>
-              </div>
-            </Col>
-            <Col xs={24} md={12}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <SafetyCertificateOutlined style={{ color: '#666' }} />
-                <Text strong>تاريخ الإنشاء: </Text>
-                <Text>{user.createdAt ? new Date(user.createdAt).toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' }) : 'غير محدد'}</Text>
-              </div>
-            </Col>
-          </Row>
-        </Card>
+        <Modal
+          title="تغيير كلمة المرور"
+          visible={isPasswordModalVisible}
+          onCancel={() => {
+            setIsPasswordModalVisible(false);
+            passwordForm.resetFields();
+          }}
+          footer={null}
+          centered
+          width={400}
+          dir={'rtl'}
+        >
+          <Form
+            form={passwordForm}
+            layout="vertical"
+            onFinish={handlePasswordUpdate}
+          >
+            <Form.Item
+              name="oldPassword"
+              label="كلمة المرور الحالية"
+              rules={[{ required: true, message: 'كلمة المرور الحالية مطلوبة' }]}
+            >
+              <Input.Password size="large" style={{ textAlign: 'center' }} />
+            </Form.Item>
+            <Form.Item
+              name="newPassword"
+              label="كلمة المرور الجديدة"
+              rules={[
+                { required: true, message: 'كلمة المرور الجديدة مطلوبة' },
+                { min: 6, message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }
+              ]}
+            >
+              <Input.Password size="large" style={{ textAlign: 'center' }} />
+            </Form.Item>
+            <Form.Item
+              name="confirmPassword"
+              label="تأكيد كلمة المرور"
+              dependencies={['newPassword']}
+              rules={[
+                { required: true, message: 'تأكيد كلمة المرور مطلوب' },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (!value || getFieldValue('newPassword') === value) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error('كلمات المرور غير متطابقة'));
+                  },
+                }),
+              ]}
+            >
+              <Input.Password size="large" style={{ textAlign: 'center' }} />
+            </Form.Item>
+                      <Form.Item>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                block
+                size="large"
+                style={{ backgroundColor: '#28a745', borderColor: '#28a745' }}
+              >
+                تحديث كلمة المرور
+              </Button>
+            </Form.Item>
+          </Form>
+        </Modal>
       </Content>
     </>
   );

@@ -12,11 +12,12 @@ import {
   TablePagination,
   IconButton,
   Chip,
-  InputBase
+  InputBase,
+  InputAdornment
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import { Spin } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import AddTransactionModal from '../modals/AddTransactionModal';
 import EditTransactionModal from '../modals/EditTransactionModal';
 import { StyledTableCell, StyledTableRow } from '../styles/TableLayout';
@@ -54,6 +55,11 @@ const Transactions = () => {
     setFilteredTransactions(filtered);
   }, [transactions, searchQuery]);
 
+  useEffect(() => {
+    fetchTransactions();
+  }, [page, rowsPerPage, searchQuery]); // إضافة التبعيات
+
+  // تعديل دالة جلب البيانات
   const fetchTransactions = async () => {
     try {
       setLoading(true);
@@ -75,10 +81,12 @@ const Transactions = () => {
     } catch (err) {
       console.error('Error fetching transactions:', err);
       setError(handleApiError(err));
+      toast.error(`خطأ في تحميل البيانات: ${handleApiError(err)}`);
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleAddTransaction = () => {
     setAddModalOpen(true);
@@ -120,6 +128,32 @@ const Transactions = () => {
     setPage(1);
   };
 
+  const getTransactionTypeLabel = (type) => {
+    switch(type) {
+      case 'deposit':
+        return 'ايداع';
+      case 'withdrawal':
+        return 'سحب';
+      case 'profit':
+        return 'أرباح';
+      default:
+        return 'غير محدد';
+    }
+  };
+
+  const getTransactionTypeColor = (type) => {
+    switch(type) {
+      case 'deposit':
+        return 'success';
+      case 'withdrawal':
+        return 'error';
+      case 'profit':
+        return 'info';
+      default:
+        return 'default';
+    }
+  };
+
   return (
     <>
     <Helmet>
@@ -140,91 +174,121 @@ const Transactions = () => {
           placeholder="ابحث عن عملية..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ width: 200 }}
+          sx={{ 
+            width: 200, 
+            pr: '35px',
+            '& .MuiOutlinedInput-root': {
+              '& fieldset': {
+                borderColor: 'white',   
+              },
+              '& .MuiInputBase-input': {
+                color: 'white',
+                textAlign: 'right',
+                '&::placeholder': {
+                  color: 'white',
+                  opacity: 1,
+                  marginRight: '10px'
+                }
+              }
+            },
+          }}
+          startAdornment={
+            <InputAdornment position="start">
+              <SearchOutlined style={{ color: '#666', marginRight: '10px' }} />
+            </InputAdornment>
+          }
         />
+        
       </Stack>
 
       <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
-        <Table stickyHeader>
-          <TableHead>
-            <TableRow>
-              <StyledTableCell align="center">اسم المساهم</StyledTableCell>
-              <StyledTableCell align="center">نوع المعاملة</StyledTableCell>
-              <StyledTableCell align="center">المبلغ ({currentCurrency})</StyledTableCell>
-              <StyledTableCell align="center">التاريخ</StyledTableCell>
-              <StyledTableCell align="center">السنة المالية</StyledTableCell>
-              <StyledTableCell align="center">تعديل</StyledTableCell>
-              <StyledTableCell align="center">حذف</StyledTableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <StyledTableRow>
-                <StyledTableCell colSpan={7} align="center">
-                  <Spin size="large" />
-                </StyledTableCell>
-              </StyledTableRow>
-            ) : !transactions || transactions.length === 0 ? (
-              <StyledTableRow>
-                <StyledTableCell colSpan={7} align="center">
-                  لا توجد معاملات
-                </StyledTableCell>
-              </StyledTableRow>
-            ) : (
-              transactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((transaction) => (
-                <StyledTableRow key={transaction.id}>
-                  <StyledTableCell align="center">{transaction.investorName}</StyledTableCell>
-                  <StyledTableCell align="center">
-                    <Chip
-                      label={transaction.type}
-                      variant="outlined"
-                      sx={{
-                        fontSize: '12px',
-                        fontWeight: 'bold'
-                      }}
-                    />
-                  </StyledTableCell>
-                  <StyledTableCell align="center">
-                    {formatAmount(transaction.amount / (currentCurrency === 'IQD' ? 1 : 1).toFixed(5), transaction.originalCurrency || 'IQD')}
-                  </StyledTableCell>
-                  <StyledTableCell align="center">
-                    {transaction.date ? new Date(transaction.date).toLocaleDateString('en-US') : ''}
-                  </StyledTableCell>
-                  <StyledTableCell align="center">{transaction.profitYear || 'غير محدد'}</StyledTableCell>
-                  <StyledTableCell align="center">
-                    <IconButton
-                      size="small"
-                      color="warning"
-                      onClick={() => handleEditTransaction(transaction)}
-                    >
-                      <EditOutlined />
-                    </IconButton>
-                  </StyledTableCell>
-                  <StyledTableCell align="center">
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => handleDeleteTransaction(transaction)}
-                    >
-                      <DeleteOutlined />
-                    </IconButton>
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow>
+                <StyledTableCell align="center">اسم المساهم</StyledTableCell>
+                <StyledTableCell align="center">نوع المعاملة</StyledTableCell>
+                <StyledTableCell align="center">المبلغ ({currentCurrency})</StyledTableCell>
+                <StyledTableCell align="center">التاريخ</StyledTableCell>
+                <StyledTableCell align="center">رقم الإيصال</StyledTableCell>
+                <StyledTableCell align="center">تعديل</StyledTableCell>
+                <StyledTableCell align="center">حذف</StyledTableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                <StyledTableRow>
+                  <StyledTableCell colSpan={7} align="center">
+                    <Spin size="large" />
                   </StyledTableCell>
                 </StyledTableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-        <TablePagination
-          component="div"
-          count={transactions.length}
-          page={page}
-          onPageChange={(e, newPage) => setPage(newPage)}
-          rowsPerPage={rowsPerPage}
-          rowsPerPageOptions={[5, 10, 20]}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="عدد الصفوف في الصفحة"
-        />
-      </TableContainer>
+              ) : transactions.length === 0 ? (
+                <StyledTableRow>
+                  <StyledTableCell colSpan={7} align="center">
+                    لا توجد معاملات
+                  </StyledTableCell>
+                </StyledTableRow>
+              ) : (
+                transactions.map((transaction) => (
+                  <StyledTableRow key={transaction._id}>
+                    <StyledTableCell align="center">
+                      {transaction.investorId?.fullName || 'غير محدد'}
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      <Chip
+                        label={getTransactionTypeLabel(transaction.type)}
+                        color={getTransactionTypeColor(transaction.type)}
+                        variant="outlined"
+                        sx={{
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}
+                      />
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {formatAmount(transaction.amount, transaction.currency)}
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {transaction.transactionDate ? 
+                        new Date(transaction.transactionDate).toLocaleDateString('ar-EG') : 
+                        'غير محدد'}
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {transaction.receiptNumber || 'غير محدد'}
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      <IconButton
+                        size="small"
+                        color="warning"
+                        onClick={() => handleEditTransaction(transaction)}
+                      >
+                        <EditOutlined />
+                      </IconButton>
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDeleteTransaction(transaction)}
+                      >
+                        <DeleteOutlined />
+                      </IconButton>
+                    </StyledTableCell>
+                  </StyledTableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          <TablePagination
+            component="div"
+            count={transactions.length}
+            page={page - 1}
+            onPageChange={(e, newPage) => setPage(newPage + 1)}
+            rowsPerPage={rowsPerPage}
+            rowsPerPageOptions={[5, 10, 20]}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage="عدد الصفوف في الصفحة"
+          />
+        </TableContainer>
 
       <AddTransactionModal
         open={addModalOpen}

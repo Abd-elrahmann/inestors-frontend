@@ -4,21 +4,21 @@ import { MdMenu as MenuIcon, MdMenuOpen as MenuOpenIcon, MdPerson as Person, MdE
 import { useNavigate, useLocation } from 'react-router-dom';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
-import { authAPI } from '../services/api';
-
+import Api from '../services/api';
 const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const profile = Api.get('/api/profile');
 
   useEffect(() => {
-    const checkUserStatus = () => {
+    const checkUserStatus = async () => {
       const token = localStorage.getItem('token');
       const userData = localStorage.getItem('user');
-      
-      if (token && userData) {
+
+      if (token && userData && profile) {
         try {
           const parsedUser = JSON.parse(userData);
           setUser(parsedUser);
@@ -26,6 +26,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
           console.error('Error parsing user data:', error);
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          localStorage.removeItem('profile');
           setUser(null);
         }
       } else {
@@ -47,6 +48,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, isInitialized]); 
 
   const navbarVariants = {
@@ -113,23 +115,19 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
     setAnchorEl(null);
   };
 
-  const handleLogout = async () => {
-    try {
-      await authAPI.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setUser(null);
-      handleUserMenuClose();
-      
-      navigate('/login', { replace: true });
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('profile');
+    setUser(null);
+    handleUserMenuClose();
+    navigate('/login', { replace: true });
   };
 
   const handleProfile = () => {
     handleUserMenuClose();
+
+    localStorage.setItem('profile', JSON.stringify(true));
     navigate('/profile');
   };
 
@@ -230,7 +228,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                       color: '#28a745'
                     }}
                   >
-                    {user.email.split('@')[0]}
+                    {user.userName}
                   </Typography>
                 </Box>
                 <IconButton
@@ -238,6 +236,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                   sx={{ p: 0 }}
                 >
                   <Avatar 
+                    src={user.profileImage}
                     sx={{ 
                       bgcolor: '#28a745',
                       width: 40,
@@ -246,7 +245,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                       fontFamily: 'Cairo'
                     }}
                   >
-                    {user.fullName ? user.fullName.charAt(0) : user.email.split('@')[0].charAt(0)}
+                    {user.profileImage ? user.profileImage : user.userName.charAt(0)}
                   </Avatar>
                 </IconButton>
 

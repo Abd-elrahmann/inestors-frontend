@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -33,7 +33,8 @@ import {
   TrendingUp as ProfitIcon,
   CalendarToday as CalendarIcon,
   AccountBalance as AccountBalanceIcon,
-  RemoveCircleOutline as RemoveIcon
+  RemoveCircleOutline as RemoveIcon,
+  AccessTime as LateIcon
 } from '@mui/icons-material';
 import { financialYearsAPI } from '../services/apiHelpers';
 import { showErrorAlert } from '../utils/sweetAlert';
@@ -79,37 +80,50 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
       position: 'top-end'
     });
   };
-  // eslint-disable-next-line no-unused-vars
-  const [summary, setSummary] = useState({
-    totalInvestors: 0,
-    totalDistributed: 0,
-    totalDays: 0,
-    averageProfit: 0
-  });
 
-  useEffect(() => {
-    if (open && financialYear) {
-      fetchDistributions();
-      
-        const interval = setInterval(() => {
-        fetchDistributions();
-      }, 60000);
-      
-      return () => clearInterval(interval);
+  // استخدام useMemo لحساب القيم المشتقة مرة واحدة فقط
+  const { summary, dailyProfitRate, totalCapital, activeDistributions } = useMemo(() => {
+    const activeDistributions = distributions.filter(d => d.status !== 'inactive');
+    const totalInvestors = activeDistributions.length;
+    
+    const totalActualProfit = activeDistributions.reduce((sum, dist) => sum + (dist.calculation?.calculatedProfit || 0), 0);
+    const totalActualDays = activeDistributions.reduce((sum, dist) => sum + (dist.calculation?.totalDays || 0), 0);
+    
+    const totalDistributed = Math.min(totalActualProfit, financialYear?.totalProfit || 0);
+    const averageProfit = totalInvestors > 0 ? totalDistributed / totalInvestors : 0;
+    
+    const totalCapital = activeDistributions.reduce((sum, d) => sum + (d.calculation?.investmentAmount || 0), 0);
+    
+    // حساب معدل الربح اليومي من السنة المالية بدلاً من أول مستثمر
+    let dailyProfitRate = 0;
+    if (financialYear && financialYear.totalProfit && financialYear.totalDaysCalculated) {
+      dailyProfitRate = financialYear.totalProfit / (financialYear.totalDaysCalculated * totalCapital);
+    } else if (financialYear && financialYear.totalProfit && financialYear.totalDays) {
+      dailyProfitRate = financialYear.totalProfit / (financialYear.totalDays * totalCapital);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, financialYear]);
 
-  const fetchDistributions = async () => {
+    return {
+      summary: {
+        totalInvestors,
+        totalDistributed,
+        totalDays: totalActualDays,
+        averageProfit
+      },
+      dailyProfitRate,
+      totalCapital,
+      activeDistributions
+    };
+  }, [distributions, financialYear]);
+
+  // استخدام useCallback للدوال التي يتم تمريرها كمكونات فرعية
+  const fetchDistributions = useCallback(async () => {
     try {
       setLoading(true);
       const response = await financialYearsAPI.getDistributions(financialYear._id);
       
       if (response.success) {
         let distributionsData = response.data.distributions || [];
-  
         setDistributions(distributionsData);
-        calculateSummary(distributionsData.filter(d => d.status !== 'inactive'));
         setLastUpdated(new Date());
       }
     } catch (error) {
@@ -118,24 +132,19 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [financialYear]);
 
-  const calculateSummary = (distributionsData) => {
-    const totalInvestors = distributionsData.length;
-    
-    const totalActualProfit = distributionsData.reduce((sum, dist) => sum + (dist.calculation?.calculatedProfit || 0), 0);
-    const totalActualDays = distributionsData.reduce((sum, dist) => sum + (dist.calculation?.totalDays || 0), 0);
-    
-    const totalDistributed = Math.min(totalActualProfit, financialYear?.totalProfit || 0);
-    const averageProfit = totalInvestors > 0 ? totalDistributed / totalInvestors : 0;
-
-    setSummary({
-      totalInvestors,
-      totalDistributed,
-      totalDays: totalActualDays,
-      averageProfit
-    });
-  };
+  useEffect(() => {
+    if (open && financialYear) {
+      fetchDistributions();
+      
+      const interval = setInterval(() => {
+        fetchDistributions();
+      }, 60000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [open, financialYear, fetchDistributions]);
 
   const formatCurrency = (amount, currency) => {
     return globalCurrencyManager.formatAmount(amount / (globalCurrencyManager.getCurrentDisplayCurrency() === 'IQD' ? 1 : 1).toFixed(5), currency);
@@ -220,6 +229,30 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
     }
   };
 
+  // حساب القيم المجمعة مرة واحدة فقط
+  const tableTotals = useMemo(() => {
+    return activeDistributions.reduce((acc, distribution) => {
+      const investmentAmount = distribution.calculation?.investmentAmount || 0;
+      const sharePercentage = totalCapital > 0 ? (investmentAmount / totalCapital) * 100 : 0;
+      
+      let calculatedProfit;
+      if (forceFullPeriod) {
+        calculatedProfit = (sharePercentage / 100) * financialYear.totalProfit;
+      } else {
+        const actualInvestorDays = distribution.calculation?.totalDays || 0;
+        calculatedProfit = investmentAmount * actualInvestorDays * dailyProfitRate;
+      }
+      
+      calculatedProfit = Number(calculatedProfit.toFixed(3));
+      
+      return {
+        totalInvestment: acc.totalInvestment + investmentAmount,
+        totalProfit: acc.totalProfit + calculatedProfit,
+        totalDays: acc.totalDays + (distribution.calculation?.totalDays || 0)
+      };
+    }, { totalInvestment: 0, totalProfit: 0, totalDays: 0 });
+  }, [activeDistributions, totalCapital, forceFullPeriod, financialYear, dailyProfitRate]);
+
   const renderDistributionsTable = () => {
     if (loading) {
       return (
@@ -294,9 +327,8 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {distributions.map((distribution) => {
+              {activeDistributions.map((distribution) => {
                 const investmentAmount = distribution.calculation?.investmentAmount || 0;
-                const totalCapital = distributions.reduce((sum, d) => sum + (d.calculation?.investmentAmount || 0), 0);
                 const sharePercentage = totalCapital > 0 ? (investmentAmount / totalCapital) * 100 : 0;
                 
                 let calculatedProfit;
@@ -304,16 +336,19 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
                   calculatedProfit = (sharePercentage / 100) * financialYear.totalProfit;
                 } else {
                   const actualInvestorDays = distribution.calculation?.totalDays || 0;
-                  const dailyRate = distribution.calculation?.dailyProfitRate || 0;
-                  calculatedProfit = investmentAmount * actualInvestorDays * dailyRate;
+                  calculatedProfit = investmentAmount * actualInvestorDays * dailyProfitRate;
                 }
                 
-                  calculatedProfit = Number(calculatedProfit.toFixed(3));
+                calculatedProfit = Number(calculatedProfit.toFixed(3));
 
                 let remainingProfit = calculatedProfit;
                 if (distribution.rolloverSettings?.isRolledOver) {
                   remainingProfit = calculatedProfit - (distribution.rolloverSettings?.rolloverAmount || 0);
                 }
+
+                // التحقق إذا كان المستثمر بدأ متأخراً
+                const isLateStarter = distribution.investorId?.startDate && 
+                  new Date(distribution.investorId.startDate) > new Date(financialYear.startDate);
 
                 return (
                   <TableRow key={distribution._id}>
@@ -322,6 +357,11 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
                         <Typography variant="body2" fontWeight="bold">
                           {distribution.investorId?.fullName || 'غير محدد'}
                         </Typography>
+                        {isLateStarter && (
+                          <Tooltip title="المستثمر بدأ متأخراً عن بداية السنة المالية">
+                            <LateIcon color="warning" fontSize="small" />
+                          </Tooltip>
+                        )}
                       </Box>
                     </TableCell>
                     <TableCell>
@@ -380,6 +420,30 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
                   </TableRow>
                 );
               })}
+              {/* صف المجاميع */}
+              <TableRow sx={{ backgroundColor: 'grey.50' }}>
+                <TableCell colSpan={2} align="center">
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    الإجمالي
+                  </Typography>
+                </TableCell>
+                <TableCell align="right">
+                  <Typography variant="subtitle1" fontWeight="bold" color="primary.main">
+                    {formatCurrency(tableTotals.totalInvestment, financialYear.currency, true)}
+                  </Typography>
+                </TableCell>
+              
+                <TableCell align="right"></TableCell>
+                <TableCell align="right"></TableCell>
+                <TableCell align="right"></TableCell>
+                <TableCell align="right">
+                  <Typography variant="subtitle1" fontWeight="bold" color="success.main">
+                    {formatCurrency(tableTotals.totalProfit, financialYear.currency, true)}
+                  </Typography>
+                </TableCell>
+                <TableCell align="center"></TableCell>
+                <TableCell align="center"></TableCell>
+              </TableRow>
             </TableBody>
           </Table>
         </TableContainer>
@@ -462,7 +526,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
               <br />
               • إجمالي الأيام: <strong>{financialYear.totalDaysCalculated || financialYear.totalDays} يوم</strong>
               <br />
-              • معدل الربح اليومي: <strong>{distributions.length > 0 ? distributions[0].calculation?.dailyProfitRate?.toFixed(6) || '0.000000' : 'غير محسوب'} {financialYear.currency}</strong> لكل وحدة استثمار
+              • معدل الربح اليومي: <strong>{dailyProfitRate.toFixed(6)} {financialYear.currency}</strong> لكل وحدة استثمار
               <br />
               • <strong>هام:</strong> يتم احتساب الأرباح لكل مساهم بدءًا من تاريخ مساهمته الفعلي
             </Typography>
@@ -478,7 +542,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
                         إجمالي المستثمرين
                       </Typography>
                       <Typography variant="h4" component="div">
-                        {distributions.length}
+                        {summary.totalInvestors}
                       </Typography>
                     </Box>
                     <PersonIcon color="primary" sx={{ fontSize: 40 }} />
@@ -497,7 +561,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
                       </Typography>
                       <Typography variant="h5" component="div">
                         {formatCurrency(
-                          distributions.reduce((sum, dist) => {
+                          activeDistributions.reduce((sum, dist) => {
                             const profit = dist.calculation?.calculatedProfit || 0;
                             const rolloverAmount = dist.rolloverSettings?.isRolledOver ? (dist.rolloverSettings?.rolloverAmount || 0) : 0;
                             return sum + (profit - rolloverAmount);
@@ -522,12 +586,12 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
                       </Typography>
                       <Typography variant="h5" component="div">
                         {formatCurrency(
-                          distributions.length > 0
-                            ? distributions.reduce((sum, dist) => {
+                          summary.totalInvestors > 0
+                            ? activeDistributions.reduce((sum, dist) => {
                                 const profit = dist.calculation?.calculatedProfit || 0;
                                 const rolloverAmount = dist.rolloverSettings?.isRolledOver ? (dist.rolloverSettings?.rolloverAmount || 0) : 0;
                                 return sum + (profit - rolloverAmount);
-                              }, 0) / distributions.length
+                              }, 0) / summary.totalInvestors
                             : 0,
                           financialYear.currency
                         )}
@@ -548,7 +612,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
                         معدل الربح اليومي
                       </Typography>
                       <Typography variant="h6" component="div">
-                        {distributions.length > 0 ? (distributions[0].calculation?.dailyProfitRate?.toFixed(6) || '0.000000') : 'غير محسوب'} {distributions.length > 0 ? financialYear.currency : ''}
+                        {dailyProfitRate.toFixed(6)} {financialYear.currency}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         لكل وحدة استثمار يومياً
@@ -634,4 +698,4 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
   );
 };
 
-export default ProfitDistributionsModal; 
+export default ProfitDistributionsModal;

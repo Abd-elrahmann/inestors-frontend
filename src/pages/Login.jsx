@@ -6,19 +6,18 @@ import {
   TextField, 
   Button, 
   Typography, 
-  Link,
-  Alert,
   InputAdornment,
   IconButton,
-  CircularProgress
 } from '@mui/material';
 import { MdVisibility as Visibility, MdVisibilityOff as VisibilityOff, MdAccountBalance as AccountBalance, MdLogin as LoginIcon } from 'react-icons/md';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { authAPI } from '../services/api';
+import Api, { handleApiError } from '../services/api';
+import toast from 'react-hot-toast';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
 import { Spin } from 'antd';
 import { Helmet } from 'react-helmet-async';
+import { useMutation } from 'react-query';
 
 const validationSchema = Yup.object().shape({
   email: Yup.string().trim()
@@ -32,12 +31,10 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     if (location.state?.message) {
-      setSuccess(location.state.message);
+      toast.success(location.state.message);
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -45,6 +42,32 @@ const Login = () => {
   const handleTogglePassword = () => {
     setShowPassword(!showPassword);
   };
+
+  const loginMutation = useMutation(
+    async (credentials) => {
+      const response = await Api.post('/api/auth/login', credentials);
+      return response.data;
+    },
+    {
+      onSuccess: (data) => {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('profile', JSON.stringify(false));
+        toast.success('تم تسجيل الدخول بنجاح!');
+        setTimeout(() => {
+          navigate('/dashboard', { replace: true });
+        }, 1000);
+      },
+      onError: (error) => {
+        handleApiError(error);
+        if (error?.response?.data?.message?.includes('Invalid credentials')) {
+          toast.error('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+        } else {
+          toast.error('حدث خطأ في تسجيل الدخول. يرجى المحاولة مرة أخرى');
+        }
+      }
+    }
+  );
 
   return (
     <Box 
@@ -99,78 +122,24 @@ const Login = () => {
             </Typography>
           </Box>
 
-          {success && (
-            <Alert 
-              severity="success" 
-              sx={{ 
-                mb: 3,
-                '& .MuiAlert-message': {
-                  fontFamily: 'Cairo',
-                  textAlign: 'right',
-                  width: '100%'
-                }
-              }}
-            >
-              {success}
-            </Alert>
-          )}
-
-          {error && (
-            <Alert 
-              severity="error" 
-              sx={{ 
-                mb: 3,
-                '& .MuiAlert-message': {
-                  fontFamily: 'Cairo',
-                  textAlign: 'right',
-                  width: '100%'
-                }
-              }}
-            >
-              {error}
-            </Alert>
-          )}
-
           <Formik
             initialValues={{
               email: '',
               password: ''
             }}
             validationSchema={validationSchema}
-            onSubmit={async (values, { setSubmitting }) => {
-              setError('');
+            onSubmit={async (values) => {
               try {
-                const response = await authAPI.login({
+                await loginMutation.mutateAsync({
                   email: values.email.trim(),
                   password: values.password
                 });
-
-                if (response.success) {
-                  localStorage.setItem('token', response.token);
-                  localStorage.setItem('user', JSON.stringify(response.user));
-                  
-                  setSuccess('تم تسجيل الدخول بنجاح!');
-                  
-                  setTimeout(() => {
-                    navigate('/dashboard', { replace: true });
-                  }, 1000);
-                } else {
-                  setError(response.message || 'حدث خطأ في تسجيل الدخول');
-                }
-              } catch (err) {
-                console.error('Login error:', err);
-                
-                if (err.message.includes('Invalid credentials')) {
-                  setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
-                } else {
-                  setError(err.message || 'حدث خطأ في تسجيل الدخول. يرجى المحاولة مرة أخرى');
-                }
-              } finally {
-                setSubmitting(false);
+              } catch (error) {
+                console.error(error);
               }
             }}
           >
-            {({ values, errors, touched, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
+            {({ values, errors, touched, handleChange, handleBlur, handleSubmit }) => (
               <Form onSubmit={handleSubmit}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   <TextField
@@ -183,8 +152,8 @@ const Login = () => {
                     error={touched.email && Boolean(errors.email)}
                     helperText={touched.email && errors.email}
                     variant="outlined"
-                    disabled={isSubmitting}
                     autoComplete="username"
+                    disabled={loginMutation.isLoading}
                     sx={{
                       '& .MuiInputLabel-root': {
                         fontFamily: 'Cairo',
@@ -210,8 +179,8 @@ const Login = () => {
                     error={touched.password && Boolean(errors.password)}
                     helperText={touched.password && errors.password}
                     variant="outlined"
-                    disabled={isSubmitting}
                     autoComplete="current-password"
+                    disabled={loginMutation.isLoading}
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
@@ -219,7 +188,6 @@ const Login = () => {
                             aria-label="toggle password visibility"
                             onClick={handleTogglePassword}
                             edge="end"
-                            disabled={isSubmitting}
                           >
                             {showPassword ? <VisibilityOff size={40} /> : <Visibility size={40} />}
                           </IconButton>
@@ -244,7 +212,7 @@ const Login = () => {
                     type="submit"
                     fullWidth
                     variant="contained"
-                    disabled={isSubmitting}
+                    disabled={loginMutation.isLoading}
                     sx={{
                       py: 1.5,
                       backgroundColor: '#28a745',
@@ -256,23 +224,14 @@ const Login = () => {
                       },
                     }}
                   >
-                    {isSubmitting ? (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Spin size="small" />
-                        <span>جاري تسجيل الدخول...</span>
-                      </Box>
-                    ) : 'تسجيل الدخول'}
+                    <Spin size="small" />
+                   {loginMutation.isLoading ? 'تسجيل الدخول جاري' : 'تسجيل الدخول'}
                   </Button>
                 </Box>
               </Form>
             )}
           </Formik>
-              
-          <Box sx={{ textAlign: 'center', mt: 3 }}>
-            <Typography variant="body2" sx={{ fontFamily: 'Cairo', color: 'text.secondary' }}>
-              تسجيل الدخول للإدمن فقط
-            </Typography>
-          </Box>
+            
         </CardContent>
       </Card>
     </Box>
