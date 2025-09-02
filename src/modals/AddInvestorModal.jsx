@@ -9,71 +9,75 @@ import {
   Box,
   IconButton,
   InputAdornment,
-  CircularProgress,
-  Autocomplete
+  CircularProgress
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
 import Api from '../services/api';
 import PhoneIcon from '@mui/icons-material/Phone';
-import MoneyIcon from '@mui/icons-material/AccountBalance';
-import toast from 'react-hot-toast';
-import { useQueryClient } from 'react-query';
-const AddInvestorModal = ({ open, onClose, onSuccess, editMode = false, investorData = null }) => {
+import { toast } from 'react-toastify';
+
+const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'normal' }) => {
   const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState([]);
-  const queryClient = useQueryClient();
+  const [settings, setSettings] = useState({
+    defaultCurrency: 'USD',
+    USDtoIQD: 0
+  });
   const [formData, setFormData] = useState({
-    userName: '',
+    id: '',
+    fullName: '',
     phone: '',
     amount: ''
   });
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await Api.get('/api/users/1', {
-          params: {
-            limit: 1000,
-          }
-        });
-        setUsers(response.data.users);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
-    };
-    fetchUsers();
-  }, []);
-
-  useEffect(() => {
-    if (editMode && investorData) {
+    if (mode === 'fromUser' && userData) {
       setFormData({
-        userName: investorData.userName || '',
-        phone: investorData.phone || '',
-        amount: investorData.amount || ''
+        id: userData.id || '',
+        fullName: userData.fullName || userData.userName || '',
+        phone: userData.phone || '',
+        amount: ''
+      });
+    } else {
+      setFormData({
+        id: '',
+        fullName: '',
+        phone: '',
+        amount: ''
       });
     }
-  }, [editMode, investorData]);
+    fetchSettings();
+  }, [mode, userData]);
 
   const [errors, setErrors] = useState({});
 
+  const fetchSettings = async () => {
+      const response = await Api.get('/api/settings');
+      if (response.data) {
+      setSettings({
+        defaultCurrency: response.data.defaultCurrency,
+        USDtoIQD: response.data.USDtoIQD
+      });
+    }
+  };  
+
   const validateForm = () => {
     const newErrors = {};
-
-    if (!editMode) {
-      if (!formData.userName.trim()) {
-        newErrors.userName = 'اسم المستثمر مطلوب';
-      }
-
-      if (!formData.phone.trim()) {
-        newErrors.phone = 'رقم الهاتف مطلوب';
-      }
-    }
 
     if (!formData.amount) {
       newErrors.amount = 'المبلغ مطلوب';
     } else if (isNaN(formData.amount) || parseFloat(formData.amount) <= 0) {
       newErrors.amount = 'يجب أن يكون المبلغ رقماً موجباً';
+    }
+
+    if (mode !== 'fromUser') {
+      if (!formData.fullName.trim()) {
+        newErrors.fullName = 'اسم المستثمر مطلوب';
+      }
+      
+      if (!formData.phone.trim()) {
+        newErrors.phone = 'رقم الهاتف مطلوب';
+      }
     }
 
     setErrors(newErrors);
@@ -108,24 +112,11 @@ const AddInvestorModal = ({ open, onClose, onSuccess, editMode = false, investor
         amount: parseFloat(formData.amount)
       };
 
-      if (!editMode) {
-        payload.userName = formData.userName.trim();
-        payload.phone = formData.phone.trim();
-      }
-
-      let result;
-      if (editMode) {
-        result = await Api.put(`/api/investors/${investorData.id}`, payload);
-        toast.success('تم تحديث المستثمر بنجاح');
-        queryClient.invalidateQueries('investors');
-      } else {
-        result = await Api.post('/api/investors', payload);
-        toast.success('تم إضافة المستثمر بنجاح');
-        queryClient.invalidateQueries('investors');
-      }
-
+      const result = await Api.post(`/api/investors/${userData.id}`, payload);
+      toast.success('تم إضافة المستثمر بنجاح');
+      
       setFormData({
-        userName: '',
+        fullName: '',
         phone: '',
         amount: ''
       });
@@ -151,7 +142,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, editMode = false, investor
   const handleClose = () => {
     if (!loading) {
       setFormData({
-        userName: '',
+        fullName: '',
         phone: '',
         amount: ''
       });
@@ -159,7 +150,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, editMode = false, investor
       onClose();
     }
   };
-
+  
   return (
     <Dialog 
       open={open} 
@@ -169,7 +160,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, editMode = false, investor
       PaperProps={{
         sx: {
           borderRadius: 3,
-          minHeight: editMode ? '30vh' : '40vh',
+          minHeight: '40vh',
           width: '50%',
           scrollbarWidth: 'none',
         }
@@ -187,7 +178,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, editMode = false, investor
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <PersonIcon />
-          <span>{editMode ? 'تعديل المستثمر' : 'إضافة مستثمر جديد'}</span>
+          <span>إضافة مستثمر جديد</span>
         </Box>
         <IconButton onClick={handleClose} disabled={loading} sx={{ color: 'black' }}>
           <CloseIcon />
@@ -198,49 +189,39 @@ const AddInvestorModal = ({ open, onClose, onSuccess, editMode = false, investor
         <DialogContent sx={{ mt: 1, px: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
             
-            {editMode ? (
-              <TextField
-                sx={{width:'300px'}}
-                label="اسم المستثمر"
-                value={formData.userName}
-                disabled={true}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <PersonIcon />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            ) : (
-              <Autocomplete
-                sx={{width:'300px'}}
-                options={users}
-                filterSelectedOptions
-                getOptionLabel={(option) => option.fullName}
-                value={users.find(user => user.fullName === formData.userName) || null}
-                onChange={(event, newValue) => {
-                  handleInputChange('userName', newValue ? newValue.fullName : '');
-                }}
-                disabled={loading}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="اسم المستثمر"
-                    error={!!errors.userName}
-                    helperText={errors.userName}
-                    InputProps={{
-                      ...params.InputProps,
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PersonIcon />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                )}
-              />
-            )}
+            <TextField
+              sx={{width:'300px'}}
+              label="مسلسل المستثمر"
+              value={formData.id}
+              onChange={(e) => handleInputChange('userId', e.target.value)}
+              error={!!errors.id}
+              helperText={errors.id}
+              disabled={loading || mode === 'fromUser'}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PersonIcon sx={{ color: '#28a745' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            
+            <TextField
+              sx={{width:'300px'}}
+              label="اسم المستثمر"
+              value={formData.fullName}
+              onChange={(e) => handleInputChange('fullName', e.target.value)}
+              error={!!errors.fullName}
+              helperText={errors.fullName}
+              disabled={loading || mode === 'fromUser'}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PersonIcon sx={{ color: '#28a745' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
 
             <TextField
               sx={{width:'300px'}}
@@ -249,11 +230,11 @@ const AddInvestorModal = ({ open, onClose, onSuccess, editMode = false, investor
               onChange={(e) => handleInputChange('phone', e.target.value)}
               error={!!errors.phone}
               helperText={errors.phone}
-              disabled={loading || editMode}
+              disabled={loading || mode === 'fromUser'}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <PhoneIcon />
+                    <PhoneIcon sx={{ color: '#28a745' }} />
                   </InputAdornment>
                 ),
               }}
@@ -271,7 +252,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, editMode = false, investor
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <MoneyIcon />
+                    {settings.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                   </InputAdornment>
                 ),
               }}
@@ -300,7 +281,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, editMode = false, investor
             {loading ? (
               <CircularProgress size={24} color="inherit" />
             ) : (
-              editMode ? 'تحديث' : 'إضافة'
+              'إضافة'
             )}
           </Button>
         </DialogActions>

@@ -12,7 +12,7 @@ import {
 import { MdVisibility as Visibility, MdVisibilityOff as VisibilityOff, MdAccountBalance as AccountBalance, MdLogin as LoginIcon } from 'react-icons/md';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Api, { handleApiError } from '../services/api';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
 import { Spin } from 'antd';

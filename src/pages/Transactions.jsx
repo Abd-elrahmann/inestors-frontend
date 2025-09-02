@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Button, 
+import React, { useState } from "react";
+import {
+  Box,
+  Button,
   Stack,
   Table,
   TableBody,
@@ -13,114 +13,100 @@ import {
   IconButton,
   Chip,
   InputBase,
-  InputAdornment
-} from '@mui/material';
-import { toast } from 'react-toastify';
-import { Spin } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import AddTransactionModal from '../modals/AddTransactionModal';
-import EditTransactionModal from '../modals/EditTransactionModal';
-import { StyledTableCell, StyledTableRow } from '../styles/TableLayout';
-import { transactionsAPI, transformers, handleApiError } from '../services/apiHelpers';
-import { showDeleteConfirmation, showSuccessAlert } from '../utils/sweetAlert';
-import { useCurrencyManager } from '../utils/globalCurrencyManager';
-import { Helmet } from 'react-helmet-async';
+  InputAdornment,
+} from "@mui/material";
+import { toast } from "react-toastify";
+import { Spin } from "antd";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  FilterOutlined,
+} from "@ant-design/icons";
+import AddTransactionModal from "../modals/AddTransactionModal";
+import { StyledTableCell, StyledTableRow } from "../styles/TableLayout";
+import Api from "../services/api";
+import { useCurrencyManager } from "../utils/globalCurrencyManager";
+import { Helmet } from "react-helmet-async";
+import { useMutation, useQuery, useQueryClient } from "react-query";
+import DeleteModal from "../modals/DeleteModal";
+import TransactionsSearchModal from "../modals/TransactionsSearchModal";
+import dayjs from "dayjs";
 
 const Transactions = () => {
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line no-unused-vars
-  const [error, setError] = useState(null);
+  const queryClient = useQueryClient();
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchQuery, setSearchQuery] = useState('');
-  // eslint-disable-next-line no-unused-vars
-  const [filteredTransactions, setFilteredTransactions] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({});
 
   const { formatAmount, currentCurrency } = useCurrencyManager();
 
-  useEffect(() => {
-    fetchTransactions();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const filtered = transactions.filter(transaction => 
-      transaction.investorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.type.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredTransactions(filtered);
-  }, [transactions, searchQuery]);
-
-  useEffect(() => {
-    fetchTransactions();
-  }, [page, rowsPerPage, searchQuery]); // إضافة التبعيات
-
-  // تعديل دالة جلب البيانات
-  const fetchTransactions = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await transactionsAPI.getAll({
-        page: page,
+  // Fetch transactions query
+  const {
+    data: transactionsData,
+    isLoading,
+    isFetching,
+  } = useQuery(
+    ["transactions", page, rowsPerPage, searchQuery, advancedFilters],
+    async () => {
+      const params = {
         limit: rowsPerPage,
-        search: searchQuery
-      });
-      
-      if (response.data && response.data.transactions) {
-        const transformedTransactions = response.data.transactions.map(transformers.transaction);
-        setTransactions(transformedTransactions);
-        setFilteredTransactions(transformedTransactions);
-      } else {
-        throw new Error('تنسيق البيانات غير صحيح');
-      }
-    } catch (err) {
-      console.error('Error fetching transactions:', err);
-      setError(handleApiError(err));
-      toast.error(`خطأ في تحميل البيانات: ${handleApiError(err)}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+        search: searchQuery,
+        ...advancedFilters,
+      };
 
+      const response = await Api.get(`/api/transactions/${page}`, { params });
+      return response.data;
+    },
+    {
+      keepPreviousData: true,
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 5,
+    }
+  );
+
+  // Delete transaction mutation
+  const deleteTransactionMutation = useMutation(
+    (transactionId) => Api.delete(`/api/transactions/${transactionId}`),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries("transactions");
+        toast.success("تم حذف العملية بنجاح");
+      },
+      onError: (error) => {
+        console.error("Error deleting transaction:", error);
+        toast.error("فشل في حذف العملية");
+      },
+    }
+  );
 
   const handleAddTransaction = () => {
     setAddModalOpen(true);
   };
 
-  const handleEditTransaction = (transaction) => {
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setSelectedTransaction(null);
+  };
+
+  const handleOpenDeleteModal = (transaction) => {
     setSelectedTransaction(transaction);
-    setEditModalOpen(true);
+    setShowDeleteModal(true);
   };
 
   const handleDeleteTransaction = async (transaction) => {
-    const confirmed = await showDeleteConfirmation(
-      `${transaction.type} - ${transaction.amount.toFixed(2)} ريال`,
-      'العملية المالية'
-    );
-    
-    if (confirmed) {
-      try {
-        await transactionsAPI.delete(transaction.id);
-        showSuccessAlert('تم حذف العملية المالية بنجاح');
-        fetchTransactions();
-      } catch (error) {
-        console.error('Error deleting transaction:', error);
-        toast.error(`خطأ في حذف العملية المالية: ${error.message}`);
-      }
-    }
+    deleteTransactionMutation.mutate(transaction.id);
   };
 
   const handleAddSuccess = () => {
-    fetchTransactions();
-  };
-
-  const handleEditSuccess = () => {
-    fetchTransactions();
+    queryClient.invalidateQueries("transactions");
+    setAddModalOpen(false);
   };
 
   const handleChangeRowsPerPage = (event) => {
@@ -128,110 +114,135 @@ const Transactions = () => {
     setPage(1);
   };
 
+  const handleSearch = (event) => {
+    setSearchQuery(event.target.value);
+    setPage(1);
+  };
+
+  const handleAdvancedSearch = (filters) => {
+    setAdvancedFilters(filters);
+    setPage(1);
+  };
+
   const getTransactionTypeLabel = (type) => {
-    switch(type) {
-      case 'deposit':
-        return 'ايداع';
-      case 'withdrawal':
-        return 'سحب';
-      case 'profit':
-        return 'أرباح';
+    switch (type) {
+      case "deposit":
+        return "ايداع";
+      case "withdrawal":
+        return "سحب";
+      case "profit":
+        return "أرباح";
       default:
-        return 'غير محدد';
+        return "غير محدد";
     }
   };
 
   const getTransactionTypeColor = (type) => {
-    switch(type) {
-      case 'deposit':
-        return 'success';
-      case 'withdrawal':
-        return 'error';
-      case 'profit':
-        return 'info';
+    switch (type) {
+      case "deposit":
+        return "success";
+      case "withdrawal":
+        return "error";
+      case "profit":
+        return "info";
       default:
-        return 'default';
+        return "default";
     }
   };
 
+  const transactions = transactionsData?.transactions || [];
+  const totalTransactions = transactionsData?.totalTransactions || 0;
+
   return (
     <>
-    <Helmet>
-      <title>المعاملات</title>
-      <meta name="description" content="المعاملات في نظام إدارة المساهمين" />
-    </Helmet>
-    <Box className="content-area">
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3} mr={1} mt={2} spacing={2}>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleAddTransaction}
-          startIcon={<PlusOutlined style={{marginLeft: '10px'}} />}
+      <Helmet>
+        <title>المعاملات</title>
+        <meta name="description" content="المعاملات في نظام إدارة المساهمين" />
+      </Helmet>
+      <Box className="content-area">
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={3}
+          mr={1}
+          mt={2}
+          spacing={2}
         >
-          إضافة عملية جديدة
-        </Button>
-        <InputBase
-          placeholder="ابحث عن عملية..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ 
-            width: 200, 
-            pr: '35px',
-            '& .MuiOutlinedInput-root': {
-              '& fieldset': {
-                borderColor: 'white',   
-              },
-              '& .MuiInputBase-input': {
-                color: 'white',
-                textAlign: 'right',
-                '&::placeholder': {
-                  color: 'white',
-                  opacity: 1,
-                  marginRight: '10px'
-                }
-              }
-            },
-          }}
-          startAdornment={
-            <InputAdornment position="start">
-              <SearchOutlined style={{ color: '#666', marginRight: '10px' }} />
-            </InputAdornment>
-          }
-        />
-        
-      </Stack>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleAddTransaction}
+            startIcon={<PlusOutlined style={{ marginLeft: "10px" }} />}
+          >
+            إضافة عملية جديدة
+          </Button>
 
-      <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
+          <Stack direction="row" spacing={1}>
+            <InputBase
+              placeholder="ابحث عن عملية..."
+              value={searchQuery}
+              onChange={handleSearch}
+              startAdornment={
+                <InputAdornment position="start">
+                  <SearchOutlined
+                    style={{ color: "#666", marginRight: "10px" }}
+                  />
+                </InputAdornment>
+              }
+              sx={{
+                width: "250px",
+                padding: "8px 15px",
+                marginLeft: "5px",
+                borderRadius: "4px",
+                fontSize: "16px",
+              }}
+            />
+
+            <IconButton
+              onClick={() => setSearchModalOpen(true)}
+              sx={{ border: "1px solid", borderColor: "divider" }}
+            >
+              <FilterOutlined />
+            </IconButton>
+          </Stack>
+        </Stack>
+
+        <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
           <Table stickyHeader>
             <TableHead>
               <TableRow>
+                <StyledTableCell align="center">مسلسل المساهم</StyledTableCell>
                 <StyledTableCell align="center">اسم المساهم</StyledTableCell>
                 <StyledTableCell align="center">نوع المعاملة</StyledTableCell>
-                <StyledTableCell align="center">المبلغ ({currentCurrency})</StyledTableCell>
+                <StyledTableCell align="center">
+                  المبلغ ({currentCurrency})
+                </StyledTableCell>
                 <StyledTableCell align="center">التاريخ</StyledTableCell>
-                <StyledTableCell align="center">رقم الإيصال</StyledTableCell>
-                <StyledTableCell align="center">تعديل</StyledTableCell>
                 <StyledTableCell align="center">حذف</StyledTableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {loading ? (
+              {isLoading || isFetching ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={7} align="center">
+                  <StyledTableCell colSpan={6} align="center">
                     <Spin size="large" />
                   </StyledTableCell>
                 </StyledTableRow>
               ) : transactions.length === 0 ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={7} align="center">
+                  <StyledTableCell colSpan={6} align="center">
                     لا توجد معاملات
                   </StyledTableCell>
                 </StyledTableRow>
               ) : (
                 transactions.map((transaction) => (
-                  <StyledTableRow key={transaction._id}>
+                  <StyledTableRow key={transaction.id}>
                     <StyledTableCell align="center">
-                      {transaction.investorId?.fullName || 'غير محدد'}
+                      {transaction.id || "غير محدد"}
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {transaction.user?.fullName || "غير محدد"}
                     </StyledTableCell>
                     <StyledTableCell align="center">
                       <Chip
@@ -239,36 +250,27 @@ const Transactions = () => {
                         color={getTransactionTypeColor(transaction.type)}
                         variant="outlined"
                         sx={{
-                          fontSize: '12px',
-                          fontWeight: 'bold'
+                          fontSize: "12px",
+                          fontWeight: "bold",
                         }}
                       />
                     </StyledTableCell>
                     <StyledTableCell align="center">
-                      {formatAmount(transaction.amount, transaction.currency)}
+                      {formatAmount(
+                        transaction.amount,
+                        transaction.currency || "IQD"
+                      )}
                     </StyledTableCell>
                     <StyledTableCell align="center">
-                      {transaction.transactionDate ? 
-                        new Date(transaction.transactionDate).toLocaleDateString('ar-EG') : 
-                        'غير محدد'}
-                    </StyledTableCell>
-                    <StyledTableCell align="center">
-                      {transaction.receiptNumber || 'غير محدد'}
-                    </StyledTableCell>
-                    <StyledTableCell align="center">
-                      <IconButton
-                        size="small"
-                        color="warning"
-                        onClick={() => handleEditTransaction(transaction)}
-                      >
-                        <EditOutlined />
-                      </IconButton>
+                      {dayjs(transaction.date)
+                        ? dayjs(transaction.date).format("DD/MM/YYYY")
+                        : "غير محدد"}
                     </StyledTableCell>
                     <StyledTableCell align="center">
                       <IconButton
                         size="small"
                         color="error"
-                        onClick={() => handleDeleteTransaction(transaction)}
+                        onClick={() => handleOpenDeleteModal(transaction)}
                       >
                         <DeleteOutlined />
                       </IconButton>
@@ -280,7 +282,7 @@ const Transactions = () => {
           </Table>
           <TablePagination
             component="div"
-            count={transactions.length}
+            count={totalTransactions}
             page={page - 1}
             onPageChange={(e, newPage) => setPage(newPage + 1)}
             rowsPerPage={rowsPerPage}
@@ -290,19 +292,28 @@ const Transactions = () => {
           />
         </TableContainer>
 
-      <AddTransactionModal
-        open={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSuccess={handleAddSuccess}
-      />
+        <AddTransactionModal
+          open={addModalOpen}
+          onClose={() => setAddModalOpen(false)}
+          onSuccess={handleAddSuccess}
+        />
 
-      <EditTransactionModal
-        open={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
-        onSuccess={handleEditSuccess}
-        transaction={selectedTransaction}
-      />
-    </Box>
+        <DeleteModal
+          open={showDeleteModal}
+          onClose={handleCloseDeleteModal}
+          onConfirm={() => handleDeleteTransaction(selectedTransaction)}
+          title="حذف العملية"
+          message={`هل أنت متأكد من حذف العملية؟`}
+          isLoading={deleteTransactionMutation.isLoading}
+          ButtonText="حذف"
+        />
+
+        <TransactionsSearchModal
+          open={searchModalOpen}
+          onClose={() => setSearchModalOpen(false)}
+          onSearch={handleAdvancedSearch}
+        />
+      </Box>
     </>
   );
 };

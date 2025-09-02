@@ -20,7 +20,7 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import LockIcon from '@mui/icons-material/Lock';
 import { MdVisibility as Visibility, MdVisibilityOff as VisibilityOff } from 'react-icons/md';
 import Api from '../services/api';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { useQueryClient } from 'react-query';
 const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
   const [loading, setLoading] = useState(false);
@@ -29,8 +29,8 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     fullName: '',
-    userName: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: ''
   });
@@ -39,8 +39,8 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
     if (mode === 'edit' && user) {
       setFormData({
         fullName: user.fullName || '',
-        userName: user.userName || '',
         email: user.email || '',
+        phone: user.phone || '',
         password: '',
         confirmPassword: ''
       });
@@ -59,16 +59,14 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
     }
 
     if (mode === 'add') {
-      if (!formData.userName.trim()) {
-        newErrors.userName = 'اسم المستخدم مطلوب';
-      } else if (formData.userName.trim().length < 3) {
-        newErrors.userName = 'اسم المستخدم يجب أن يكون على الأقل 3 أحرف';
-      }
-
       if (!formData.email.trim()) {
         newErrors.email = 'البريد الإلكتروني مطلوب';
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
         newErrors.email = 'البريد الإلكتروني غير صحيح';
+      }
+
+      if (!formData.phone.trim()) {
+        newErrors.phone = 'رقم الهاتف مطلوب';
       }
 
       if (!formData.password) {
@@ -103,8 +101,8 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
       if (mode === 'add') {
         const userData = {
           fullName: formData.fullName.trim(),
-          userName: formData.userName.trim(),
           email: formData.email.trim().toLowerCase(),
+          phone: formData.phone.trim(),
           password: formData.password
         };
         result = await Api.post('/api/users', userData);
@@ -136,8 +134,8 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
     if (!loading) {
       setFormData({
         fullName: '',
-        userName: '',
         email: '',
+        phone: '',
         password: '',
         confirmPassword: ''
       });
@@ -217,7 +215,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
           </Typography>
           
           <Grid container spacing={6} sx={{ mb: 4, justifyContent: 'center',flexDirection: 'column', alignItems: 'center' }}>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={12}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
                 <TextField
                   sx={{width:'300px'}}
@@ -235,24 +233,8 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
                     ),
                   }}
                 />
-                 <Grid item xs={12} md={6}>
-                <TextField
-                  sx={{width:'300px'}}
-                  label="اسم المستخدم"
-                  value={formData.userName}
-                  onChange={(e) => handleInputChange('userName', e.target.value)}
-                  error={!!errors.userName}
-                  helperText={errors.userName}
-                  disabled={mode === 'edit' || loading}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PersonIcon sx={{ color: primaryColor }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-            </Grid>
+              
+            
 
                 <TextField
                   sx={{width:'300px'}}
@@ -270,6 +252,16 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
                       </InputAdornment>
                     ),
                   }}
+                />
+
+                <TextField
+                  sx={{width:'300px'}}
+                  label="رقم الهاتف"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  error={!!errors.phone}
+                  helperText={errors.phone}
+                  disabled={loading}
                 />
               </Box>
             </Grid>
@@ -293,7 +285,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
               </Typography>
               
               <Grid container spacing={6} sx={{ mb: 4, justifyContent: 'center', alignItems: 'center' }}>
-                <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <Grid item xs={12} md={12} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                   <TextField
                     sx={{width:'300px'}}
                     label="كلمة المرور"
@@ -310,14 +302,15 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
                         </InputAdornment>
                       ),
                       endAdornment: (
-                        <InputAdornment position="end">
+                        <InputAdornment position="end" sx={{ marginLeft: 0 }}>
                           <IconButton
                             aria-label="toggle password visibility"
                             onClick={handleTogglePassword}
                             edge="end"
                             disabled={loading}
+                            sx={{ marginRight: '-10px' }}
                           >
-                            {showPassword ? <VisibilityOff size={40} /> : <Visibility size={40} />}
+                            {showPassword ? <VisibilityOff size={30} /> : <Visibility size={30} />}
                           </IconButton>
                         </InputAdornment>
                       ),
@@ -325,7 +318,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
                   />
                 </Grid>
 
-                <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <Grid item xs={12} md={12} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                   <TextField
                     sx={{width:'300px'}}
                     label="تأكيد كلمة المرور"
@@ -342,14 +335,15 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
                         </InputAdornment>
                       ),
                       endAdornment: (
-                        <InputAdornment position="end">
+                        <InputAdornment position="end" sx={{ marginLeft: 0 }}>
                           <IconButton
                             aria-label="toggle confirm password visibility"
                             onClick={handleToggleConfirmPassword}
                             edge="end"
                             disabled={loading}
+                            sx={{ marginRight: '-10px' }}
                           >
-                            {showConfirmPassword ? <VisibilityOff size={40} /> : <Visibility size={40} />}
+                            {showConfirmPassword ? <VisibilityOff size={30} /> : <Visibility size={30} />}
                           </IconButton>
                         </InputAdornment>
                       ),

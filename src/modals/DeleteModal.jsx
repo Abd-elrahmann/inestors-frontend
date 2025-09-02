@@ -45,7 +45,7 @@ const DeleteModal = ({ open, onClose, onConfirm, title, message, isLoading, Butt
           disabled={isLoading}
           color={"primary"}
           variant="outlined"
-          startIcon={<CloseOutlined />}
+          startIcon={<CloseOutlined style={{marginLeft: '10px'}} />}
           size="small"
         >
           { 'إلغاء'}
@@ -55,7 +55,7 @@ const DeleteModal = ({ open, onClose, onConfirm, title, message, isLoading, Butt
           variant="contained" 
           color={"error"}
           disabled={isLoading}
-          startIcon={isLoading ? <Spin size="large" /> : <DeleteOutlined />}
+          startIcon={<DeleteOutlined style={{display:isLoading ? 'none' : 'block',marginLeft: '10px'}} />}
           size="small"
         >
           {isLoading? <Spin size="large" /> : ButtonText || 'حذف'}

@@ -1,15 +1,9 @@
-
 import React from 'react';
-import { settingsAPI } from '../services/apiHelpers';
+import Api from '../services/api';
 
 const DEFAULT_SETTINGS = {
-  defaultCurrency: 'IQD',
-  displayCurrency: 'IQD',
-  autoConvertCurrency: false,
-  exchangeRates: {
-    USD_TO_IQD: 0,
-    IQD_TO_USD: 0
-  }
+  defaultCurrency: 'USD',
+  USDtoIQD: 0
 };
 
 class GlobalCurrencyManager {
@@ -32,9 +26,12 @@ class GlobalCurrencyManager {
     if (this.isInitialized) return;
 
     try {
-      const response = await settingsAPI.getSettings();
-      if (response.success && response.data?.settings) {
-        this.currentSettings = response.data.settings;
+      const response = await Api.get('/api/settings');
+      if (response.data) {
+        this.currentSettings = {
+          defaultCurrency: response.data.defaultCurrency,
+          USDtoIQD: response.data.USDtoIQD
+        };
         localStorage.setItem('currencySettings', JSON.stringify(this.currentSettings));
       }
       this.isInitialized = true;
@@ -46,37 +43,49 @@ class GlobalCurrencyManager {
   }
 
   getCurrentDisplayCurrency() {
-    return this.currentSettings.displayCurrency || this.currentSettings.defaultCurrency || DEFAULT_SETTINGS.defaultCurrency;
+    return this.currentSettings.defaultCurrency || DEFAULT_SETTINGS.defaultCurrency;
   }
 
   getExchangeRate(fromCurrency, toCurrency) {
     if (fromCurrency === toCurrency) return 1;
-
-    const rates = this.currentSettings.exchangeRates;
     
     if (fromCurrency === 'USD' && toCurrency === 'IQD') {
-      return rates.USD_TO_IQD || DEFAULT_SETTINGS.exchangeRates.USD_TO_IQD;
+      return this.currentSettings.USDtoIQD || DEFAULT_SETTINGS.USDtoIQD;
     }
     
     if (fromCurrency === 'IQD' && toCurrency === 'USD') {
-      return rates.IQD_TO_USD || DEFAULT_SETTINGS.exchangeRates.IQD_TO_USD;
+      return 1 / (this.currentSettings.USDtoIQD || DEFAULT_SETTINGS.USDtoIQD);
     }
 
     return 1;
   }
 
- convertAmount(amount, fromCurrency, toCurrency = null) {
-  if (!amount || isNaN(amount)) return 0;
-
-  const targetCurrency = toCurrency || this.getCurrentDisplayCurrency();
+  convertAmount(amount, fromCurrency = 'IQD', toCurrency = null) {
+    const targetCurrency = toCurrency || this.getCurrentDisplayCurrency();
+    
+    if (fromCurrency === targetCurrency) return amount;
+    
+    // التحويل من IQD إلى USD
+    if (fromCurrency === 'IQD' && targetCurrency === 'USD') {
+      const exchangeRate = this.currentSettings.USDtoIQD;
+      if (exchangeRate && exchangeRate > 0) {
+        return amount / exchangeRate;
+      }
+      return amount; // إذا لم يكن هناك سعر صرف، نعود بالمبلغ كما هو
+    }
+    
+    // التحويل من USD إلى IQD
+    if (fromCurrency === 'USD' && targetCurrency === 'IQD') {
+      const exchangeRate = this.currentSettings.USDtoIQD;
+      if (exchangeRate && exchangeRate > 0) {
+        return amount * exchangeRate;
+      }
+      return amount; // إذا لم يكن هناك سعر صرف، نعود بالمبلغ كما هو
+    }
+    
+    return amount; // للعملات الأخرى أو إذا كان التحويل غير مدعوم
+  }
   
-  if (fromCurrency === targetCurrency) return Number(amount);
-
-  const rate = this.getExchangeRate(fromCurrency, targetCurrency);
-  return Number(amount) * rate; 
-}
-
-
   formatAmount(amount, originalCurrency = 'IQD', targetCurrency = null) {
     const displayCurrency = targetCurrency || this.getCurrentDisplayCurrency();
     const convertedAmount = this.convertAmount(amount, originalCurrency, displayCurrency);
@@ -85,11 +94,10 @@ class GlobalCurrencyManager {
       minimumFractionDigits: displayCurrency === 'USD' ? 2 : 0,
       maximumFractionDigits: displayCurrency === 'USD' ? 2 : 0
     });
-
+  
     const symbol = this.getCurrencySymbol(displayCurrency);
     return `${formatted} ${symbol}`;
   }
-
   getCurrencySymbol(currency) {
     const symbols = {
       'IQD': 'د.ع',
@@ -98,31 +106,31 @@ class GlobalCurrencyManager {
     return symbols[currency] || currency;
   }
 
-  async updateCurrencySettings(newSettings) {
+  async updateSettings(newSettings) {
     try {
-      const response = await settingsAPI.updateSettings({
-        ...this.currentSettings,
-        ...newSettings
+      const response = await Api.patch('/api/settings', {
+        defaultCurrency: newSettings.defaultCurrency,
+        USDtoIQD: newSettings.USDtoIQD
       });
-
-      if (response.success) {
-        this.currentSettings = { ...this.currentSettings, ...newSettings };
+      
+      if (response.data) {
+        this.currentSettings = {
+          defaultCurrency: response.data.defaultCurrency,
+          USDtoIQD: response.data.USDtoIQD
+        };
         this.notifyListeners();
-        
         localStorage.setItem('currencySettings', JSON.stringify(this.currentSettings));
-        
         return true;
       }
       return false;
     } catch (error) {
-      console.error('Error updating currency settings:', error);
+      console.error('Error updating settings:', error);
       return false;
     }
   }
 
   addListener(callback) {
     this.listeners.add(callback);
-    
     return () => {
       this.listeners.delete(callback);
     };
@@ -140,7 +148,6 @@ class GlobalCurrencyManager {
 
   refreshPage() {
     this.notifyListeners();
-    
     setTimeout(() => {
       window.location.reload();
     }, 500);
@@ -148,29 +155,6 @@ class GlobalCurrencyManager {
 
   getSettings() {
     return { ...this.currentSettings };
-  }
-
-  shouldAutoConvert() {
-    return this.currentSettings.autoConvertCurrency;
-  }
-
-  async updateExchangeRates(newRates) {
-    try {
-      const response = await settingsAPI.updateExchangeRates(newRates);
-      
-      if (response.success) {
-        this.currentSettings.exchangeRates = {
-          ...this.currentSettings.exchangeRates,
-          ...newRates
-        };
-        this.notifyListeners();
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error updating exchange rates:', error);
-      return false;
-    }
   }
 }
 
@@ -197,7 +181,7 @@ export const useCurrencyManager = () => {
     convertAmount: (amount, fromCurrency, toCurrency) => 
       globalCurrencyManager.convertAmount(amount, fromCurrency, toCurrency),
     updateSettings: (newSettings) => 
-      globalCurrencyManager.updateCurrencySettings(newSettings),
+      globalCurrencyManager.updateSettings(newSettings),
     refreshPage: () => globalCurrencyManager.refreshPage()
   };
 };
@@ -210,4 +194,4 @@ export const convertCurrency = (amount, fromCurrency, toCurrency = null) => {
   return globalCurrencyManager.convertAmount(amount, fromCurrency, toCurrency);
 };
 
-export default globalCurrencyManager; 
+export default globalCurrencyManager;

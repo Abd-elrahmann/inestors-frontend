@@ -18,6 +18,7 @@ import {
   DeleteOutlined,
   PlusOutlined,
   SearchOutlined,
+  FilterOutlined
 } from "@ant-design/icons";
 import { Spin } from "antd";
 import dayjs from "dayjs";
@@ -25,11 +26,13 @@ import AddInvestorModal from "../modals/AddInvestorModal";
 
 import { StyledTableCell, StyledTableRow } from "../styles/TableLayout";
 import Api from "../services/api";
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { useCurrencyManager } from "../utils/globalCurrencyManager";
 import { Helmet } from 'react-helmet-async';
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import DeleteModal from "../modals/DeleteModal";
+import InvestorSearchModal from "../modals/InvestorSearchModal";
+
 const Investors = () => {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -38,19 +41,27 @@ const Investors = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({});
   const { formatAmount, currentCurrency } = useCurrencyManager();
 
   // Fetch investors query
-  const { data: investorsData, isLoading } = useQuery(
-    ['investors', page, rowsPerPage, searchQuery],
+  const { data: investorsData, isLoading, isFetching } = useQuery(
+    ['investors', page, rowsPerPage, searchQuery, advancedFilters],
     async () => {
-      const response = await Api.get(`/api/investors/${page}`, {
-        params: {
-          limit: rowsPerPage,
-          search: searchQuery
-        }
-      });
+      const params = {
+        limit: rowsPerPage,
+        search: searchQuery,
+        ...advancedFilters
+      };
+      
+      const response = await Api.get(`/api/investors/${page}`, { params });
       return response.data;
+    },
+    {
+      keepPreviousData: true,
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 5,
     }
   );
 
@@ -69,11 +80,6 @@ const Investors = () => {
     }
   );
 
-  const handleAddInvestor = () => {
-    setSelectedInvestor(null);
-    setShowAddModal(true);
-  };
-
   const handleAddSuccess = () => {
     queryClient.invalidateQueries('investors');
     setShowAddModal(false);
@@ -83,11 +89,6 @@ const Investors = () => {
     setShowAddModal(false);
     setSelectedInvestor(null);
     setShowDeleteModal(false);
-  };
-
-  const handleEditInvestor = (investor) => {
-    setSelectedInvestor(investor);
-    setShowAddModal(true);
   };
 
   const handleCloseDeleteModal = () => {
@@ -109,91 +110,102 @@ const Investors = () => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(1);
   };
+  
+  const handleSearch = (event) => {
+    setSearchQuery(event.target.value);
+    setPage(1);
+  };
+  
+  const handleAdvancedSearch = (filters) => {
+    setAdvancedFilters(filters);
+    setPage(1);
+  };
 
+  const filteredInvestors = investorsData?.investors || [];
+  
   return (
     <>
       <Helmet>
         <title>المساهمين</title>
         <meta name="description" content="المساهمين في نظام إدارة المساهمين" />
       </Helmet>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3} mr={3} mt={2} spacing={2}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1} mr={3} mt={5} spacing={2}>
           <Button 
             variant="contained" 
             color="primary" 
-            onClick={handleAddInvestor}
+            onClick={() => setShowAddModal(true)}
             startIcon={<PlusOutlined style={{marginLeft: '10px'}} />}
           >
             اضافة مساهم
           </Button>
+          
+          <Stack direction="row" spacing={1}>
             <InputBase
-              placeholder="ابحث عن مساهم"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              sx={{ 
+              placeholder="بحث عن مساهم"
+              startAdornment={<SearchOutlined style={{marginLeft: '10px', marginRight: '10px'}} />}
+              sx={{
                 width: '250px',
-                pr: '35px'
+                padding: '8px 15px',
+                marginLeft: '5px',
+                borderRadius: '4px',
+                fontSize: '16px',
               }}
+              value={searchQuery}
+              onChange={handleSearch}
             />
-            <SearchOutlined style={{ 
-              position: 'absolute',
-              right: '8px',
-              color: '#666'
-            }} />
+            
+            <IconButton 
+              onClick={() => setSearchModalOpen(true)}
+              sx={{ border: '1px solid', borderColor: 'divider' }}
+            >
+              <FilterOutlined />
+            </IconButton>
+          </Stack>
         </Stack>
       <Box className="content-area">
         <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
           <Table stickyHeader>
             <TableHead>
               <TableRow>
+                <StyledTableCell align="center"> مسلسل المساهم</StyledTableCell>
                 <StyledTableCell align="center">اسم المساهم</StyledTableCell>
-                <StyledTableCell align="center">رقم الهاتف</StyledTableCell>
                 <StyledTableCell align="center">
                   المبلغ المساهم ({currentCurrency})
                 </StyledTableCell>
                 <StyledTableCell align="center">نسبة المساهمة</StyledTableCell>
                 <StyledTableCell align="center">تاريخ الانضمام</StyledTableCell>
-                <StyledTableCell align="center">تعديل</StyledTableCell>
                 <StyledTableCell align="center">حذف</StyledTableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {isLoading ? (
+              {isLoading || isFetching ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={7} align="center">
+                  <StyledTableCell colSpan={6} align="center">
                     <Spin size="large" /> 
                   </StyledTableCell>
                 </StyledTableRow>
               ) : !investorsData?.investors?.length ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={7} align="center">
+                  <StyledTableCell colSpan={6} align="center">
                     لا يوجد مساهمين
                   </StyledTableCell>
                 </StyledTableRow>
               ) : (
                 <>
-                  {investorsData.investors.map((investor) => (
+                  {filteredInvestors.map((investor) => (
                     <StyledTableRow key={investor.id}>
                       <StyledTableCell align="center">
-                        {investor.userName}
+                        {investor.userId}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {investor.phone}
+                        {investor.fullName}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {formatAmount(investor.amount, currentCurrency)}
+                        {formatAmount(investor.amount, 'IQD')}
                       </StyledTableCell>
-                      <StyledTableCell align="center">{`${investor.sharePercentage}%`}</StyledTableCell>
+                      <StyledTableCell align="center">{`${investor.sharePercentage.toFixed(2)}%`}</StyledTableCell>
                       <StyledTableCell align="center">
                         {dayjs(investor.createdAt).format("DD/MM/YYYY")}
-                      </StyledTableCell>
-                      <StyledTableCell align="center">
-                        <IconButton
-                          size="small"
-                          color="warning"
-                          onClick={() => handleEditInvestor(investor)}
-                        >
-                          <EditOutlined />
-                        </IconButton>
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         <IconButton
@@ -211,9 +223,12 @@ const Investors = () => {
                       الإجمالي
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
-                      {formatAmount(investorsData.investors.reduce((total, investor) => total + investor.amount, 0), currentCurrency)}
+                      {formatAmount(
+                        filteredInvestors.reduce((total, investor) => total + investor.amount, 0),
+                        'IQD'
+                      )}
                     </StyledTableCell>
-                    <StyledTableCell colSpan={4} />
+                    <StyledTableCell colSpan={3} />
                   </StyledTableRow>
                 </>
               )}
@@ -235,7 +250,7 @@ const Investors = () => {
           open={showAddModal}
           onClose={handleCloseModal}
           onSuccess={handleAddSuccess}
-          editMode={!!selectedInvestor}
+          mode="normal"
           investorData={selectedInvestor}
         />
 
@@ -247,6 +262,12 @@ const Investors = () => {
           message={`هل أنت متأكد من حذف المساهم؟`}  
           isLoading={deleteInvestorMutation.isLoading}
           ButtonText="حذف"
+        />
+
+        <InvestorSearchModal
+          open={searchModalOpen}
+          onClose={() => setSearchModalOpen(false)}
+          onSearch={handleAdvancedSearch}
         />
 
       </Box>

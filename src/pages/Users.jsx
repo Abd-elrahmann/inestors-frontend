@@ -11,43 +11,57 @@ import {
   IconButton,
   Button,
   Stack,
-  InputBase,
-  Chip
+  Chip,
+  InputBase
 } from '@mui/material';
 import {
   EditOutlined,
   DeleteOutlined,
   PlusOutlined,
   SearchOutlined,
+  UserAddOutlined,
+  FilterOutlined
 } from '@ant-design/icons';
 import { Spin } from 'antd';
 import { StyledTableCell, StyledTableRow } from '../styles/TableLayout';
 import AddUserModal from '../modals/AddUserModal';
 import Api from '../services/api';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { Helmet } from 'react-helmet-async';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import DeleteModal from '../modals/DeleteModal';
+import UserSearchModal from '../modals/UserSearchModal';
+import AddInvestorModal from '../modals/AddInvestorModal';
 
 const Users = () => {
   const queryClient = useQueryClient();
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addInvestorModalOpen, setAddInvestorModalOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [search, setSearch] = useState("");
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({});
+
   // Fetch users query
-  const { data: usersData, isLoading } = useQuery(
-    ['users', page, rowsPerPage, searchQuery],
+  const { data: usersData, isLoading, isFetching } = useQuery(
+    ['users', page, rowsPerPage, search, advancedFilters],
     async () => {
-      const response = await Api.get(`/api/users/${page}`, {
-        params: {
-          limit: rowsPerPage,
-          search: searchQuery
-        }
-      });
+      const params = {
+        limit: rowsPerPage,
+        search: search,
+        ...advancedFilters
+      };
+      
+      const response = await Api.get(`/api/users/${page}`, { params });
       return response.data;
+    },
+    {
+      keepPreviousData: true,
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 5,
     }
   );
 
@@ -75,6 +89,11 @@ const Users = () => {
     setAddModalOpen(true);
   };
 
+  const handleAddAsInvestor = (user) => {
+    setSelectedUser(user);
+    setAddInvestorModalOpen(true);
+  };
+
   const handleCloseDeleteModal = () => {
     setShowDeleteModal(false);
     setSelectedUser(null);
@@ -94,8 +113,23 @@ const Users = () => {
     setAddModalOpen(false);
   };
 
+  const handleInvestorAddSuccess = () => {
+    setAddInvestorModalOpen(false);
+    setSelectedUser(null);
+  };
+
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(1);
+  };
+
+  const handleSearch = (event) => {
+    setSearch(event.target.value);
+    setPage(1);
+  };
+
+  const handleAdvancedSearch = (filters) => {
+    setAdvancedFilters(filters);
     setPage(1);
   };
 
@@ -117,55 +151,65 @@ const Users = () => {
           >
             إضافة مستخدم
           </Button>
-          <Box sx={{ position: 'relative' }}>
+          
+          <Stack direction="row" spacing={1}>
             <InputBase
-              placeholder="البحث عن مستخدم..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="بحث عن مستخدم"
+              startAdornment={<SearchOutlined style={{marginLeft: '10px', marginRight: '10px'}} />}
               sx={{
                 width: '250px',
-                pr: '35px'
+                padding: '8px 15px',
+                marginLeft: '5px',
+                borderRadius: '4px',
+                fontSize: '16px',
               }}
+              value={search}
+              onChange={handleSearch}
             />
-            <SearchOutlined style={{
-              position: 'absolute',
-              right: '8px',
-              color: '#666'
-            }} />
-          </Box>
+            
+            <IconButton 
+              onClick={() => setSearchModalOpen(true)}
+              sx={{ border: '1px solid', borderColor: 'divider' }}
+            >
+              <FilterOutlined />
+            </IconButton>
+          </Stack>
         </Stack>
 
         <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
           <Table stickyHeader>
             <TableHead>
               <TableRow>
+                <StyledTableCell align="center">المسلسل</StyledTableCell>
                 <StyledTableCell align="center">الاسم الكامل</StyledTableCell>
-                <StyledTableCell align="center">اسم المستخدم</StyledTableCell>
                 <StyledTableCell align="center">البريد الإلكتروني</StyledTableCell>
+                <StyledTableCell align="center">الهاتف</StyledTableCell>
                 <StyledTableCell align="center">الدور</StyledTableCell>
+                <StyledTableCell align="center">إضافة كمساهم</StyledTableCell>
                 <StyledTableCell align="center">تعديل</StyledTableCell>
                 <StyledTableCell align="center">حذف</StyledTableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {isLoading ? (
+              {isLoading || isFetching ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={6} align="center">
+                  <StyledTableCell colSpan={7} align="center">
                     <Spin size="large" />
                   </StyledTableCell>
                 </StyledTableRow>
               ) : !filteredUsers.length ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={6} align="center">
+                  <StyledTableCell colSpan={7} align="center">
                     لا يوجد مستخدمين
                   </StyledTableCell>
                 </StyledTableRow>
               ) : (
                 filteredUsers.map((user) => (
                   <StyledTableRow key={user.id}>
+                    <StyledTableCell align="center">{user.id}</StyledTableCell>
                     <StyledTableCell align="center">{user.fullName}</StyledTableCell>
-                    <StyledTableCell align="center">{user.userName}</StyledTableCell>
                     <StyledTableCell align="center">{user.email}</StyledTableCell>
+                    <StyledTableCell align="center">{user.phone}</StyledTableCell>
                     <StyledTableCell align="center">
                       <Chip
                         label={user.role}
@@ -176,6 +220,15 @@ const Users = () => {
                           color: user.role === 'ADMIN' ? '#ffc107' : '#6c757d'
                         }}
                       />
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      <IconButton
+                        size="small"
+                        color="success"
+                        onClick={() => handleAddAsInvestor(user)}
+                      >
+                        <UserAddOutlined />
+                      </IconButton>
                     </StyledTableCell>
                     <StyledTableCell align="center">
                       <IconButton
@@ -220,6 +273,17 @@ const Users = () => {
           mode={selectedUser ? 'edit' : 'add'}
         />  
 
+        <AddInvestorModal
+          open={addInvestorModalOpen}
+          onClose={() => {
+            setAddInvestorModalOpen(false);
+            setSelectedUser(null);
+          }}
+          onSuccess={handleInvestorAddSuccess}
+          userData={selectedUser}
+          mode="fromUser"
+        />
+
         <DeleteModal
           open={showDeleteModal}
           onClose={handleCloseDeleteModal}
@@ -228,6 +292,12 @@ const Users = () => {
           message={`هل أنت متأكد من حذف المستخدم؟`}  
           isLoading={deleteUserMutation.isLoading}
           ButtonText="حذف"
+        />
+
+        <UserSearchModal
+          open={searchModalOpen}
+          onClose={() => setSearchModalOpen(false)}
+          onSearch={handleAdvancedSearch}
         />
       </Box>
     </>

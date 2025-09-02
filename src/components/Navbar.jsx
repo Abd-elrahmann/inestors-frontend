@@ -228,7 +228,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                       color: '#28a745'
                     }}
                   >
-                    {user.userName}
+                    {user.email.split('@')[0]}
                   </Typography>
                 </Box>
                 <IconButton

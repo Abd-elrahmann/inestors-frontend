@@ -7,36 +7,30 @@ import {
   TextField,
   Button,
   Box,
-  Grid,
-  Typography,
   IconButton,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   InputAdornment,
   CircularProgress,
-  Autocomplete
+  Autocomplete,
+  MenuItem
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import PersonIcon from '@mui/icons-material/Person';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { toast } from 'react-toastify';
-import { transactionsAPI, investorsAPI } from '../services/apiHelpers';
+import Api from '../services/api';
 
 const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [investorsLoading, setInvestorsLoading] = useState(false);
   const [investors, setInvestors] = useState([]);
+  const [settings, setSettings] = useState({
+    defaultCurrency: 'USD',
+    USDtoIQD: 0
+  });
   const [formData, setFormData] = useState({
-    investorId: null,
+    userId: null,
     type: 'deposit',
-    amount: '',
-    currency: 'IQD',
-    transactionDate: new Date()
+    amount: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -47,28 +41,19 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
     { value: 'profit', label: 'أرباح' }
   ];
 
-  const currencies = [
-    { code: 'IQD', name: 'دينار عراقي', symbol: 'د.ع' },
-    { code: 'USD', name: 'دولار أمريكي', symbol: '$' }
-  ];
-
-  
   useEffect(() => {
     if (open) {
       fetchInvestors();
+      fetchSettings();
     }
   }, [open]);
 
   const fetchInvestors = async () => {
     try {
       setInvestorsLoading(true);
-      const response = await investorsAPI.getAll();
+      const response = await Api.get('/api/investors/1');
       if (response.data && response.data.investors) {
-        setInvestors(response.data.investors.map(investor => ({
-          id: investor._id,
-          name: investor.fullName,
-          label: `${investor.fullName} `
-        })));
+        setInvestors(response.data.investors);
       }
     } catch (error) {
       console.error('Error fetching investors:', error);
@@ -78,26 +63,32 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
     }
   };
 
+  const fetchSettings = async () => {
+    try {
+      const response = await Api.get('/api/settings');
+      if (response.data) {
+        setSettings({
+          defaultCurrency: response.data.defaultCurrency,
+          USDtoIQD: response.data.USDtoIQD
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      toast.error('خطأ في تحميل الإعدادات');
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
-   
-    if (!formData.investorId) {
-      newErrors.investorId = 'اختيار المساهم مطلوب';
+    if (!formData.userId) {
+      newErrors.userId = 'اختيار المساهم مطلوب';
     }
 
-    
     if (!formData.amount.trim()) {
       newErrors.amount = 'المبلغ مطلوب';
     } else if (isNaN(formData.amount) || parseFloat(formData.amount) <= 0) {
       newErrors.amount = 'المبلغ يجب أن يكون رقم أكبر من صفر';
-    }
-
-   
-
-    
-    if (!formData.transactionDate) {
-      newErrors.transactionDate = 'تاريخ العملية مطلوب';
     }
 
     setErrors(newErrors);
@@ -110,7 +101,6 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       [field]: value
     }));
 
-      
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -122,7 +112,6 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    
     if (!validateForm()) {
       return;
     }
@@ -130,31 +119,22 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
     setLoading(true);
     
     try {
-     
       const transactionData = {
-        investorId: formData.investorId,
+        userId: formData.userId,
         type: formData.type,
-        amount: parseFloat(formData.amount),
-        currency: formData.currency,
-        transactionDate: formData.transactionDate
+        amount: parseFloat(formData.amount)
       };
 
-
-      const result = await transactionsAPI.create(transactionData);
-      
+      const result = await Api.post('/api/transactions', transactionData);
       
       toast.success('تم إضافة العملية المالية بنجاح');
       
-     
       setFormData({
-        investorId: null,
+        userId: null,
         type: 'deposit',
-        amount: '',
-        currency: 'IQD',
-        transactionDate: new Date()
+        amount: ''
       });
       
-     
       onClose();
       if (onSuccess) {
         onSuccess(result.data);
@@ -162,8 +142,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       
     } catch (error) {
       console.error('Error adding transaction:', error);
-      
-    
+      toast.error(error.response?.data?.message || 'حدث خطأ أثناء إضافة العملية');
     } finally {
       setLoading(false);
     }
@@ -172,11 +151,9 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const handleClose = () => {
     if (!loading) {
       setFormData({
-        investorId: null,
+        userId: null,
         type: 'deposit',
-        amount: '',
-        currency: 'IQD',
-        transactionDate: new Date()
+        amount: ''
       });
       setErrors({});
       onClose();
@@ -184,267 +161,146 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Dialog 
-        open={open} 
-        onClose={handleClose}
-        maxWidth="sm"
-        fullWidth
-        TransitionProps={{
-          timeout: { enter: 200, exit: 150 } 
-        }}
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            minHeight: '60vh', 
-            width: '50%',
-            scrollbarWidth: 'none'
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          backgroundColor: '#28a745',
-          color: 'white',
-          fontFamily: 'Cairo',
-          fontSize: '1.2rem',
-          fontWeight: 600
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <AccountBalanceIcon />
-            <span>إضافة عملية مالية جديدة</span>
+    <Dialog 
+      open={open} 
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          minHeight: '50vh',
+          width: '50%',
+        }
+      }}
+    >
+      <DialogTitle sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        backgroundColor: '#28a745',
+        color: 'white',
+        fontFamily: 'Cairo',
+        fontSize: '1.2rem',
+        fontWeight: 600
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AccountBalanceIcon />
+          <span>إضافة عملية مالية جديدة</span>
+        </Box>
+        <IconButton 
+          onClick={handleClose}
+          disabled={loading}
+          sx={{ color: 'white' }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+
+      <form onSubmit={handleSubmit}>
+        <DialogContent sx={{ mt: 2, px: 3 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 3,
+            width: '80%',
+            mx: 'auto'
+          }}>
+            <Autocomplete
+              options={investors}
+              getOptionLabel={(option) => option.userId + ' - ' + option.fullName || ''}
+              value={investors.find(inv => inv.userId === formData.userId) || null}
+              onChange={(event, newValue) => {
+                handleInputChange('userId', newValue ? newValue.userId : null);
+              }}
+              loading={investorsLoading}
+              disabled={loading || investorsLoading}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="اختر المساهم"
+                  error={!!errors.userId}
+                  helperText={errors.userId}
+                  InputProps={{
+                    ...params.InputProps,
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonIcon sx={{ color: '#28a745' }} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <>
+                        {investorsLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  }}
+                />
+              )}
+            />
+
+            <TextField
+              fullWidth
+              type="number"
+              label="المبلغ"
+              value={formData.amount}
+              onChange={(e) => handleInputChange('amount', e.target.value)}
+              error={!!errors.amount}
+              helperText={errors.amount}
+              disabled={loading}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    {settings.defaultCurrency === 'USD' ? '$' : 'د.ع'}
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              select
+              fullWidth
+              label="نوع العملية"
+              value={formData.type}
+              onChange={(e) => handleInputChange('type', e.target.value)}
+              disabled={loading}
+            >
+              {transactionTypes.map((type) => (
+                <MenuItem key={type.value} value={type.value}>
+                  {type.label}
+                </MenuItem>
+              ))}
+            </TextField>
           </Box>
-          <IconButton 
+        </DialogContent>
+
+        <DialogActions sx={{ p: 3, gap: 3, justifyContent: 'center' }}>
+          <Button
             onClick={handleClose}
             disabled={loading}
-            sx={{ color: 'white' }}
+            variant="outlined"
+            size="large"
           >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <form onSubmit={handleSubmit}>
-          <DialogContent sx={{ mt: 2, px: 3 }}>
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: 3,
-              width: '60%',
-              mx: 'auto'
-            }}>
-             
-              <Autocomplete
-                options={investors}
-                getOptionLabel={(option) => option.label || ''}
-                value={investors.find(inv => inv.id === formData.investorId) || null}
-                onChange={(event, newValue) => {
-                  handleInputChange('investorId', newValue ? newValue.id : null);
-                }}
-                loading={investorsLoading}
-                disabled={loading || investorsLoading}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="اختر المساهم"
-                    error={!!errors.investorId}
-                    helperText={errors.investorId}
-                    InputProps={{
-                      ...params.InputProps,
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PersonIcon sx={{ color: '#28a745' }} />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <>
-                          {investorsLoading ? <CircularProgress color="inherit" size={20} /> : null}
-                          {params.InputProps.endAdornment}
-                        </>
-                      ),
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        fontFamily: 'Cairo'
-                      },
-                      '& .MuiInputLabel-root': {
-                        fontFamily: 'Cairo'
-                      }
-                    }}
-                  />
-                )}
-              />
-
-             
-              <TextField
-                fullWidth
-                type="number"
-                label="المبلغ"
-                value={formData.amount}
-                onChange={(e) => handleInputChange('amount', e.target.value)}
-                error={!!errors.amount}
-                helperText={errors.amount}
-                disabled={loading}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <Typography variant="body2" sx={{ color: '#28a745', fontWeight: 600 }}>
-                        {currencies.find(c => c.code === formData.currency)?.symbol || 'د.ع'}
-                      </Typography>
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    fontFamily: 'Cairo'
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontFamily: 'Cairo'
-                  }
-                }}
-              />
-
-             
-              <FormControl fullWidth>
-                <InputLabel sx={{ fontFamily: 'Cairo' }}>نوع العملية</InputLabel>
-                <Select
-                  value={formData.type}
-                  label="نوع العملية"
-                  onChange={(e) => handleInputChange('type', e.target.value)}
-                  disabled={loading}
-                  sx={{
-                    fontFamily: 'Cairo'
-                  }}
-                >
-                  {transactionTypes.map((type) => (
-                    <MenuItem key={type.value} value={type.value} sx={{ fontFamily: 'Cairo' }}>
-                      {type.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-             
-              <FormControl fullWidth>
-                <InputLabel sx={{ fontFamily: 'Cairo' }}>العملة</InputLabel>
-                <Select
-                  value={formData.currency}
-                  label="العملة"
-                  onChange={(e) => handleInputChange('currency', e.target.value)}
-                  disabled={loading}
-                  sx={{
-                    fontFamily: 'Cairo'
-                  }}
-                >
-                  {currencies.map((currency) => (
-                    <MenuItem key={currency.code} value={currency.code} sx={{ fontFamily: 'Cairo' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {currency.symbol}
-                        </Typography>
-                        <Typography variant="body2">
-                          {currency.name}
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-             
-              <DatePicker
-                label="تاريخ العملية"
-                value={formData.transactionDate}
-                onChange={(newValue) => handleInputChange('transactionDate', newValue)}
-                disabled={loading}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    fullWidth
-                    error={!!errors.transactionDate}
-                    helperText={errors.transactionDate}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        fontFamily: 'Cairo'
-                      },
-                      '& .MuiInputLabel-root': {
-                        fontFamily: 'Cairo'
-                      }
-                    }}
-                  />
-                )}
-              />
-            </Box>
-          </DialogContent>
-
-          <DialogActions sx={{ 
-            p: 3, 
-            gap: 3,
-            justifyContent: 'center',
-            display: 'flex',
-            alignItems: 'center',
-            direction:'ltr'
-          }}>
-            <Button
-              onClick={handleClose}
-              disabled={loading}
-              variant="outlined"
-              size="large"
-              sx={{
-                fontFamily: 'Cairo',
-                fontWeight: 500,
-                color: '#6c757d',
-                borderColor: '#6c757d',
-                px: 4,
-                py: 1.5,
-                minWidth: 120,
-                '&:hover': {
-                  borderColor: '#495057',
-                  backgroundColor: 'rgba(108, 117, 125, 0.04)'
-                }
-              }}
-            >
-              إلغاء
-            </Button>
-            
-            <Button
-              type="submit"
-              disabled={loading}
-              variant="contained"
-              size="large"
-              sx={{
-                fontFamily: 'Cairo',
-                fontWeight: 600,
-                backgroundColor: '#28a745',
-                px: 4,
-                py: 1.5,
-                minWidth: 140,
-                '&:hover': {
-                  backgroundColor: '#218838'
-                }
-              }}
-            >
-              {loading ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CircularProgress size={20} color="inherit" />
-                  <span>جاري الحفظ...</span>
-                </Box>
-              ) : (
-                <>
-                  إضافة العملية
-                </>
-              )}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
-    </LocalizationProvider>
+            إلغاء
+          </Button>
+          
+          <Button
+            type="submit"
+            disabled={loading}
+            variant="contained"
+            size="large"
+            sx={{ backgroundColor: '#28a745' }}
+          >
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              'إضافة العملية'
+            )}
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
   );
 };
 
-export default AddTransactionModal; 
+export default AddTransactionModal;
