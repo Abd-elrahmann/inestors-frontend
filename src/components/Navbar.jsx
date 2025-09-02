@@ -245,7 +245,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                       fontFamily: 'Cairo'
                     }}
                   >
-                    {user.profileImage ? user.profileImage : user.userName.charAt(0)}
+                    {user.profileImage ? user.profileImage : user.fullName.charAt(0)}
                   </Avatar>
                 </IconButton>
 
