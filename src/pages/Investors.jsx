@@ -20,7 +20,8 @@ import {
   SearchOutlined,
   FilterOutlined,
   FileExcelOutlined,
-  FilePdfOutlined
+  FilePdfOutlined,
+  EyeOutlined
 } from "@ant-design/icons";
 import { Spin } from "antd";
 import dayjs from "dayjs";
@@ -34,6 +35,7 @@ import { Helmet } from 'react-helmet-async';
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import DeleteModal from "../modals/DeleteModal";
 import InvestorSearchModal from "../modals/InvestorSearchModal";
+import { Link } from "react-router-dom";
 
 const Investors = () => {
   const queryClient = useQueryClient();
@@ -125,90 +127,7 @@ const Investors = () => {
 
   const filteredInvestors = investorsData?.investors || [];
 
-  const exportToPDF = async (exportAll = false) => {
-    try { 
-      const response = await Api.get('/api/investors/1');
-      const [jsPDFModule, autoTableModule] = await Promise.all([
-        import('jspdf'),
-        import('jspdf-autotable')
-      ]);
-      
-      const doc = new jsPDFModule.default();
-      
-      doc.addFont("/assets/fonts/Amiri-Regular.ttf", "Amiri", "normal");
-      doc.addFont("/assets/fonts/Amiri-Bold.ttf", "Amiri", "bold");
-      doc.setFont("Amiri");
-      doc.setFontSize(16);
-      doc.text('Investors Report | Report Date: ' + new Date().toLocaleDateString(), 14, 15);
-
-      const columns = ['المسلسل', 'اسم المساهم', 'المبلغ المساهم', 'نسبة المساهمة', 'الدور', 'تاريخ الانضمام'];
-      
-      const dataToExport = exportAll ? response.data.investors : investorsData.investors.slice(0, rowsPerPage);
-
-      const rows = dataToExport.map(investor => [
-        investor.userId,
-        investor.fullName,
-        investor.amount,
-        investor.sharePercentage.toFixed(2),
-        investor.role === 'ADMIN' ? 'ادمن' : 'مساهم',
-        dayjs(investor.createdAt).format("DD/MM/YYYY")
-      ]);
-
-      autoTableModule.default(doc, {
-        startY: 25,
-        head: [columns],
-        body: rows,
-        theme: 'grid',
-        styles: { 
-          fontSize: 7,
-          cellPadding: 1
-        },
-        headStyles: { 
-          fillColor: [128, 0, 128],
-          fontSize: 8
-        },
-        columnStyles: {
-          1: {
-            font: "Amiri",
-            fontStyle: "bold",
-            halign: 'right',
-            cellWidth: 35,
-            direction: 'rtl'
-          }
-        },
-        margin: { left: 10, right: 10 }
-      });
-
-      doc.save('investors_report.pdf');
-    } catch (error) {
-      console.error(error);
-      toast.error('فشل في تصدير المساهمين');
-    }
-  };
-
-  const exportToCSV = async (exportAll = false) => {
-    try {
-      const xlsxModule = await import('xlsx');
-      const response = await Api.get('/api/investors/1');
-      const dataToExport = exportAll ? response.data.investors : investorsData.investors.slice(0, rowsPerPage);
-      const rows = dataToExport.map(investor => ({  
-        ID: investor.userId,
-        Name: investor.fullName,
-        Amount: formatAmount(investor.amount, 'IQD'),
-        SharePercentage: investor.sharePercentage.toFixed(2) + '%',
-        Role: investor.role === 'ADMIN' ? 'ادمن' : 'مساهم',
-        CreatedAt: dayjs(investor.createdAt).format("DD/MM/YYYY")
-      }));
   
-      const worksheet = xlsxModule.utils.json_to_sheet(rows);
-      const workbook = xlsxModule.utils.book_new();
-      xlsxModule.utils.book_append_sheet(workbook, worksheet, 'Investors');
-      xlsxModule.writeFile(workbook, 'investors_report.xlsx');
-    } catch (error) {
-      console.error(error);
-      toast.error('فشل في تصدير المساهمين');
-    }
-  };
   return (
     <>
       <Helmet>
@@ -223,22 +142,6 @@ const Investors = () => {
             startIcon={<PlusOutlined style={{marginLeft: '10px'}} />}
           >
             اضافة مساهم
-          </Button>
-          <Button 
-            variant="contained" 
-            color="primary" 
-            onClick={() => exportToPDF(true)}
-            startIcon={<FilePdfOutlined style={{marginLeft: '10px'}} />}
-          >
-            تصدير PDF
-          </Button>
-          <Button 
-            variant="contained" 
-            color="primary" 
-            onClick={() => exportToCSV(true)}
-            startIcon={<FileExcelOutlined style={{marginLeft: '10px'}} />}
-          >
-            تصدير CSV
           </Button>
           <Stack direction="row" spacing={1}>
             <InputBase
@@ -275,6 +178,7 @@ const Investors = () => {
                 </StyledTableCell>
                 <StyledTableCell align="center">نسبة المساهمة</StyledTableCell>
                 <StyledTableCell align="center">تاريخ الانضمام</StyledTableCell>
+                <StyledTableCell align="center">عرض المعاملات</StyledTableCell>
                 <StyledTableCell align="center">حذف</StyledTableCell>
               </TableRow>
             </TableHead>
@@ -309,12 +213,19 @@ const Investors = () => {
                         {dayjs(investor.createdAt).format("DD/MM/YYYY")}
                       </StyledTableCell>
                       <StyledTableCell align="center">
+                        <Link to={`/transactions/${investor.userId}`}>
+                          <IconButton size="small">
+                            <EyeOutlined style={{color: 'green'}} />
+                          </IconButton>
+                        </Link>
+                      </StyledTableCell>
+                      <StyledTableCell align="center">
                         <IconButton
                           size="small"
                           color="error"
                           onClick={() => handleOpenDeleteModal(investor)}
                         >
-                          <DeleteOutlined />
+                          <DeleteOutlined style={{color: 'red'}} />
                         </IconButton>
                       </StyledTableCell>
                     </StyledTableRow>

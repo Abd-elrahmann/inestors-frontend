@@ -25,7 +25,7 @@ import {
   RiseOutlined,
   CalendarOutlined
 } from '@ant-design/icons';
-import apiService from '../services/api';
+import Api from '../services/api';
 import { ErrorAlert } from '../components/shared/LoadingComponents';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
 import { Helmet } from 'react-helmet-async';

@@ -18,7 +18,8 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import PersonIcon from '@mui/icons-material/Person';
 import { toast } from 'react-toastify';
 import Api from '../services/api';
-
+import { Link } from 'react-router-dom';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [investorsLoading, setInvestorsLoading] = useState(false);
@@ -164,7 +165,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
     <Dialog 
       open={open} 
       onClose={handleClose}
-      maxWidth="sm"
+      maxWidth="xs"
       fullWidth
       PaperProps={{
         sx: {
@@ -178,8 +179,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
-        backgroundColor: '#28a745',
-        color: 'white',
+        color: 'black',
         fontFamily: 'Cairo',
         fontSize: '1.2rem',
         fontWeight: 600
@@ -191,7 +191,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
         <IconButton 
           onClick={handleClose}
           disabled={loading}
-          sx={{ color: 'white' }}
+          sx={{ color: 'black' }}
         >
           <CloseIcon />
         </IconButton>
@@ -206,6 +206,14 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
             width: '80%',
             mx: 'auto'
           }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, justifyContent: 'center' }}>
+              <span>هل تحتاج الي تغيير العملة؟</span>
+              <Link to="/settings" target='_blank' style={{textDecoration: 'none', color: 'green'}}>
+                تغيير العملة
+                <ArrowLeftOutlined style={{ marginRight: "10px" }} />
+              </Link>
+            </Box>
+
             <Autocomplete
               options={investors}
               getOptionLabel={(option) => option.userId + ' - ' + option.fullName || ''}
@@ -289,7 +297,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
             disabled={loading}
             variant="contained"
             size="large"
-            sx={{ backgroundColor: '#28a745' }}
+            sx={{ backgroundColor: 'primary.main' }}
           >
             {loading ? (
               <CircularProgress size={24} color="inherit" />

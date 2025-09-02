@@ -52,6 +52,11 @@ const routes = [
     protected: true,
   },
   {
+    path: '/transactions/:userId',
+    element: Transactions,
+    protected: true,
+  },
+  {
     path: '/users',
     element: Users,
     protected: true,

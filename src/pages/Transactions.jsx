@@ -14,6 +14,8 @@ import {
   Chip,
   InputBase,
   InputAdornment,
+  Card,
+  Typography,
 } from "@mui/material";
 import { toast } from "react-toastify";
 import { Spin } from "antd";
@@ -23,6 +25,7 @@ import {
   PlusOutlined,
   SearchOutlined,
   FilterOutlined,
+  ArrowLeftOutlined,
 } from "@ant-design/icons";
 import AddTransactionModal from "../modals/AddTransactionModal";
 import { StyledTableCell, StyledTableRow } from "../styles/TableLayout";
@@ -33,8 +36,11 @@ import { useMutation, useQuery, useQueryClient } from "react-query";
 import DeleteModal from "../modals/DeleteModal";
 import TransactionsSearchModal from "../modals/TransactionsSearchModal";
 import dayjs from "dayjs";
+import { useParams, useNavigate } from "react-router-dom";
 
 const Transactions = () => {
+  const { userId } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
@@ -45,7 +51,7 @@ const Transactions = () => {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
 
-  const { formatAmount, currentCurrency } = useCurrencyManager();
+  const { formatAmount, currentCurrency, settings } = useCurrencyManager();
 
   // Fetch transactions query
   const {
@@ -53,11 +59,11 @@ const Transactions = () => {
     isLoading,
     isFetching,
   } = useQuery(
-    ["transactions", page, rowsPerPage, searchQuery, advancedFilters],
+    ["transactions", page, rowsPerPage, searchQuery, advancedFilters, userId],
     async () => {
       const params = {
         limit: rowsPerPage,
-        search: searchQuery,
+        ...(userId ? { userId } : isNaN(searchQuery) ? { search: searchQuery } : { userId: searchQuery }),
         ...advancedFilters,
       };
 
@@ -152,6 +158,11 @@ const Transactions = () => {
 
   const transactions = transactionsData?.transactions || [];
   const totalTransactions = transactionsData?.totalTransactions || 0;
+  const investorDetails = transactions[0]?.user;
+  const amount = transactions.reduce((total, transaction) => {
+    return total + transaction.amount;
+  }, 0);
+  const currency = settings.defaultCurrency;
 
   return (
     <>
@@ -160,6 +171,28 @@ const Transactions = () => {
         <meta name="description" content="المعاملات في نظام إدارة المساهمين" />
       </Helmet>
       <Box className="content-area">
+        {userId && investorDetails && (
+          <Card sx={{ p: 2, mb: 3, mt: 2 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6">
+                المساهم: {investorDetails.fullName}
+              </Typography>
+              <Typography variant="h6">
+                إجمالي المبالغ: {formatAmount(amount, currency, 'IQD')}
+              </Typography>
+              <Typography variant="h6">
+                العملة: {currency}
+              </Typography>
+            </Stack>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" marginTop={2}>
+             <Button variant="contained" color="primary" onClick={() => navigate('/investors')}>
+              الرجوع لصفحة المساهمين
+              <ArrowLeftOutlined style={{ marginRight: "10px" }} />
+             </Button>
+            </Stack>
+          </Card>
+        )}
+
         <Stack
           direction="row"
           justifyContent="space-between"
@@ -239,7 +272,7 @@ const Transactions = () => {
                 transactions.map((transaction) => (
                   <StyledTableRow key={transaction.id}>
                     <StyledTableCell align="center">
-                      {transaction.id || "غير محدد"}
+                      {transaction.userId || "غير محدد"}
                     </StyledTableCell>
                     <StyledTableCell align="center">
                       {transaction.user?.fullName || "غير محدد"}
