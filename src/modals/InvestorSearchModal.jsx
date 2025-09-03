@@ -42,6 +42,14 @@ const InvestorSearchModal = ({ open, onClose, onSearch }) => {
     };
     onSearch(formattedFilters);
     onClose();
+    setFilters({
+      minAmount: '',
+      maxAmount: '',
+      startDate: null,
+      endDate: null,
+      minShare: '',
+      maxShare: ''
+    });
   };
 
   const handleReset = () => {

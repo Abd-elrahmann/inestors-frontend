@@ -1,5 +1,6 @@
 import React from 'react';
 import Api from '../services/api';
+import { useSettings } from '../hooks/useSettings';
 
 const DEFAULT_SETTINGS = {
   defaultCurrency: 'USD',
@@ -161,13 +162,22 @@ class GlobalCurrencyManager {
 export const globalCurrencyManager = new GlobalCurrencyManager();
 
 export const useCurrencyManager = () => {
-  const [settings, setSettings] = React.useState(globalCurrencyManager.getSettings());
+  const { data: settings } = useSettings();
+  const [currencySettings, setCurrencySettings] = React.useState(globalCurrencyManager.getSettings());
 
   React.useEffect(() => {
-    globalCurrencyManager.initialize();
+    if (settings) {
+      globalCurrencyManager.currentSettings = {
+        defaultCurrency: settings.defaultCurrency,
+        USDtoIQD: settings.USDtoIQD
+      };
+      setCurrencySettings(globalCurrencyManager.getSettings());
+    }
+  }, [settings]);
 
+  React.useEffect(() => {
     const unsubscribe = globalCurrencyManager.addListener((newSettings) => {
-      setSettings(newSettings);
+      setCurrencySettings(newSettings);
     });
 
     return unsubscribe;
@@ -175,7 +185,7 @@ export const useCurrencyManager = () => {
 
   return {
     currentCurrency: globalCurrencyManager.getCurrentDisplayCurrency(),
-    settings,
+    settings: currencySettings,
     formatAmount: (amount, originalCurrency = 'IQD') => 
       globalCurrencyManager.formatAmount(amount, originalCurrency),
     convertAmount: (amount, fromCurrency, toCurrency) => 

@@ -54,11 +54,8 @@ const UserSearchModal = ({ open, onClose, onSearch }) => {
   };
 
   const handleSearch = () => {
-    // إنشاء كائن فلترة صحيح مع إزالة الحقول الفارغة
     const searchFilters = {};
-    
-    // إرسال البريد الإلكتروني كقيمة نصية وليس ككائن
-    if (filters.email && filters.email.email) {
+      if (filters.email && filters.email.email) {
       searchFilters.email = filters.email.email;
     }
     
@@ -68,6 +65,10 @@ const UserSearchModal = ({ open, onClose, onSearch }) => {
     
     onSearch(searchFilters);
     onClose();
+    setFilters({
+      email: null,
+      role: ''
+    });
   };
 
   const handleReset = () => {

@@ -14,15 +14,12 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
 import Api from '../services/api';
+import { useCurrencyManager } from '../utils/globalCurrencyManager';
 import PhoneIcon from '@mui/icons-material/Phone';
 import { toast } from 'react-toastify';
-
 const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'normal' }) => {
   const [loading, setLoading] = useState(false);
-  const [settings, setSettings] = useState({
-    defaultCurrency: 'USD',
-    USDtoIQD: 0
-  });
+  const { formatAmount, currentCurrency } = useCurrencyManager();
   const [formData, setFormData] = useState({
     id: '',
     fullName: '',
@@ -46,20 +43,11 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
         amount: ''
       });
     }
-    fetchSettings();
   }, [mode, userData]);
 
   const [errors, setErrors] = useState({});
 
-  const fetchSettings = async () => {
-      const response = await Api.get('/api/settings');
-      if (response.data) {
-      setSettings({
-        defaultCurrency: response.data.defaultCurrency,
-        USDtoIQD: response.data.USDtoIQD
-      });
-    }
-  };  
+  
 
   const validateForm = () => {
     const newErrors = {};
@@ -243,8 +231,8 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
             <TextField
               sx={{width:'300px'}}
               type="number"
-              label="المبلغ"
-              value={formData.amount}
+              label={`المبلغ (${currentCurrency})`}
+              value={formatAmount(formData.amount, currentCurrency)}
               onChange={(e) => handleInputChange('amount', e.target.value)}
               error={!!errors.amount}
               helperText={errors.amount}
@@ -252,7 +240,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    {settings.defaultCurrency === 'USD' ? '$' : 'د.ع'}
+                    {currentCurrency === 'USD' ? '$' : 'د.ع'}
                   </InputAdornment>
                 ),
               }}

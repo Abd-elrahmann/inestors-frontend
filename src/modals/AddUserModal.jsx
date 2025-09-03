@@ -11,7 +11,9 @@ import {
   Typography,
   IconButton,
   InputAdornment,
-  CircularProgress
+  CircularProgress,
+  Select,
+  MenuItem
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
@@ -22,6 +24,8 @@ import { MdVisibility as Visibility, MdVisibilityOff as VisibilityOff } from 're
 import Api from '../services/api';
 import { toast } from 'react-toastify';
 import { useQueryClient } from 'react-query';
+import PhoneIcon from '@mui/icons-material/Phone';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -32,6 +36,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
     email: '',
     phone: '',
     password: '',
+    role: 'USER',
     confirmPassword: ''
   });
 
@@ -42,6 +47,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
         email: user.email || '',
         phone: user.phone || '',
         password: '',
+        role: user.role || 'USER',
         confirmPassword: ''
       });
     }
@@ -103,14 +109,16 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
           fullName: formData.fullName.trim(),
           email: formData.email.trim().toLowerCase(),
           phone: formData.phone.trim(),
-          password: formData.password
+          password: formData.password,
+          role: formData.role
         };
         result = await Api.post('/api/users', userData);
         toast.success('تم إضافة المستخدم بنجاح');
         queryClient.invalidateQueries('users');
       } else {
         const updateData = {
-          fullName: formData.fullName.trim()
+          fullName: formData.fullName.trim(),
+          role: formData.role
         };
         result = await Api.put(`/api/users/${user.id}`, updateData);
         toast.success('تم تحديث المستخدم بنجاح');
@@ -137,6 +145,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
         email: '',
         phone: '',
         password: '',
+        role: 'USER',
         confirmPassword: ''
       });
       setErrors({});
@@ -262,7 +271,32 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
                   error={!!errors.phone}
                   helperText={errors.phone}
                   disabled={loading}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PhoneIcon sx={{ color: primaryColor }} />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
+                <Select
+                  sx={{width:'300px'}}
+                  label="الدور"
+                  value={formData.role}
+                  onChange={(e) => handleInputChange('role', e.target.value)}
+                  error={!!errors.role}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <AdminPanelSettingsIcon sx={{ color: primaryColor }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                >
+                  <MenuItem value="ADMIN">مدير</MenuItem>
+                  <MenuItem value="USER">مستخدم</MenuItem>
+                </Select>
+                
               </Box>
             </Grid>
 

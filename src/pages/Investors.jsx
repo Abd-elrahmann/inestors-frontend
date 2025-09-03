@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Table,
@@ -9,9 +9,9 @@ import {
   Paper,
   TablePagination,
   IconButton,
-  Button,
   Stack,
   InputBase,
+  Fab
 } from "@mui/material";
 import {
   EditOutlined,
@@ -19,23 +19,22 @@ import {
   PlusOutlined,
   SearchOutlined,
   FilterOutlined,
-  FileExcelOutlined,
-  FilePdfOutlined,
-  EyeOutlined
+  EyeOutlined,
 } from "@ant-design/icons";
 import { Spin } from "antd";
 import dayjs from "dayjs";
 import AddInvestorModal from "../modals/AddInvestorModal";
-
+import { RestartAltOutlined } from "@mui/icons-material";
 import { StyledTableCell, StyledTableRow } from "../styles/TableLayout";
 import Api from "../services/api";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 import { useCurrencyManager } from "../utils/globalCurrencyManager";
-import { Helmet } from 'react-helmet-async';
+import { Helmet } from "react-helmet-async";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import DeleteModal from "../modals/DeleteModal";
 import InvestorSearchModal from "../modals/InvestorSearchModal";
 import { Link } from "react-router-dom";
+import { debounce } from 'lodash';
 
 const Investors = () => {
   const queryClient = useQueryClient();
@@ -50,15 +49,19 @@ const Investors = () => {
   const { formatAmount, currentCurrency } = useCurrencyManager();
 
   // Fetch investors query
-  const { data: investorsData, isLoading, isFetching } = useQuery(
-    ['investors', page, rowsPerPage, searchQuery, advancedFilters],
+  const {
+    data: investorsData,
+    isLoading,
+    isFetching,
+  } = useQuery(
+    ["investors", page, rowsPerPage, searchQuery, advancedFilters],
     async () => {
       const params = {
         limit: rowsPerPage,
         search: searchQuery,
-        ...advancedFilters
+        ...advancedFilters,
       };
-      
+
       const response = await Api.get(`/api/investors/${page}`, { params });
       return response.data;
     },
@@ -74,18 +77,18 @@ const Investors = () => {
     (investorId) => Api.delete(`/api/investors/${investorId}`),
     {
       onSuccess: () => {
-        queryClient.invalidateQueries('investors');
-        toast.success('تم حذف المساهم بنجاح');
+        queryClient.invalidateQueries("investors");
+        toast.success("تم حذف المساهم بنجاح");
       },
       onError: (error) => {
-        console.error('Error deleting investor:', error);
-        toast.error('فشل في حذف المساهم');
-      }
+        console.error("Error deleting investor:", error);
+        toast.error("فشل في حذف المساهم");
+      },
     }
   );
 
   const handleAddSuccess = () => {
-    queryClient.invalidateQueries('investors');
+    queryClient.invalidateQueries("investors");
     setShowAddModal(false);
   };
 
@@ -114,58 +117,96 @@ const Investors = () => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(1);
   };
-  
+  const debouncedSearch = useMemo(() => debounce((val) => {
+    setSearchQuery(val);
+    setPage(1);
+  }, 300), []);
   const handleSearch = (event) => {
-    setSearchQuery(event.target.value);
+    debouncedSearch(event.target.value);
     setPage(1);
   };
-  
+
   const handleAdvancedSearch = (filters) => {
     setAdvancedFilters(filters);
     setPage(1);
   };
 
+  const fetchInvestorsQuery = () => {
+    queryClient.invalidateQueries("investors");
+  };
+
   const filteredInvestors = investorsData?.investors || [];
 
-  
   return (
     <>
       <Helmet>
         <title>المساهمين</title>
         <meta name="description" content="المساهمين في نظام إدارة المساهمين" />
       </Helmet>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1} mr={3} mt={5} spacing={2}>
-          <Button 
-            variant="contained" 
-            color="primary" 
-            onClick={() => setShowAddModal(true)}
-            startIcon={<PlusOutlined style={{marginLeft: '10px'}} />}
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={1}
+        mr={3}
+        mt={5}
+        spacing={2}
+      >
+        <Fab
+          color="primary"
+          variant="extended"
+          onClick={() => setShowAddModal(true)}
+          sx={{
+            borderRadius: "8px",
+            fontWeight: "bold",
+            textTransform: "none",
+            height: "40px",
+          }}
+        >
+          <PlusOutlined style={{ marginRight: 8 }} />
+          إضافة مساهم
+        </Fab>
+        <Stack direction="row" spacing={1}>
+          <InputBase
+            placeholder="بحث عن مساهم"
+            startAdornment={
+              <SearchOutlined
+                style={{ marginLeft: "10px", marginRight: "10px" }}
+              />
+            }
+            sx={{
+              width: "250px",
+              padding: "8px 15px",
+              marginLeft: "5px",
+              borderRadius: "4px",
+              fontSize: "16px",
+            }}
+            value={searchQuery}
+            onChange={handleSearch}
+          />
+
+          <IconButton
+            onClick={() => setSearchModalOpen(true)}
+            sx={{ border: "1px solid", borderColor: "divider" }}
           >
-            اضافة مساهم
-          </Button>
-          <Stack direction="row" spacing={1}>
-            <InputBase
-              placeholder="بحث عن مساهم"
-              startAdornment={<SearchOutlined style={{marginLeft: '10px', marginRight: '10px'}} />}
-              sx={{
-                width: '250px',
-                padding: '8px 15px',
-                marginLeft: '5px',
-                borderRadius: '4px',
-                fontSize: '16px',
+            <FilterOutlined style={{ color: "green" }} />
+          </IconButton>
+
+          {(searchQuery || Object.keys(advancedFilters).length > 0) && (
+            <IconButton
+              onClick={() => {
+                setSearchQuery("");
+                fetchInvestorsQuery();
+                setPage(1);
+                setAdvancedFilters({});
               }}
-              value={searchQuery}
-              onChange={handleSearch}
-            />
-            
-            <IconButton 
-              onClick={() => setSearchModalOpen(true)}
-              sx={{ border: '1px solid', borderColor: 'divider' }}
+              sx={{ border: "1px solid", borderColor: "divider" }}
             >
-              <FilterOutlined />
+              <RestartAltOutlined style={{ color: "blue" }} />
             </IconButton>
-          </Stack>
+          )}
         </Stack>
+      </Stack>
       <Box className="content-area">
         <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
           <Table stickyHeader>
@@ -186,7 +227,7 @@ const Investors = () => {
               {isLoading || isFetching ? (
                 <StyledTableRow>
                   <StyledTableCell colSpan={6} align="center">
-                    <Spin size="large" /> 
+                    <Spin size="large" />
                   </StyledTableCell>
                 </StyledTableRow>
               ) : !investorsData?.investors?.length ? (
@@ -206,16 +247,18 @@ const Investors = () => {
                         {investor.fullName}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {formatAmount(investor.amount, 'IQD')}
+                        {formatAmount(investor.amount, "IQD")}
                       </StyledTableCell>
-                      <StyledTableCell align="center">{`${investor.sharePercentage.toFixed(2)}%`}</StyledTableCell>
+                      <StyledTableCell align="center">{`${investor.sharePercentage.toFixed(
+                        2
+                      )}%`}</StyledTableCell>
                       <StyledTableCell align="center">
                         {dayjs(investor.createdAt).format("DD/MM/YYYY")}
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         <Link to={`/transactions/${investor.userId}`}>
                           <IconButton size="small">
-                            <EyeOutlined style={{color: 'green'}} />
+                            <EyeOutlined style={{ color: "green" }} />
                           </IconButton>
                         </Link>
                       </StyledTableCell>
@@ -225,19 +268,26 @@ const Investors = () => {
                           color="error"
                           onClick={() => handleOpenDeleteModal(investor)}
                         >
-                          <DeleteOutlined style={{color: 'red'}} />
+                          <DeleteOutlined style={{ color: "red" }} />
                         </IconButton>
                       </StyledTableCell>
                     </StyledTableRow>
                   ))}
                   <StyledTableRow>
-                    <StyledTableCell colSpan={2} align="center" sx={{ fontWeight: 'bold' }}>
+                    <StyledTableCell
+                      colSpan={2}
+                      align="center"
+                      sx={{ fontWeight: "bold" }}
+                    >
                       الإجمالي
                     </StyledTableCell>
-                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
+                    <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
                       {formatAmount(
-                        filteredInvestors.reduce((total, investor) => total + investor.amount, 0),
-                        'IQD'
+                        filteredInvestors.reduce(
+                          (total, investor) => total + investor.amount,
+                          0
+                        ),
+                        "IQD"
                       )}
                     </StyledTableCell>
                     <StyledTableCell colSpan={3} />
@@ -271,7 +321,7 @@ const Investors = () => {
           onClose={handleCloseDeleteModal}
           onConfirm={() => handleDeleteInvestor(selectedInvestor)}
           title="حذف المساهم"
-          message={`هل أنت متأكد من حذف المساهم؟`}  
+          message={`هل أنت متأكد من حذف المساهم؟`}
           isLoading={deleteInvestorMutation.isLoading}
           ButtonText="حذف"
         />
@@ -281,7 +331,6 @@ const Investors = () => {
           onClose={() => setSearchModalOpen(false)}
           onSearch={handleAdvancedSearch}
         />
-
       </Box>
     </>
   );

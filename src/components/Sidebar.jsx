@@ -68,11 +68,11 @@ const Sidebar = ({ isOpen, onClose }) => {
         path: '/investors',
         label: 'المساهمين',
         icon: <People size={22} />,
-        roles: ['ADMIN', 'USER'] 
+        roles: ['ADMIN'] 
       },
       {
         path: '/transactions',
-        label: userRole === 'ADMIN' ? 'العمليات المالية' : 'عرض العمليات المالية',
+        label: userRole === 'ADMIN' ? 'العمليات المالية' : '  معاملاتك المالية',
         icon: <AccountBalance size={22} />,
         roles: ['ADMIN', 'USER'] 
       },
@@ -80,7 +80,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         path: '/financial-years',
         label: userRole === 'ADMIN' ? 'السنوات المالية' : 'عرض السنوات المالية',
         icon: <TrendingUp size={22} />,
-        roles: ['ADMIN', 'USER']
+        roles: ['ADMIN']
       },
       {
         path: '/reports',

@@ -88,7 +88,6 @@ const Settings = () => {
       
       const response = await Api.patch('/api/settings', settings);
       
-      // التعديل هنا: التحقق من وجود البيانات في الاستجابة بدلاً من response.success
       if (response.data) {
         await updateCurrencySettings(settings);
         toast.success('تم حفظ الإعدادات بنجاح');

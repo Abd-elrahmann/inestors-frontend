@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
-  Button,
+  Fab,
   Stack,
   Table,
   TableBody,
@@ -37,11 +37,19 @@ import DeleteModal from "../modals/DeleteModal";
 import TransactionsSearchModal from "../modals/TransactionsSearchModal";
 import dayjs from "dayjs";
 import { useParams, useNavigate } from "react-router-dom";
+import { useUser } from "../utils/user";
+import { debounce } from 'lodash';
+import { useSettings } from "../hooks/useSettings";
 
 const Transactions = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useUser();
+  const [profile, setProfile] = useState(user);
+  useEffect(() => {
+    setProfile(user);
+  }, [user]);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [page, setPage] = useState(1);
@@ -50,8 +58,8 @@ const Transactions = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
-
-  const { formatAmount, currentCurrency, settings } = useCurrencyManager();
+  const { data: settingsData } = useSettings();
+  const { formatAmount, currentCurrency } = useCurrencyManager();
 
   // Fetch transactions query
   const {
@@ -120,8 +128,13 @@ const Transactions = () => {
     setPage(1);
   };
 
+  const debouncedSearch = useMemo(() => debounce((val) => {
+    setSearchQuery(val);
+    setPage(1);
+  }, 300), []);
+
   const handleSearch = (event) => {
-    setSearchQuery(event.target.value);
+    debouncedSearch(event.target.value);
     setPage(1);
   };
 
@@ -162,7 +175,9 @@ const Transactions = () => {
   const amount = transactions.reduce((total, transaction) => {
     return total + transaction.amount;
   }, 0);
-  const currency = settings.defaultCurrency;
+  const currency = settingsData.defaultCurrency;
+
+  const isAdmin = profile?.role === 'ADMIN';  
 
   return (
     <>
@@ -185,10 +200,10 @@ const Transactions = () => {
               </Typography>
             </Stack>
             <Stack direction="row" justifyContent="space-between" alignItems="center" marginTop={2}>
-             <Button variant="contained" color="primary" onClick={() => navigate('/investors')}>
+             <Fab variant="contained" color="primary" onClick={() => navigate('/investors')}>
               الرجوع لصفحة المساهمين
               <ArrowLeftOutlined style={{ marginRight: "10px" }} />
-             </Button>
+             </Fab>
             </Stack>
           </Card>
         )}
@@ -202,42 +217,54 @@ const Transactions = () => {
           mt={2}
           spacing={2}
         >
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleAddTransaction}
-            startIcon={<PlusOutlined style={{ marginLeft: "10px" }} />}
-          >
-            إضافة عملية جديدة
-          </Button>
+          {isAdmin && (
+            <Fab
+              variant="extended"
+              color="primary"
+              onClick={handleAddTransaction}
+              sx={{
+                borderRadius: "8px",
+                fontWeight: "bold",
+                textTransform: "none",
+                height: "40px",
+              }}
+            >
+              <PlusOutlined style={{ marginRight: 8 }} />
+              إضافة عملية جديدة
+            </Fab>
+          )}
 
           <Stack direction="row" spacing={1}>
-            <InputBase
-              placeholder="ابحث عن عملية..."
-              value={searchQuery}
-              onChange={handleSearch}
-              startAdornment={
-                <InputAdornment position="start">
-                  <SearchOutlined
-                    style={{ color: "#666", marginRight: "10px" }}
-                  />
-                </InputAdornment>
-              }
-              sx={{
-                width: "250px",
-                padding: "8px 15px",
-                marginLeft: "5px",
-                borderRadius: "4px",
-                fontSize: "16px",
-              }}
-            />
+            {isAdmin && (
+              <>
+                <InputBase
+                  placeholder="ابحث عن عملية..."
+                  value={searchQuery}
+                  onChange={handleSearch}
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <SearchOutlined
+                        style={{ color: "#666", marginRight: "10px" }}
+                      />
+                    </InputAdornment>
+                  }
+                  sx={{
+                    width: "250px",
+                    padding: "8px 15px",
+                    marginLeft: "5px",
+                    borderRadius: "4px",
+                    fontSize: "16px",
+                  }}
+                />
 
-            <IconButton
-              onClick={() => setSearchModalOpen(true)}
-              sx={{ border: "1px solid", borderColor: "divider" }}
-            >
-              <FilterOutlined />
-            </IconButton>
+                <IconButton
+                  onClick={() => setSearchModalOpen(true)}
+                  sx={{ border: "1px solid", borderColor: "divider" }}
+                >
+                  <FilterOutlined />
+                </IconButton>
+              </>
+            )}
           </Stack>
         </Stack>
 
@@ -252,19 +279,19 @@ const Transactions = () => {
                   المبلغ ({currentCurrency})
                 </StyledTableCell>
                 <StyledTableCell align="center">التاريخ</StyledTableCell>
-                <StyledTableCell align="center">حذف</StyledTableCell>
+                {isAdmin && <StyledTableCell align="center">حذف</StyledTableCell>}
               </TableRow>
             </TableHead>
             <TableBody>
               {isLoading || isFetching ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={6} align="center">
+                  <StyledTableCell colSpan={isAdmin ? 6 : 5} align="center">
                     <Spin size="large" />
                   </StyledTableCell>
                 </StyledTableRow>
               ) : transactions.length === 0 ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={6} align="center">
+                  <StyledTableCell colSpan={isAdmin ? 6 : 5} align="center">
                     لا توجد معاملات
                   </StyledTableCell>
                 </StyledTableRow>
@@ -299,30 +326,34 @@ const Transactions = () => {
                         ? dayjs(transaction.date).format("DD/MM/YYYY")
                         : "غير محدد"}
                     </StyledTableCell>
-                    <StyledTableCell align="center">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleOpenDeleteModal(transaction)}
-                      >
-                        <DeleteOutlined />
-                      </IconButton>
-                    </StyledTableCell>
+                    {isAdmin && (
+                      <StyledTableCell align="center">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleOpenDeleteModal(transaction)}
+                        >
+                          <DeleteOutlined />
+                        </IconButton>
+                      </StyledTableCell>
+                    )}
                   </StyledTableRow>
                 ))
               )}
             </TableBody>
           </Table>
-          <TablePagination
-            component="div"
-            count={totalTransactions}
-            page={page - 1}
-            onPageChange={(e, newPage) => setPage(newPage + 1)}
-            rowsPerPage={rowsPerPage}
-            rowsPerPageOptions={[5, 10, 20]}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            labelRowsPerPage="عدد الصفوف في الصفحة"
-          />
+          {isAdmin && (
+            <TablePagination
+              component="div"
+              count={totalTransactions}
+              page={page - 1}
+              onPageChange={(e, newPage) => setPage(newPage + 1)}
+              rowsPerPage={rowsPerPage}
+              rowsPerPageOptions={[5, 10, 20]}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="عدد الصفوف في الصفحة"
+            />
+          )}
         </TableContainer>
 
         <AddTransactionModal

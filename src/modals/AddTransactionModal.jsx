@@ -20,14 +20,13 @@ import { toast } from 'react-toastify';
 import Api from '../services/api';
 import { Link } from 'react-router-dom';
 import { ArrowLeftOutlined } from '@ant-design/icons';
+import { useSettings } from '../hooks/useSettings';
+
 const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [investorsLoading, setInvestorsLoading] = useState(false);
   const [investors, setInvestors] = useState([]);
-  const [settings, setSettings] = useState({
-    defaultCurrency: 'USD',
-    USDtoIQD: 0
-  });
+  const { data: settings } = useSettings();
   const [formData, setFormData] = useState({
     userId: null,
     type: 'deposit',
@@ -45,7 +44,6 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   useEffect(() => {
     if (open) {
       fetchInvestors();
-      fetchSettings();
     }
   }, [open]);
 
@@ -61,21 +59,6 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       toast.error('خطأ في تحميل قائمة المساهمين');
     } finally {
       setInvestorsLoading(false);
-    }
-  };
-
-  const fetchSettings = async () => {
-    try {
-      const response = await Api.get('/api/settings');
-      if (response.data) {
-        setSettings({
-          defaultCurrency: response.data.defaultCurrency,
-          USDtoIQD: response.data.USDtoIQD
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching settings:', error);
-      toast.error('خطأ في تحميل الإعدادات');
     }
   };
 
@@ -209,7 +192,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, justifyContent: 'center' }}>
               <span>هل تحتاج الي تغيير العملة؟</span>
               <Link to="/settings" target='_blank' style={{textDecoration: 'none', color: 'green'}}>
-                تغيير العملة
+                الاعدادات
                 <ArrowLeftOutlined style={{ marginRight: "10px" }} />
               </Link>
             </Box>
@@ -259,7 +242,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    {settings.defaultCurrency === 'USD' ? '$' : 'د.ع'}
+                    {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                   </InputAdornment>
                 ),
               }}

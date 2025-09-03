@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { debounce } from 'lodash';
 import {
   Box,
   Table,
@@ -12,7 +13,8 @@ import {
   Button,
   Stack,
   Chip,
-  InputBase
+  InputBase,
+  Fab
 } from '@mui/material';
 import {
   EditOutlined,
@@ -32,6 +34,7 @@ import { useMutation, useQuery, useQueryClient } from 'react-query';
 import DeleteModal from '../modals/DeleteModal';
 import UserSearchModal from '../modals/UserSearchModal';
 import AddInvestorModal from '../modals/AddInvestorModal';
+import { RestartAltOutlined } from '@mui/icons-material';
 
 const Users = () => {
   const queryClient = useQueryClient();
@@ -123,14 +126,23 @@ const Users = () => {
     setPage(1);
   };
 
+  const debouncedSearch = useMemo(() => debounce((val) => {
+    setSearch(val);
+    setPage(1);
+  }, 300), []);
+
   const handleSearch = (event) => {
-    setSearch(event.target.value);
+    debouncedSearch(event.target.value);
     setPage(1);
   };
 
   const handleAdvancedSearch = (filters) => {
     setAdvancedFilters(filters);
     setPage(1);
+  };
+
+  const fetchUsersQuery = () => {
+    queryClient.invalidateQueries("users");
   };
 
   const filteredUsers = usersData?.users || [];
@@ -143,14 +155,21 @@ const Users = () => {
       </Helmet>
       <Box className="content-area">
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3} mr={1} mt={2} spacing={2}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleAddUser}
-            startIcon={<PlusOutlined style={{marginLeft: '10px'}} />}
-          >
-            إضافة مستخدم
-          </Button>
+        <Fab
+  color="primary"
+  variant="extended"
+  onClick={handleAddUser}
+  sx={{
+    borderRadius: '8px',
+    fontWeight: 'bold',
+    textTransform: 'none',
+    height: '40px',
+  }}
+>
+  <PlusOutlined style={{ marginRight: 8 }} />
+  إضافة مستخدم
+</Fab>
+
           
           <Stack direction="row" spacing={1}>
             <InputBase
@@ -171,8 +190,22 @@ const Users = () => {
               onClick={() => setSearchModalOpen(true)}
               sx={{ border: '1px solid', borderColor: 'divider' }}
             >
-              <FilterOutlined />
+              <FilterOutlined style={{color: 'green'}} />
             </IconButton>
+
+            {(search || Object.keys(advancedFilters).length > 0) && (
+              <IconButton
+                onClick={() => {
+                  setSearch('');
+                  fetchUsersQuery();
+                  setAdvancedFilters({});
+                }}
+            
+                sx={{ border: '1px solid', borderColor: 'divider' }}
+              >
+                <RestartAltOutlined style={{color: 'blue'}} />
+              </IconButton>
+            )}
           </Stack>
         </Stack>
 
@@ -212,12 +245,13 @@ const Users = () => {
                     <StyledTableCell align="center">{user.phone}</StyledTableCell>
                     <StyledTableCell align="center">
                       <Chip
-                        label={user.role}
+                        label={user.role === 'ADMIN' ? 'مدير' : 'مستخدم'} 
                         variant="outlined"
                         sx={{
                           fontSize: '12px',
                           fontWeight: 'bold',
                           color: user.role === 'ADMIN' ? '#ffc107' : '#6c757d'
+                          
                         }}
                       />
                     </StyledTableCell>
