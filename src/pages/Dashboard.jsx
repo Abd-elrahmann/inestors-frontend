@@ -37,16 +37,15 @@ import {
 } from 'chart.js';
 import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
-import { investorsAPI, transactionsAPI, financialYearsAPI, handleApiError } from '../services/apiHelpers';
 import { Helmet } from 'react-helmet-async';
+import { useMediaQuery } from '@mui/material';
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
-
+import Api from '../services/api';
 const { Title: AntTitle, Text } = Typography;
 const { Content } = Layout;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
-
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -180,6 +179,7 @@ const Dashboard = () => {
     profitGrowth: 0,
     operationsGrowth: 0
   });
+  const isMobile = useMediaQuery('(max-width: 480px)');
 
 
 
@@ -219,9 +219,9 @@ const Dashboard = () => {
       setLoading(true);
       
       const [investorsResponse, transactionsResponse, financialYearsResponse] = await Promise.allSettled([
-        investorsAPI.getAll({ page: 1, limit: 1000 }),
-        transactionsAPI.getAll({ page: 1, limit: 1000 }),
-        financialYearsAPI.getAll({ page: 1, limit: 1000 })
+        Api.get('/investors', { params: { page: 1, limit: 1000 } }),
+        Api.get('/transactions', { params: { page: 1, limit: 1000 } }),
+        Api.get('/financial-years', { params: { page: 1, limit: 1000 } })
       ]);
 
       // Handle API responses
@@ -229,19 +229,19 @@ const Dashboard = () => {
       let transactionsData = [];
       let financialYearsData = [];
       
-      if (investorsResponse.status === 'fulfilled' && investorsResponse.value.success) {
+      if (investorsResponse.status === 'fulfilled' && investorsResponse.value.data.success) {
         investorsData = investorsResponse.value.data.investors || [];
       } else {
         console.error('Error fetching investors:', investorsResponse.reason);
       }
       
-      if (transactionsResponse.status === 'fulfilled' && transactionsResponse.value.success) {
+      if (transactionsResponse.status === 'fulfilled' && transactionsResponse.value.data.success) {
         transactionsData = transactionsResponse.value.data.transactions || [];
       } else {
         console.error('Error fetching transactions:', transactionsResponse.reason);
       }
       
-      if (financialYearsResponse.status === 'fulfilled' && financialYearsResponse.value.success) {
+      if (financialYearsResponse.status === 'fulfilled' && financialYearsResponse.value.data.success) {
         financialYearsData = financialYearsResponse.value.data.financialYears || [];
       } else {
         console.error('Error fetching financial years:', financialYearsResponse.reason);
@@ -294,7 +294,7 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       // eslint-disable-next-line no-unused-vars
-      const errorMessage = handleApiError(error);
+      const errorMessage = Api.handleApiError(error);
       // You might want to show this error to the user
     } finally {
       setLoading(false);
@@ -583,13 +583,23 @@ const Dashboard = () => {
       <title>لوحة التحكم</title>
       <meta name="description" content="لوحة التحكم في نظام إدارة المساهمين" />
     </Helmet>
-    <Content style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+    <Content style={{ 
+      padding: isMobile ? '16px' : '24px', 
+      maxWidth: '1400px', 
+      margin: '0 auto',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: isMobile ? 'center' : 'stretch'
+    }}>
       <motion.div 
         variants={pageVariants}
         initial="initial"
         animate="animate"
         layout={false}
         key="dashboard-page"
+        style={{
+          width: '100%'
+        }}
       >
         <div style={{ marginBottom: '24px', textAlign: 'center' }}>
           <AntTitle level={2}>لوحة التحكم</AntTitle>
@@ -602,7 +612,7 @@ const Dashboard = () => {
           </div>
         ) : (
           <>
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+            <Row gutter={[16, 16]} style={{ marginBottom: '24px', width: '100%' }}>
               {stats.map((stat, index) => (
                 <Col xs={24} sm={12} md={6} key={index}>
                   <motion.div
@@ -634,7 +644,7 @@ const Dashboard = () => {
               ))}
             </Row>
 
-            <Row gutter={[16, 16]}>
+            <Row gutter={[16, 16]} style={{ width: '100%' }}>
               <Col xs={24} lg={12}>
                 <motion.div variants={chartVariants}>
                   <Card 

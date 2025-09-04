@@ -14,7 +14,8 @@ import {
   Stack,
   Chip,
   InputBase,
-  Fab
+  Fab,
+  useMediaQuery
 } from '@mui/material';
 import {
   EditOutlined,
@@ -47,7 +48,7 @@ const Users = () => {
   const [search, setSearch] = useState("");
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
-
+  const isMobile = useMediaQuery('(max-width: 480px)');
   // Fetch users query
   const { data: usersData, isLoading, isFetching } = useQuery(
     ['users', page, rowsPerPage, search, advancedFilters],
@@ -154,7 +155,7 @@ const Users = () => {
         <meta name="description" content="المستخدمين في نظام إدارة المساهمين" />
       </Helmet>
       <Box className="content-area">
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3} mr={1} mt={2} spacing={2}>
+        <Stack direction={isMobile ? 'column' : 'row'} justifyContent="space-between" alignItems="center" mb={3} mr={1} mt={2} spacing={2}>
         <Fab
   color="primary"
   variant="extended"

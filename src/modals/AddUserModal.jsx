@@ -13,7 +13,8 @@ import {
   InputAdornment,
   CircularProgress,
   Select,
-  MenuItem
+  MenuItem,
+  useMediaQuery
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
@@ -30,7 +31,8 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient(); 
+  const isMobile = useMediaQuery('(max-width: 480px)');
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -175,13 +177,13 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
     <Dialog 
       open={open} 
       onClose={handleClose}
-      maxWidth="xs"
+      maxWidth={isMobile ? 'md' : 'xs'}
       fullWidth
       PaperProps={{
         sx: {
           borderRadius: 3,
           minHeight: mode === 'add' ? '30vh' : '40vh',
-          width: '50%',
+          width: isMobile ? '90%' : '50%',
           scrollbarWidth: 'none',
         }
       }}
@@ -223,7 +225,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
             البيانات الأساسية
           </Typography>
           
-          <Grid container spacing={6} sx={{ mb: 4, justifyContent: 'center',flexDirection: 'column', alignItems: 'center' }}>
+          <Grid container spacing={6} sx={{ mb: 4, justifyContent: 'center',flexDirection: isMobile ? 'column' : 'row', alignItems: 'center' }}>
             <Grid item xs={12} md={12}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
                 <TextField
@@ -318,7 +320,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
                 إعدادات كلمة المرور
               </Typography>
               
-              <Grid container spacing={6} sx={{ mb: 4, justifyContent: 'center', alignItems: 'center' }}>
+              <Grid container spacing={6} sx={{ mb: 4, justifyContent: 'center', alignItems: 'center',flexDirection: isMobile ? 'column' : 'row' }}>
                 <Grid item xs={12} md={12} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                   <TextField
                     sx={{width:'300px'}}
@@ -352,7 +354,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
                   />
                 </Grid>
 
-                <Grid item xs={12} md={12} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <Grid item xs={12} md={12} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center',flexDirection: isMobile ? 'column' : 'row' }}>
                   <TextField
                     sx={{width:'300px'}}
                     label="تأكيد كلمة المرور"
@@ -395,13 +397,13 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
           justifyContent: 'space-between',
           display: 'flex',
           alignItems: 'center',
-          direction:'ltr'
+          direction:'ltr',
         }}>
           <Button
             onClick={handleClose}
             disabled={loading}
             variant="outlined"
-            size="large"
+            size={isMobile ? 'small' : 'large'}
             sx={{
               fontFamily: 'Cairo',
               fontWeight: 500,
@@ -420,7 +422,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
             type="submit"
             disabled={loading}
             variant="contained"
-            size="large"
+            size={isMobile ? 'small' : 'large'}
             sx={{
               fontFamily: 'Cairo',
               fontWeight: 500,

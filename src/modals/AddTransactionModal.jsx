@@ -11,7 +11,8 @@ import {
   InputAdornment,
   CircularProgress,
   Autocomplete,
-  MenuItem
+  MenuItem,
+  useMediaQuery
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
@@ -27,6 +28,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const [investorsLoading, setInvestorsLoading] = useState(false);
   const [investors, setInvestors] = useState([]);
   const { data: settings } = useSettings();
+  const isMobile = useMediaQuery('(max-width: 480px)');
   const [formData, setFormData] = useState({
     userId: null,
     type: 'deposit',
@@ -148,13 +150,13 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
     <Dialog 
       open={open} 
       onClose={handleClose}
-      maxWidth="xs"
+      maxWidth={isMobile ? 'md' : 'xs'}
       fullWidth
       PaperProps={{
         sx: {
           borderRadius: 3,
           minHeight: '50vh',
-          width: '50%',
+          width: isMobile ? '90%' : '50%',
         }
       }}
     >
@@ -189,7 +191,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
             width: '80%',
             mx: 'auto'
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, justifyContent: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, justifyContent: 'center',flexDirection: isMobile ? 'column' : 'row' }}>
               <span>هل تحتاج الي تغيير العملة؟</span>
               <Link to="/settings" target='_blank' style={{textDecoration: 'none', color: 'green'}}>
                 الاعدادات
@@ -265,12 +267,12 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
           </Box>
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, gap: 3, justifyContent: 'center' }}>
+        <DialogActions sx={{ p: 3, gap: 3, justifyContent: 'center',flexDirection: isMobile ? 'column' : 'row' }}>
           <Button
             onClick={handleClose}
             disabled={loading}
             variant="outlined"
-            size="large"
+            size={isMobile ? 'small' : 'large'}
           >
             إلغاء
           </Button>
@@ -279,7 +281,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
             type="submit"
             disabled={loading}
             variant="contained"
-            size="large"
+            size={isMobile ? 'small' : 'large'}
             sx={{ backgroundColor: 'primary.main' }}
           >
             {loading ? (

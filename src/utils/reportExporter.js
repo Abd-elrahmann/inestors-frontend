@@ -307,19 +307,7 @@ export const exportToExcel = (data, reportType) => {
       ];
       break;
       
-    case 'performance_analysis':
-      filename = 'تقرير-تحليل-الأداء.xlsx';
-      worksheetData = [
-        ['المقياس', 'القيمة'],
-        ['إجمالي المستثمرين', data.totalInvestors],
-        ['إجمالي رأس المال', data.totalCapital],
-        ['إجمالي الأرباح', data.totalProfits],
-        ['متوسط العائد', data.averageReturn],
-        ['العمليات الشهرية', data.monthlyOperations],
-        ['معدل النجاح', data.successRate]
-      ];
-      break;
-      
+  
     case 'financial_year':
       filename = `تقرير-السنة-المالية-${data.year}.xlsx`;
       worksheetData = [

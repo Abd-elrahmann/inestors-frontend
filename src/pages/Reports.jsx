@@ -26,7 +26,6 @@ import {
   CalendarOutlined
 } from '@ant-design/icons';
 import Api from '../services/api';
-import { ErrorAlert } from '../components/shared/LoadingComponents';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
 import { Helmet } from 'react-helmet-async';
 import ReportTypeSelector from '../components/Reports/ReportTypeSelector';
@@ -45,7 +44,6 @@ const Reports = () => {
   const [selectedReport, setSelectedReport] = useState("");
   const [dateRange, setDateRange] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [reportGenerating, setReportGenerating] = useState(false);
   const [reportData, setReportData] = useState(null);
   const { formatAmount, currentCurrency } = useCurrencyManager();
@@ -76,12 +74,11 @@ const Reports = () => {
   const loadInitialData = async () => {
     try {
       setLoading(true);
-      setError(null);
       
       const [investorsResponse, transactionsResponse, financialYearsResponse] = await Promise.all([
-        apiService.request('/investors?limit=200&includeInactive=true'),
-        apiService.request('/transactions?limit=500'),
-        apiService.request('/financial-years?limit=10&sort=-startDate')
+        Api.get('/investors?limit=200&includeInactive=true'),
+        Api.get('/transactions?limit=500'),
+        Api.get('/financial-years?limit=10&sort=-startDate')
       ]);
       
       const investorsData = investorsResponse?.data?.investors || [];
@@ -104,7 +101,6 @@ const Reports = () => {
       setLoading(false);
     } catch (err) {
       console.error('Error loading reports data:', err);
-      setError('فشل في تحميل بيانات التقارير');
       setLoading(false);
     }
   };
@@ -112,7 +108,6 @@ const Reports = () => {
   const handleGenerateReport = async () => {
     try {
       setReportGenerating(true);
-      setError(null);
       
       if (selectedReport === "individual_investor") {
         setIndividualReportOpen(true);
@@ -122,7 +117,6 @@ const Reports = () => {
 
       if (selectedReport === "financial_year") {
         if (!selectedFinancialYear) {
-          setError('يرجى اختيار السنة المالية');
           setReportGenerating(false);
           return;
         }
@@ -130,8 +124,8 @@ const Reports = () => {
         try {
           setFinancialYearReportLoading(true);
           const [yearResponse, distributionsResponse] = await Promise.all([
-            apiService.request(`/financial-years/${selectedFinancialYear._id}`),
-            apiService.request(`/financial-years/${selectedFinancialYear._id}/distributions`)
+            Api.get(`/financial-years/${selectedFinancialYear._id}`),
+            Api.get(`/financial-years/${selectedFinancialYear._id}/distributions`)
           ]);
           
           const yearData = yearResponse?.data?.financialYear || {};
@@ -143,7 +137,6 @@ const Reports = () => {
           });
         } catch (err) {
           console.error('Error loading financial year data:', err);
-          setError('فشل في تحميل بيانات السنة المالية');
         } finally {
           setFinancialYearReportLoading(false);
           setReportGenerating(false);
@@ -159,7 +152,7 @@ const Reports = () => {
 
       switch (selectedReport) {
         case "investors_summary": {
-          const investorsResponse = await apiService.request('/investors?limit=200&includeInactive=true');
+          const investorsResponse = await Api.get('/investors?limit=200&includeInactive=true');
           const investorsData = investorsResponse?.data?.investors || [];
           reportData.data = investorsData.map(investor => ({
             id: investor._id,
@@ -173,11 +166,10 @@ const Reports = () => {
           
         case "financial_transactions": {
           if (dateRange.length !== 2) {
-            setError('يرجى تحديد الفترة الزمنية للعمليات المالية');
             setReportGenerating(false);
             return;
           }
-          const transactionsResponse = await apiService.request('/transactions?limit=500');
+          const transactionsResponse = await Api.get('/transactions?limit=500');
           const transactionsData = transactionsResponse?.data?.transactions || [];
           reportData.data = transactionsData.map(transaction => ({
             id: transaction._id,
@@ -196,7 +188,6 @@ const Reports = () => {
       setReportData(reportData);
     } catch (err) {
       console.error('Error generating report:', err);
-      setError('فشل في إنشاء التقرير');
     } finally {
       setReportGenerating(false);
     }
@@ -204,18 +195,16 @@ const Reports = () => {
 
   const handleGenerateIndividualReport = async () => {
     if (!selectedInvestor) {
-      setError('يرجى اختيار المساهم');
       return;
     }
 
     try {
       setIndividualReportLoading(true);
-      setError(null);
 
       const [investorResponse, transactionsResponse, financialYearsResponse] = await Promise.all([
-        apiService.request(`/investors/${selectedInvestor._id}`),
-        apiService.request(`/transactions?investorId=${selectedInvestor._id}`),
-        apiService.request('/financial-years')
+        Api.get(`/investors/${selectedInvestor._id}`),
+        Api.get(`/transactions?investorId=${selectedInvestor._id}`),
+        Api.get('/financial-years')
       ]);
 
       const investorData = investorResponse?.data?.investor || investorResponse?.data || {};
@@ -223,7 +212,7 @@ const Reports = () => {
       const financialYears = financialYearsResponse?.data?.financialYears || [];
 
       const profitsPromises = financialYears.map(year => 
-        apiService.request(`/financial-years/${year._id}/distributions`)
+        Api.get(`/financial-years/${year._id}/distributions`)
           .then(response => {
             const distributions = response?.data?.distributions || [];
             const investorDistribution = distributions.find(d => 
@@ -258,7 +247,6 @@ const Reports = () => {
 
     } catch (err) {
       console.error('Error generating individual report:', err);
-      setError('فشل في إنشاء تقرير المساهم');
     } finally {
       setIndividualReportLoading(false);
     }
@@ -266,7 +254,6 @@ const Reports = () => {
 
   const handleDownloadPDF = () => {
     if (!reportData && !financialYearReportData && !individualReportData) {
-      setError('يرجى إنشاء التقرير أولاً');
       return;
     }
     
@@ -284,18 +271,15 @@ const Reports = () => {
             exportTransactionsToPDF(reportData.data);
             break;
           default:
-            setError('نوع التقرير غير مدعوم للتصدير');
         }
       }
     } catch (err) {
       console.error('Error downloading PDF:', err);
-      setError('فشل في تحميل ملف PDF');
     }
   };
   
   const handleDownloadExcel = () => {
     if (!reportData && !financialYearReportData && !individualReportData) {
-      setError('يرجى إنشاء التقرير أولاً');
       return;
     }
     
@@ -309,13 +293,11 @@ const Reports = () => {
       }
     } catch (err) {
       console.error('Error downloading Excel:', err);
-      setError('فشل في تحميل ملف Excel');
     }
   };
   
   const handlePrintReport = () => {
     if (!reportData && !individualReportData) {
-      setError('يرجى إنشاء التقرير أولاً');
       return;
     }
 
@@ -489,7 +471,6 @@ const Reports = () => {
       }
     } catch (err) {
       console.error('Error printing report:', err);
-      setError('فشل في طباعة التقرير');
     }
   };
 
@@ -501,9 +482,6 @@ const Reports = () => {
     );
   }
 
-  if (error) {
-    return <ErrorAlert error={error} onRetry={loadInitialData} />;
-  }
 
   return (
     <>

@@ -1,134 +1,22 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Box, CircularProgress, Typography, keyframes } from '@mui/material';
+import { Box } from '@mui/material';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import './styles/commonStyles.css';
-import './styles/sweetAlert.css';
 import { globalCurrencyManager } from './utils/globalCurrencyManager';
 import routes from './routes';
 
 const Navbar = React.lazy(() => import('./components/Navbar'));
 const Sidebar = React.lazy(() => import('./components/Sidebar'));
 
-const pulse = keyframes`
-  0% { opacity: 1; }
-  50% { opacity: 0.6; }
-  100% { opacity: 1; }
-`;
-
-const fadeInOut = keyframes`
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 1; }
-`;
-
-const SmallLoadingSpinner = () => (
-  <Box
-    sx={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '64px',
-      width: '100%'
-    }}
-  >
-    <CircularProgress 
-      size={24} 
-      sx={{ 
-        color: '#28a745',
-        animation: `${pulse} 1s ease-in-out infinite`
-      }} 
-    />
-  </Box>
-);
-
-  const SidebarLoadingSpinner = () => (
-  <Box
-    sx={{
-      position: 'fixed',
-      top: 64,
-      right: 0,
-      bottom: 0,
-      width: '280px',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'transparent',
-      zIndex: 1199
-    }}
-  >
-    <CircularProgress 
-      size={20} 
-      sx={{ 
-        color: '#28a745',
-        opacity: 0.5
-      }} 
-    />
-  </Box>
-);
-
-const LoadingSpinner = () => (
-  <Box
-    sx={{
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: { xs: '100px', md: '150px' },
-      gap: 1.5,
-      p: 2,
-      position: 'relative'
-    }}
-  >
-    <CircularProgress 
-      size={32}
-      thickness={4}
-      sx={{ 
-        color: '#28a745',
-        animation: `${pulse} 1s ease-in-out infinite`
-      }} 
-    />
-    <Typography 
-      variant="caption"
-      sx={{ 
-        fontFamily: 'Cairo',
-        color: '#888',
-        fontSize: '0.8rem',
-        textAlign: 'center',
-        animation: `${fadeInOut} 1.5s ease-in-out infinite`
-      }}
-    >
-      تحميل...
-    </Typography>
-  </Box>
-);
-
-const FastLoadingSpinner = () => (
-  <Box
-    sx={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '60px',
-      width: '100%'
-    }}
-  >
-    <CircularProgress 
-      size={20} 
-      thickness={5}
-      sx={{ 
-        color: '#28a745'
-      }} 
-    />
-  </Box>
-);
 
 const theme = createTheme({
   direction: 'rtl',
   typography: {
     fontFamily: 'Cairo, Tajawal, Arial, sans-serif',
+    display:'swap'
   },
   palette: {
     primary: {
@@ -210,7 +98,6 @@ const AppLayout = () => {
 
   if (isAuthPage) {
     return (
-      <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           {routes
             .filter(route => !route.protected)
@@ -226,7 +113,6 @@ const AppLayout = () => {
               />
             ))}
         </Routes>
-      </Suspense>
     );
   }
 
@@ -273,7 +159,6 @@ const AppLayout = () => {
             overflowX: 'hidden' 
           }}
         >
-          <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               {routes
                 .filter(route => route.protected)
@@ -289,7 +174,7 @@ const AppLayout = () => {
                   />
                 ))}
             </Routes>
-          </Suspense>
+          </Box>
         </Box>
         
         {isLoggedIn && isInitialized && (
@@ -300,7 +185,6 @@ const AppLayout = () => {
           />
         )}
       </Box>
-    </Box>
   );
 };
 

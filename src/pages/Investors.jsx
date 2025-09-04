@@ -11,7 +11,8 @@ import {
   IconButton,
   Stack,
   InputBase,
-  Fab
+  Fab,
+  useMediaQuery
 } from "@mui/material";
 import {
   EditOutlined,
@@ -47,7 +48,7 @@ const Investors = () => {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
   const { formatAmount, currentCurrency } = useCurrencyManager();
-
+  const isMobile = useMediaQuery('(max-width: 480px)');
   // Fetch investors query
   const {
     data: investorsData,
@@ -144,8 +145,8 @@ const Investors = () => {
         <meta name="description" content="المساهمين في نظام إدارة المساهمين" />
       </Helmet>
       <Stack
-        direction="row"
-        justifyContent="space-between"
+        direction={isMobile ? 'column' : 'row'}
+        justifyContent= {isMobile ? 'center' : "space-between"}
         alignItems="center"
         mb={1}
         mr={3}
@@ -166,7 +167,7 @@ const Investors = () => {
           <PlusOutlined style={{ marginRight: 8 }} />
           إضافة مساهم
         </Fab>
-        <Stack direction="row" spacing={1}>
+        <Stack direction={isMobile ? 'column' : 'row'} spacing={1}>
           <InputBase
             placeholder="بحث عن مساهم"
             startAdornment={
@@ -175,7 +176,7 @@ const Investors = () => {
               />
             }
             sx={{
-              width: "250px",
+              width: isMobile ? '100%' : '250px',
               padding: "8px 15px",
               marginLeft: "5px",
               borderRadius: "4px",
@@ -187,7 +188,7 @@ const Investors = () => {
 
           <IconButton
             onClick={() => setSearchModalOpen(true)}
-            sx={{ border: "1px solid", borderColor: "divider" }}
+            sx={{ border: isMobile ? 'none' : "1px solid", borderColor: isMobile ? 'none' : "divider" }}
           >
             <FilterOutlined style={{ color: "green" }} />
           </IconButton>
@@ -200,7 +201,7 @@ const Investors = () => {
                 setPage(1);
                 setAdvancedFilters({});
               }}
-              sx={{ border: "1px solid", borderColor: "divider" }}
+              sx={{ border: isMobile ? 'none' : "1px solid", borderColor: isMobile ? 'none' : "divider" }}
             >
               <RestartAltOutlined style={{ color: "blue" }} />
             </IconButton>

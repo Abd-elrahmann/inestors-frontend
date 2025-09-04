@@ -14,12 +14,10 @@ import {
   Grid
 } from 'antd';
 import {
-  SettingOutlined,
   SaveOutlined,
   DollarOutlined
 } from '@ant-design/icons';
 import { toast } from 'react-toastify';
-import { ErrorAlert } from '../components/shared/LoadingComponents';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
 import { Helmet } from 'react-helmet-async';
 import Api from '../services/api';
@@ -32,7 +30,6 @@ const { useBreakpoint } = Grid;
 const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
   const { updateSettings: updateCurrencySettings, refreshPage } = useCurrencyManager();
   // eslint-disable-next-line no-unused-vars
   const screens = useBreakpoint();
@@ -46,7 +43,6 @@ const Settings = () => {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      setError(null);
       
       const response = await Api.get('/api/settings');
       
@@ -64,7 +60,6 @@ const Settings = () => {
       }
     } catch (err) {
       console.error('Error fetching settings:', err);
-      setError('خطأ في تحميل إعدادات النظام');
     } finally {
       setLoading(false);
     }
@@ -111,10 +106,6 @@ const Settings = () => {
     );
   }
 
-  if (error) {
-    return <ErrorAlert error={error} onRetry={fetchSettings} />;
-  }
-
   return (
     <>
       <Helmet>
@@ -141,9 +132,14 @@ const Settings = () => {
                 form={form}
                 layout="vertical"
                 initialValues={settings}
+                onFinish={handleSaveSettings}
                 style={{ maxWidth: '400px', margin: '0 auto' }}
               >
-                <Form.Item label="العملة الافتراضية" name="defaultCurrency">
+                <Form.Item 
+                  label="العملة الافتراضية" 
+                  name="defaultCurrency"
+                  rules={[{ required: true, message: 'الرجاء اختيار العملة الافتراضية' }]}
+                >
                   <Select
                     onChange={(value) => handleSettingChange('defaultCurrency', value)}
                     style={{ width: '100%' }}
@@ -153,7 +149,11 @@ const Settings = () => {
                   </Select>
                 </Form.Item>
 
-                <Form.Item label="سعر صرف الدولار" name="USDtoIQD">
+                <Form.Item 
+                  label="سعر صرف الدولار" 
+                  name="USDtoIQD"
+                  rules={[{ required: true, message: 'الرجاء إدخال سعر الصرف' }]}
+                >
                   <InputNumber
                     style={{ width: '100%' }}
                     onChange={(value) => handleSettingChange('USDtoIQD', value)}
@@ -161,27 +161,21 @@ const Settings = () => {
                     step={10}
                   />
                 </Form.Item>
-              </Form>
-            </Card>
-          </Col>
 
-          <Col xs={24} md={16}>
-            <Card>
-              <Row gutter={[16, 16]} justify="center">
-                <Col xs={24} sm={12}>
+                <Form.Item>
                   <Button
                     type="primary"
-                    icon={<SaveOutlined />}
-                    onClick={handleSaveSettings}
+                    htmlType="submit"
+                    icon={<SaveOutlined style={{marginLeft: '8px'}} />}
                     loading={saving}
                     block
                     size="large"
-                    style={{ backgroundColor: '#28a745', borderColor: '#28a745' }}
+                    style={{ backgroundColor: '#28a745', borderColor: '#28a745',width: '150px',display: 'block',margin: '0 auto' }}
                   >
                     {saving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
                   </Button>
-                </Col>
-              </Row>
+                </Form.Item>
+              </Form>
             </Card>
           </Col>
         </Row>

@@ -16,6 +16,7 @@ import {
   InputAdornment,
   Card,
   Typography,
+  useMediaQuery,
 } from "@mui/material";
 import { toast } from "react-toastify";
 import { Spin } from "antd";
@@ -60,7 +61,7 @@ const Transactions = () => {
   const [advancedFilters, setAdvancedFilters] = useState({});
   const { data: settingsData } = useSettings();
   const { formatAmount, currentCurrency } = useCurrencyManager();
-
+  const isMobile = useMediaQuery('(max-width: 480px)');
   // Fetch transactions query
   const {
     data: transactionsData,
@@ -209,11 +210,11 @@ const Transactions = () => {
         )}
 
         <Stack
-          direction="row"
+          direction={isMobile ? 'column' : 'row'}
           justifyContent="space-between"
           alignItems="center"
           mb={3}
-          mr={1}
+          mr={isMobile ? 0 : 1}
           mt={2}
           spacing={2}
         >
@@ -234,7 +235,7 @@ const Transactions = () => {
             </Fab>
           )}
 
-          <Stack direction="row" spacing={1}>
+          <Stack direction={isMobile ? 'column' : 'row'} spacing={1}>
             {isAdmin && (
               <>
                 <InputBase
@@ -249,7 +250,7 @@ const Transactions = () => {
                     </InputAdornment>
                   }
                   sx={{
-                    width: "250px",
+                    width: isMobile ? '100%' : '250px',
                     padding: "8px 15px",
                     marginLeft: "5px",
                     borderRadius: "4px",
@@ -259,7 +260,7 @@ const Transactions = () => {
 
                 <IconButton
                   onClick={() => setSearchModalOpen(true)}
-                  sx={{ border: "1px solid", borderColor: "divider" }}
+                  sx={{ border: isMobile ? 'none' : "1px solid", borderColor: isMobile ? 'none' : "divider" }}
                 >
                   <FilterOutlined />
                 </IconButton>

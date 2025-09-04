@@ -1,158 +1,76 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Typography,
   Box,
-  Chip,
-  CircularProgress,
-  Alert,
   Tabs,
   Tab,
+  Typography,
+  Table,
+  TableBody,
+  TableContainer,
+  TableHead,
+  Paper,
+  IconButton,
   Grid,
   Card,
   CardContent,
   Divider,
-  IconButton,
+  Chip,
+  CircularProgress,
+  Alert,
   Tooltip
 } from '@mui/material';
 import {
+  Close as CloseIcon,
   GetApp as ExportIcon,
   Refresh as RefreshIcon,
   Person as PersonIcon,
   TrendingUp as ProfitIcon,
   CalendarToday as CalendarIcon,
-  AccountBalance as AccountBalanceIcon,
-  RemoveCircleOutline as RemoveIcon,
-  AccessTime as LateIcon
+  AccountBalance as AccountBalanceIcon
 } from '@mui/icons-material';
-import { financialYearsAPI } from '../services/apiHelpers';
-import { showErrorAlert } from '../utils/sweetAlert';
-import Swal from 'sweetalert2';
-import { globalCurrencyManager } from '../utils/globalCurrencyManager';
+import { useCurrencyManager } from '../utils/globalCurrencyManager';
+import { StyledTableCell, StyledTableRow } from '../styles/TableLayout';
+import dayjs from 'dayjs';
+const TabPanel = (props) => {
+  const { children, value, index, ...other } = props;
 
-const TabPanel = ({ children, value, index, ...other }) => (
-  <div
-    role="tabpanel"
-    hidden={value !== index}
-    id={`simple-tabpanel-${index}`}
-    aria-labelledby={`simple-tab-${index}`}
-    {...other}
-  >
-    {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-  </div>
-);
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`tabpanel-${index}`}
+      aria-labelledby={`tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  );
+};
 
-const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
-  const [distributions, setDistributions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [updating, setUpdating] = useState(false);
+const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions }) => {
   const [tabValue, setTabValue] = useState(0);
-  const [lastUpdated, setLastUpdated] = useState(null);
-  const [forceFullPeriod, setForceFullPeriod] = useState(false);
-  
-  const handleCalculationTypeChange = () => {
-    const newValue = !forceFullPeriod;
-    setForceFullPeriod(newValue);
-    
-    const message = newValue ? 
-      "🧮 تم التبديل لمعادلة الفترة الكاملة: سيتم حساب الأرباح بناءً على نسبة المشاركة × إجمالي الربح" :
-      "📅 تم التبديل لمعادلة الأيام الجزئية: سيتم حساب الأرباح بناءً على الأيام الفعلية المنقضية";
-    
-    Swal.fire({
-      title: 'تم تغيير طريقة الحساب',
-      text: message,
-      icon: 'info',
-      timer: 3000,
-      timerProgressBar: true,
-      showConfirmButton: false,
-      toast: true,
-      position: 'top-end'
-    });
-  };
+  // eslint-disable-next-line no-unused-vars
+  const [loading, setLoading] = useState(false);
+  const { formatAmount } = useCurrencyManager();
 
-  // استخدام useMemo لحساب القيم المشتقة مرة واحدة فقط
-  const { summary, dailyProfitRate, totalCapital, activeDistributions } = useMemo(() => {
-    const activeDistributions = distributions.filter(d => d.status !== 'inactive');
-    const totalInvestors = activeDistributions.length;
-    
-    const totalActualProfit = activeDistributions.reduce((sum, dist) => sum + (dist.calculation?.calculatedProfit || 0), 0);
-    const totalActualDays = activeDistributions.reduce((sum, dist) => sum + (dist.calculation?.totalDays || 0), 0);
-    
-    const totalDistributed = Math.min(totalActualProfit, financialYear?.totalProfit || 0);
-    const averageProfit = totalInvestors > 0 ? totalDistributed / totalInvestors : 0;
-    
-    const totalCapital = activeDistributions.reduce((sum, d) => sum + (d.calculation?.investmentAmount || 0), 0);
-    
-    // حساب معدل الربح اليومي من السنة المالية بدلاً من أول مستثمر
-    let dailyProfitRate = 0;
-    if (financialYear && financialYear.totalProfit && financialYear.totalDaysCalculated) {
-      dailyProfitRate = financialYear.totalProfit / (financialYear.totalDaysCalculated * totalCapital);
-    } else if (financialYear && financialYear.totalProfit && financialYear.totalDays) {
-      dailyProfitRate = financialYear.totalProfit / (financialYear.totalDays * totalCapital);
-    }
+  if (!distributions || !financialYear) return null;
 
-    return {
-      summary: {
-        totalInvestors,
-        totalDistributed,
-        totalDays: totalActualDays,
-        averageProfit
-      },
-      dailyProfitRate,
-      totalCapital,
-      activeDistributions
-    };
-  }, [distributions, financialYear]);
-
-  // استخدام useCallback للدوال التي يتم تمريرها كمكونات فرعية
-  const fetchDistributions = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await financialYearsAPI.getDistributions(financialYear._id);
-      
-      if (response.success) {
-        let distributionsData = response.data.distributions || [];
-        setDistributions(distributionsData);
-        setLastUpdated(new Date());
-      }
-    } catch (error) {
-      console.error('Error fetching distributions:', error);
-      showErrorAlert('حدث خطأ أثناء جلب توزيعات الأرباح');
-    } finally {
-      setLoading(false);
-    }
-  }, [financialYear]);
-
-  useEffect(() => {
-    if (open && financialYear) {
-      fetchDistributions();
-      
-      const interval = setInterval(() => {
-        fetchDistributions();
-      }, 60000);
-      
-      return () => clearInterval(interval);
-    }
-  }, [open, financialYear, fetchDistributions]);
-
-  const formatCurrency = (amount, currency) => {
-    return globalCurrencyManager.formatAmount(amount / (globalCurrencyManager.getCurrentDisplayCurrency() === 'IQD' ? 1 : 1).toFixed(5), currency);
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US');
-  };
+    return dayjs(date).format('DD/MM/YYYY:hh:mm');
+  }
+  const formatDate1 = (date) => {
+    return dayjs(date).format('DD/MM/YYYY');
+  }
+
 
   const getStatusColor = (status) => {
     const colors = {
@@ -174,285 +92,6 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
     return statusMap[status] || status;
   };
 
-  const handleUpdateProfits = async () => {
-    try {
-      setUpdating(true);
-      
-      const response = await financialYearsAPI.calculateDistributions(financialYear._id, {
-        forceFullPeriod
-      });
-      
-      if (response.success) {
-        await fetchDistributions();
-        const summary = response.data?.summary;
-        
-        if (summary?.status === 'approved') {
-          Swal.fire({
-            title: 'توزيعات موافق عليها',
-            html: `
-              <div style="text-align: right; direction: rtl">
-                <p>${summary.message}</p>
-                <p>عدد المستثمرين: ${summary.totalApprovedInvestors}</p>
-              </div>
-            `,
-            icon: 'info',
-            confirmButtonText: 'حسناً'
-          });
-        } else {
-          const elapsedDays = summary?.elapsedDays || 0;
-          const totalDays = summary?.totalDaysInYear || 0;
-          const calculationMessage = summary?.calculationMessage;
-          
-          Swal.fire({
-            title: 'تم تحديث الحسابات بنجاح',
-            html: `
-              <div style="text-align: right; direction: rtl">
-                <p>${calculationMessage}</p>
-                <p>الأيام المحسوبة: ${elapsedDays} من ${totalDays} يوم</p>
-                <p>إجمالي الربح المحسوب: ${formatCurrency(summary.totalCalculatedProfit, financialYear.currency, true)}</p>
-              </div>
-            `,
-            icon: 'success',
-            confirmButtonText: 'حسناً'
-          });
-          
-        }
-      } else {
-        console.error('فشل تحديث الأرباح:', response.message);
-        showErrorAlert(response.message || 'فشل في تحديث الأرباح');
-      }
-    } catch (error) {
-      console.error('خطأ في تحديث الأرباح:', error);
-      showErrorAlert('حدث خطأ أثناء تحديث الأرباح');
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  // حساب القيم المجمعة مرة واحدة فقط
-  const tableTotals = useMemo(() => {
-    return activeDistributions.reduce((acc, distribution) => {
-      const investmentAmount = distribution.calculation?.investmentAmount || 0;
-      const sharePercentage = totalCapital > 0 ? (investmentAmount / totalCapital) * 100 : 0;
-      
-      let calculatedProfit;
-      if (forceFullPeriod) {
-        calculatedProfit = (sharePercentage / 100) * financialYear.totalProfit;
-      } else {
-        const actualInvestorDays = distribution.calculation?.totalDays || 0;
-        calculatedProfit = investmentAmount * actualInvestorDays * dailyProfitRate;
-      }
-      
-      calculatedProfit = Number(calculatedProfit.toFixed(3));
-      
-      return {
-        totalInvestment: acc.totalInvestment + investmentAmount,
-        totalProfit: acc.totalProfit + calculatedProfit,
-        totalDays: acc.totalDays + (distribution.calculation?.totalDays || 0)
-      };
-    }, { totalInvestment: 0, totalProfit: 0, totalDays: 0 });
-  }, [activeDistributions, totalCapital, forceFullPeriod, financialYear, dailyProfitRate]);
-
-  const renderDistributionsTable = () => {
-    if (loading) {
-      return (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
-          <CircularProgress />
-        </Box>
-      );
-    }
-
-    if (distributions.length === 0) {
-      return (
-        <Alert severity="info">
-          لا توجد توزيعات أرباح لهذه السنة المالية بعد. يرجى حساب التوزيعات أولاً.
-        </Alert>
-      );
-    }
-
-    return (
-      <>
-        <Box mb={2} display="flex" justifyContent="space-between" alignItems="center">
-          <Box display="flex" gap={2} alignItems="center">
-            <Button
-              variant={forceFullPeriod ? "contained" : "outlined"}
-              color={forceFullPeriod ? "primary" : "inherit"}
-              onClick={handleCalculationTypeChange}
-              startIcon={<CalendarIcon />}
-              sx={{ ml: 1 }}
-            >
-              {forceFullPeriod ? " حساب الفترة كاملة" : " حساب الأيام الفعلية"}
-            </Button>
-            
-            <Box sx={{ 
-              p: 1, 
-              backgroundColor: forceFullPeriod ? 'primary.light' : 'info.light', 
-              borderRadius: 1,
-              color: 'white',
-              fontSize: '0.8rem'
-            }}>
-              <Typography variant="caption" sx={{ color: 'white', fontWeight: 'bold' }}>
-                {forceFullPeriod ? 
-                  "المعادلة: نسبة المشاركة × إجمالي الربح" : 
-                  "المعادلة: المبلغ × الأيام × معدل الربح اليومي"
-                }
-              </Typography>
-            </Box>
-          </Box>
-          <Box>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleUpdateProfits}
-              disabled={updating}
-              startIcon={updating ? <CircularProgress size={20} /> : <RefreshIcon />}
-            >
-              {updating ? "جاري التحديث..." : "تحديث الحسابات"}
-            </Button>
-          </Box>
-        </Box>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>المستثمر</TableCell>
-                <TableCell>تاريخ الانضمام</TableCell>
-                <TableCell align="right">رأس المال الحالي</TableCell>
-                <TableCell align="right">نسبة المساهمة</TableCell>
-                <TableCell align="right">تاريخ بدايه الربح</TableCell>
-                <TableCell align="right">عدد الأيام</TableCell>
-                <TableCell align="right">مبلغ الربح</TableCell>
-                <TableCell align="center">الحالة</TableCell>
-                <TableCell align="center">آخر تحديث</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {activeDistributions.map((distribution) => {
-                const investmentAmount = distribution.calculation?.investmentAmount || 0;
-                const sharePercentage = totalCapital > 0 ? (investmentAmount / totalCapital) * 100 : 0;
-                
-                let calculatedProfit;
-                if (forceFullPeriod) {
-                  calculatedProfit = (sharePercentage / 100) * financialYear.totalProfit;
-                } else {
-                  const actualInvestorDays = distribution.calculation?.totalDays || 0;
-                  calculatedProfit = investmentAmount * actualInvestorDays * dailyProfitRate;
-                }
-                
-                calculatedProfit = Number(calculatedProfit.toFixed(3));
-
-                let remainingProfit = calculatedProfit;
-                if (distribution.rolloverSettings?.isRolledOver) {
-                  remainingProfit = calculatedProfit - (distribution.rolloverSettings?.rolloverAmount || 0);
-                }
-
-                // التحقق إذا كان المستثمر بدأ متأخراً
-                const isLateStarter = distribution.investorId?.startDate && 
-                  new Date(distribution.investorId.startDate) > new Date(financialYear.startDate);
-
-                return (
-                  <TableRow key={distribution._id}>
-                    <TableCell>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Typography variant="body2" fontWeight="bold">
-                          {distribution.investorId?.fullName || 'غير محدد'}
-                        </Typography>
-                        {isLateStarter && (
-                          <Tooltip title="المستثمر بدأ متأخراً عن بداية السنة المالية">
-                            <LateIcon color="warning" fontSize="small" />
-                          </Tooltip>
-                        )}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      {distribution.investorId?.startDate ? formatDate(distribution.investorId.startDate) : 'غير محدد'}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" fontWeight="bold" color="primary.main">
-                        {formatCurrency(investmentAmount, financialYear.currency, true)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" fontWeight="bold" color="success.main">
-                        {sharePercentage.toFixed(2)}%
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" fontWeight="bold" color="info.main">
-                        {financialYear.startDate ? formatDate(financialYear.startDate) : 'غير محدد'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography variant="body2" fontWeight="bold">
-                        {distribution.calculation?.totalDays || 0}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        يوم
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Box>
-                        <Typography variant="body2" fontWeight="bold" color={distribution.rolloverSettings?.isRolledOver ? "warning.main" : "success.main"}>
-                          {formatCurrency(calculatedProfit, financialYear.currency, true)}
-                        </Typography>
-                        {distribution.rolloverSettings?.isRolledOver && (
-                          <>
-                            <Typography variant="caption" color="text.secondary" display="block">
-                              تم تدوير: {formatCurrency(distribution.rolloverSettings.rolloverAmount, financialYear.currency)}
-                            </Typography>
-                            <Typography variant="caption" color="success.main" fontWeight="bold" display="block">
-                              المتبقي: {formatCurrency(remainingProfit, financialYear.currency)}
-                            </Typography>
-                          </>
-                        )}
-                      </Box>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Chip 
-                        label={getStatusText(distribution.status)} 
-                        color={getStatusColor(distribution.status)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="center">
-                      {distribution.updatedAt ? new Date(distribution.updatedAt).toLocaleTimeString('en-US') : 'غير محدد'}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              {/* صف المجاميع */}
-              <TableRow sx={{ backgroundColor: 'grey.50' }}>
-                <TableCell colSpan={2} align="center">
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    الإجمالي
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="subtitle1" fontWeight="bold" color="primary.main">
-                    {formatCurrency(tableTotals.totalInvestment, financialYear.currency, true)}
-                  </Typography>
-                </TableCell>
-              
-                <TableCell align="right"></TableCell>
-                <TableCell align="right"></TableCell>
-                <TableCell align="right"></TableCell>
-                <TableCell align="right">
-                  <Typography variant="subtitle1" fontWeight="bold" color="success.main">
-                    {formatCurrency(tableTotals.totalProfit, financialYear.currency, true)}
-                  </Typography>
-                </TableCell>
-                <TableCell align="center"></TableCell>
-                <TableCell align="center"></TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </>
-    );
-  };
-
-  if (!financialYear) return null;
-
   return (
     <Dialog 
       open={open} 
@@ -466,31 +105,16 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
       <DialogTitle>
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Typography variant="h6" component="div" fontWeight="bold">
-            توزيعات أرباح {financialYear.periodName || `السنة المالية ${financialYear.year}`}
+            توزيعات أرباح {financialYear.periodName || `السنة المالية`}
           </Typography>
-          <Box display="flex" gap={1}>
-            <Tooltip title={`تحديث الأرباح والأيام المنقضية${lastUpdated ? ` (آخر تحديث: ${lastUpdated.toLocaleTimeString('ar-SA')})` : ''}`}>
-              <IconButton 
-                onClick={handleUpdateProfits}
-                disabled={updating || loading}
-                color="primary"
-                sx={{
-                  animation: updating ? 'spin 1s linear infinite' : 'none',
-                  '@keyframes spin': {
-                    '0%': { transform: 'rotate(0deg)' },
-                    '100%': { transform: 'rotate(360deg)' }
-                  }
-                }}
-              >
-                <RefreshIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
+          <IconButton onClick={onClose} size="small">
+            <CloseIcon />
+          </IconButton>
         </Box>
       </DialogTitle>
 
       <DialogContent>
-        <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} sx={{ mb: 2 }}>
+        <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
           <Tab label="ملخص التوزيعات" />
           <Tab label="تفاصيل التوزيعات" />
         </Tabs>
@@ -505,30 +129,15 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
             borderColor: 'divider'
           }}>
             <Typography variant="subtitle2" gutterBottom>
-               📊 آليات حساب الأرباح المتوفرة:
+              📊 معلومات السنة المالية
             </Typography>
-            <Typography variant="body2" component="div">
-              <strong>🧮 معادلة الفترة الكاملة (موصى بها للسنوات المنتهية):</strong>
+            <Typography variant="body2" component="div" sx={{mb: 2}}>
+              <strong >💰 إجمالي الربح:</strong> {formatAmount(financialYear.totalProfit, financialYear.currency)}
               <br />
-              &nbsp;&nbsp;&nbsp;الربح = نسبة المشاركة × إجمالي الربح
-              <br />
-              &nbsp;&nbsp;&nbsp;حيث: نسبة المشاركة = مبلغ مساهمة الشخص ÷ إجمالي رؤوس الأموال
-              <br /><br />
-              
-              <strong>📅 معادلة الأيام الجزئية (للسنوات النشطة):</strong>
-              <br />
-              &nbsp;&nbsp;&nbsp;الربح = مبلغ المساهمة × عدد الأيام × معدل الربح اليومي
-              <br /><br />
-              
-              <strong>📈 بيانات السنة المالية:</strong>
-              <br />
-              • إجمالي الأرباح: <strong>{formatCurrency(financialYear.totalProfit, financialYear.currency, true)}</strong>
-              <br />
-              • إجمالي الأيام: <strong>{financialYear.totalDaysCalculated || financialYear.totalDays} يوم</strong>
-              <br />
-              • معدل الربح اليومي: <strong>{dailyProfitRate.toFixed(6)} {financialYear.currency}</strong> لكل وحدة استثمار
+              <strong>🧮 طريقة حساب الارباح للمستثمر:</strong> مبلغ المساهمة × معدل الربح اليومي × عدد الايام حتى الآن
               <br />
               • <strong>هام:</strong> يتم احتساب الأرباح لكل مساهم بدءًا من تاريخ مساهمته الفعلي
+              <br />
             </Typography>
           </Box>
 
@@ -542,7 +151,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
                         إجمالي المستثمرين
                       </Typography>
                       <Typography variant="h4" component="div">
-                        {summary.totalInvestors}
+                        {distributions.summary.totalInvestors}
                       </Typography>
                     </Box>
                     <PersonIcon color="primary" sx={{ fontSize: 40 }} />
@@ -557,17 +166,10 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
                   <Box display="flex" alignItems="center" justifyContent="space-between">
                     <Box>
                       <Typography color="textSecondary" gutterBottom>
-                        إجمالي الأرباح الموزعة
+                        إجمالي الربح اليومي
                       </Typography>
                       <Typography variant="h5" component="div">
-                        {formatCurrency(
-                          activeDistributions.reduce((sum, dist) => {
-                            const profit = dist.calculation?.calculatedProfit || 0;
-                            const rolloverAmount = dist.rolloverSettings?.isRolledOver ? (dist.rolloverSettings?.rolloverAmount || 0) : 0;
-                            return sum + (profit - rolloverAmount);
-                          }, 0),
-                          financialYear.currency
-                        )}
+                        {formatAmount(distributions.summary.totalDailyProfit, financialYear.currency)}
                       </Typography>
                     </Box>
                     <ProfitIcon color="success" sx={{ fontSize: 40 }} />
@@ -582,19 +184,10 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
                   <Box display="flex" alignItems="center" justifyContent="space-between">
                     <Box>
                       <Typography color="textSecondary" gutterBottom>
-                        متوسط الربح للمستثمر
+                        متوسط الربح اليومي
                       </Typography>
                       <Typography variant="h5" component="div">
-                        {formatCurrency(
-                          summary.totalInvestors > 0
-                            ? activeDistributions.reduce((sum, dist) => {
-                                const profit = dist.calculation?.calculatedProfit || 0;
-                                const rolloverAmount = dist.rolloverSettings?.isRolledOver ? (dist.rolloverSettings?.rolloverAmount || 0) : 0;
-                                return sum + (profit - rolloverAmount);
-                              }, 0) / summary.totalInvestors
-                            : 0,
-                          financialYear.currency
-                        )}
+                        {formatAmount(distributions.summary.averageDailyProfit, financialYear.currency)}
                       </Typography>
                     </Box>
                     <AccountBalanceIcon color="info" sx={{ fontSize: 40 }} />
@@ -612,10 +205,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
                         معدل الربح اليومي
                       </Typography>
                       <Typography variant="h6" component="div">
-                        {dailyProfitRate.toFixed(6)} {financialYear.currency}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        لكل وحدة استثمار يومياً
+                        {(distributions.summary.dailyProfitRate * 100).toFixed(4)}%
                       </Typography>
                     </Box>
                     <CalendarIcon color="secondary" sx={{ fontSize: 40 }} />
@@ -626,41 +216,40 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
           </Grid>
 
           <Card>
-            <CardContent>
+            <CardContent sx={{mb: 2}}>
               <Typography variant="h6" gutterBottom sx={{ textAlign: 'center' }}>
-                معلومات السنة المالية
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mb: 1 }}>
-                💡 يتم استخدام معادلتين: للفترة الكاملة (نسبة المشاركة × إجمالي الربح) وللأيام الجزئية (المبلغ × الأيام × معدل الربح اليومي)
+                ملخص التوزيعات
               </Typography>
               <Divider sx={{ mb: 2 }} />
-              <Grid container spacing={2} sx={{justifyContent:'space-between',height:'50px'}}>
+              <Grid container spacing={2} sx={{justifyContent:'space-between', height:'50px'}}>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="textSecondary">
-                    الفترة الزمنية
+                  <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center' }}>
+                    الأيام حتى الآن
                   </Typography>
-                  <Typography variant="body1">
-                    {formatDate(financialYear.startDate)} - {formatDate(financialYear.endDate)}
+                  <Typography variant="body1" sx={{ textAlign: 'center' }}>
+                    {distributions.summary.daysSoFar||0} {distributions.summary.daysSoFar===1 ? 'يوم' : 'ايام'}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="textSecondary">
-                    إجمالي الربح للفترة
+                  <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center' }}>
+                    الأيام المتبقية
                   </Typography>
-                  <Typography variant="body1">
-                    {formatCurrency(financialYear.totalProfit, financialYear.currency, true)}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="textSecondary">
-                    عدد أيام السنة
-                  </Typography>
-                  <Typography variant="body1">
-                    {Math.floor(Math.abs(new Date(financialYear.endDate) - new Date(financialYear.startDate)) / (1000 * 60 * 60 * 24)) + 1} يوم
+                  <Typography variant="body1" sx={{ textAlign: 'center' }}>
+                    {Math.max((distributions.summary.totalDays || 0) - (distributions.summary.daysSoFar || 0), 0)} {Math.max((distributions.summary.totalDays || 0) - (distributions.summary.daysSoFar || 0), 0) === 1 ? 'يوم' : 'ايام'}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="textSecondary">
+                  <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center' }}>
+                     الفترة الزمنية
+                  </Typography>
+                  <Typography variant="body1" sx={{ textAlign: 'center' }}>
+                    {formatDate1(financialYear.startDate)} - {formatDate1(financialYear.endDate)}
+                    <br />
+                    {`(${distributions.summary.totalDays||0} يوم)`}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center' }}>
                     حالة السنة المالية
                   </Typography>
                   <Chip 
@@ -675,25 +264,46 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear }) => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
-          {renderDistributionsTable()}
+          {loading ? (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+              <CircularProgress />
+            </Box>
+          ) : !distributions.distributions || distributions.distributions.length === 0 ? (
+            <Alert severity="info">
+              لا توجد توزيعات أرباح لهذه السنة المالية بعد.
+            </Alert>
+          ) : (
+            <TableContainer component={Paper} sx={{ maxHeight: 650,width: '100%' }}>
+              <Table stickyHeader>
+                <TableHead>
+                  <StyledTableRow>
+                    <StyledTableCell align="center">المستثمر</StyledTableCell>
+                    <StyledTableCell align="center">رأس المال</StyledTableCell>
+                    <StyledTableCell align="center">نسبة المساهمة</StyledTableCell>
+                    <StyledTableCell align='center'>تاريخ المساهمة</StyledTableCell>
+                    <StyledTableCell align='center'>تاريخ التوزيع</StyledTableCell>
+                    <StyledTableCell align="center">الربح اليومي</StyledTableCell>
+                    <StyledTableCell align="center">الأيام حتى الآن</StyledTableCell>
+                  </StyledTableRow>
+                </TableHead>
+                <TableBody>
+                  {distributions.distributions.map((distribution) => (
+                    <StyledTableRow key={distribution.id}>
+                      <StyledTableCell align="center">{distribution.user.fullName}</StyledTableCell>
+                      <StyledTableCell align="center">{formatAmount(distribution.amount, financialYear.currency)}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.percentage.toFixed(2)}%</StyledTableCell>
+                      <StyledTableCell align="center">{formatDate(distribution.user.investors[0].createdAt)}</StyledTableCell>
+                      <StyledTableCell align="center">{formatDate(distribution.distributedAt)}</StyledTableCell>
+                      <StyledTableCell align="center">{formatAmount(distribution.dailyProfit, financialYear.currency)}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.daysSoFar}</StyledTableCell>
+                    </StyledTableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
         </TabPanel>
       </DialogContent>
-
-      <DialogActions sx={{ p: 2, justifyContent: 'center', gap: 2 }}>     
-        <Button 
-          onClick={handleUpdateProfits}
-          disabled={updating || loading}
-          startIcon={updating ? <CircularProgress size={16} /> : <RefreshIcon />}
-          variant="contained"
-          color="primary"
-          size="small"
-        >
-          {updating ? 'جاري التحديث...' : 'تحديث الأرباح'}
-        </Button>
-        <Button onClick={onClose} variant="outlined" size="small">
-          إغلاق
-        </Button>
-      </DialogActions>
     </Dialog>
   );
 };

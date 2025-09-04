@@ -1,11 +1,14 @@
-import { defineConfig } from 'vite'
+import { defineConfig, splitVendorChunkPlugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  plugins: [react({
-    fastRefresh: true
-  })],
-  
+  plugins: [
+    react({
+      fastRefresh: true,
+    }),
+    splitVendorChunkPlugin(),
+  ],
+
   server: {
     port: 3000,
     host: true,
@@ -17,33 +20,20 @@ export default defineConfig({
       compress: {
         drop_console: true,
         drop_debugger: true,
-        pure_funcs: ['console.log']
-      }
+        pure_funcs: ['console.log'],
+      },
     },
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'axios']
-        }
-      }
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
+      },
     },
-    chunkSizeWarningLimit: 2000,
+    chunkSizeWarningLimit: 1000, 
   },
 
   optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'react-icons/md',
-      '@mui/material',
-      '@mui/x-data-grid',
-      '@mui/icons-material',
-      'chart.js',
-      'react-chartjs-2',
-      'lodash',
-      'date-fns',
-    ],
-    force: false
+    force: false,
   },
-  
 })

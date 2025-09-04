@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Button, Box, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import {
@@ -15,6 +15,7 @@ import {
 const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState('ADMIN');
+  const sidebarRef = useRef(null);
 
   useEffect(() => {
     const getUserRole = () => {
@@ -37,6 +38,17 @@ const Sidebar = ({ isOpen, onClose }) => {
     window.addEventListener('storage', getUserRole);
     return () => window.removeEventListener('storage', getUserRole);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target) && isOpen) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, onClose]);
 
   const prefetchPage = {
     '/dashboard': () => import('../pages/Dashboard'),
@@ -119,6 +131,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <Box
+      ref={sidebarRef}
       sx={{
         width: isOpen ? 280 : 0,
         minWidth: isOpen ? 280 : 0,
