@@ -64,9 +64,6 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
     setTabValue(newValue);
   };
 
-  const formatDate = (date) => {
-    return dayjs(date).format('DD/MM/YYYY:hh:mm');
-  }
   const formatDate1 = (date) => {
     return dayjs(date).format('DD/MM/YYYY');
   }
@@ -205,7 +202,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                         معدل الربح اليومي
                       </Typography>
                       <Typography variant="h6" component="div">
-                        {(distributions.summary.dailyProfitRate * 100).toFixed(4)}%
+                        {(distributions.summary.dailyProfitRate||0).toFixed(5)}%
                       </Typography>
                     </Box>
                     <CalendarIcon color="secondary" sx={{ fontSize: 40 }} />
@@ -280,10 +277,11 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                     <StyledTableCell align="center">المستثمر</StyledTableCell>
                     <StyledTableCell align="center">رأس المال</StyledTableCell>
                     <StyledTableCell align="center">نسبة المساهمة</StyledTableCell>
-                    <StyledTableCell align='center'>تاريخ المساهمة</StyledTableCell>
-                    <StyledTableCell align='center'>تاريخ التوزيع</StyledTableCell>
                     <StyledTableCell align="center">الربح اليومي</StyledTableCell>
                     <StyledTableCell align="center">الأيام حتى الآن</StyledTableCell>
+                    <StyledTableCell align='center'>تاريخ المساهمة</StyledTableCell>
+                    <StyledTableCell align='center'>تاريخ التوزيع</StyledTableCell>
+                    <StyledTableCell align="center">اخر تحديث</StyledTableCell>
                   </StyledTableRow>
                 </TableHead>
                 <TableBody>
@@ -292,10 +290,11 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                       <StyledTableCell align="center">{distribution.user.fullName}</StyledTableCell>
                       <StyledTableCell align="center">{formatAmount(distribution.amount, financialYear.currency)}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.percentage.toFixed(2)}%</StyledTableCell>
-                      <StyledTableCell align="center">{formatDate(distribution.user.investors[0].createdAt)}</StyledTableCell>
-                      <StyledTableCell align="center">{formatDate(distribution.distributedAt)}</StyledTableCell>
                       <StyledTableCell align="center">{formatAmount(distribution.dailyProfit, financialYear.currency)}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.daysSoFar}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.createdAt}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.distributedAt}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.updatedAt}</StyledTableCell>
                     </StyledTableRow>
                   ))}
                 </TableBody>

@@ -10,7 +10,13 @@ import {
   IconButton,
   CircularProgress,
   InputAdornment,
-  Autocomplete
+  Autocomplete,
+  Switch,
+  FormControlLabel,
+  FormHelperText,
+  Divider,
+  Typography,
+  Alert
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
@@ -30,9 +36,14 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
     initialValues: {
       year: new Date().getFullYear(),
       periodName: '',
-      totalProfit: 0,
+      totalProfit: '',
       startDate: new Date().toISOString().split('T')[0], 
-      endDate: new Date().toISOString().split('T')[0], 
+      endDate: new Date().toISOString().split('T')[0],
+      rolloverEnabled: false,
+      rolloverPercentage: '',
+      autoRollover: false,
+      autoRolloverDate: null,
+      autoRolloverStatus: 'pending'
     },
     validationSchema: Yup.object({
       year: Yup.number().required('السنة مطلوبة'),
@@ -42,15 +53,30 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
       endDate: Yup.date()
         .required('تاريخ النهاية مطلوب')
         .min(Yup.ref('startDate'), 'يجب أن يكون تاريخ النهاية بعد تاريخ البداية'),
+      rolloverPercentage: Yup.number()
+        .when('rolloverEnabled', {
+          is: true,
+          then: Yup.number()
+            .min(1, 'يجب أن تكون النسبة أكبر من 0')
+            .max(100, 'يجب أن تكون النسبة أقل من أو تساوي 100')
+            .required('نسبة التدوير مطلوبة')
+        }),
+      autoRolloverDate: Yup.date()
+        .when(['rolloverEnabled', 'autoRollover'], {
+          is: (rolloverEnabled, autoRollover) => rolloverEnabled && !autoRollover,
+          then: Yup.date()
+            .required('تاريخ التدوير مطلوب')
+            .min(Yup.ref('startDate'), 'يجب أن يكون تاريخ التدوير بعد تاريخ البداية')
+        })
     }),
     onSubmit: async (values) => {
       setLoading(true);
       try {
-        
         const formattedValues = {
           ...values,
           startDate: new Date(values.startDate).toISOString(),
-          endDate: new Date(values.endDate).toISOString()
+          endDate: new Date(values.endDate).toISOString(),
+          autoRolloverDate: values.autoRolloverDate ? new Date(values.autoRolloverDate).toISOString() : null
         };
         
         await Api.post('/api/financial-years', formattedValues);
@@ -72,6 +98,17 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
       onClose();
     }
   };
+
+  const calculateRolloverAmount = () => {
+    if (!formik.values.rolloverEnabled || !formik.values.totalProfit || !formik.values.rolloverPercentage) {
+      return { rolloverAmount: 0, distributionAmount: 0 };
+    }
+    const rolloverAmount = (formik.values.totalProfit * formik.values.rolloverPercentage) / 100;
+    const distributionAmount = formik.values.totalProfit - rolloverAmount;
+    return { rolloverAmount, distributionAmount };
+  };
+
+  const { rolloverAmount, distributionAmount } = calculateRolloverAmount();
 
   return (
     <Dialog 
@@ -155,8 +192,20 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
               label="إجمالي الربح"
               name="totalProfit"
               type="number"
+              inputProps={{ 
+                min: 0,
+                step: 1,
+                onKeyPress: (e) => {
+                  if (e.key === '-' || e.key === '+') {
+                    e.preventDefault();
+                  }
+                }
+              }}
               value={formik.values.totalProfit}
-              onChange={formik.handleChange}
+              onChange={(e) => {
+                const value = Math.max(0, parseInt(e.target.value) || 0);
+                formik.setFieldValue('totalProfit', value);
+              }}
               error={formik.touched.totalProfit && Boolean(formik.errors.totalProfit)}
               helperText={formik.touched.totalProfit && formik.errors.totalProfit}
               disabled={loading}
@@ -203,6 +252,104 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
                 `${Math.ceil((new Date(formik.values.endDate) - new Date(formik.values.startDate)) / (1000 * 60 * 60 * 24))} يوم` : ''}
               disabled={true}
             />
+
+            <Divider sx={{ my: 2 }} />
+
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                إعدادات التدوير
+              </Typography>
+              
+              <Alert severity="info" sx={{ mb: 2 }}>
+                التدوير التلقائي يتم في نهاية السنة المالية. إذا تم تعطيله، يمكنك تحديد تاريخ مخصص للتدوير.
+              </Alert>
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formik.values.rolloverEnabled}
+                    onChange={(e) => {
+                      formik.setFieldValue('rolloverEnabled', e.target.checked);
+                      if (!e.target.checked) {
+                        formik.setFieldValue('autoRollover', false);
+                        formik.setFieldValue('rolloverPercentage', '');
+                        formik.setFieldValue('autoRolloverDate', null);
+                      }
+                    }}
+                    disabled={loading}
+                  />
+                }
+                label="تفعيل التدوير"
+              />
+
+              {formik.values.rolloverEnabled && (
+                <>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formik.values.autoRollover}
+                        onChange={(e) => {
+                          formik.setFieldValue('autoRollover', e.target.checked);
+                          if (e.target.checked) {
+                            formik.setFieldValue('autoRolloverDate', null);
+                          }
+                        }}
+                        disabled={loading}
+                      />
+                    }
+                    label="تدوير تلقائي"
+                  />
+
+                  <TextField
+                    fullWidth
+                    label="نسبة التدوير"
+                    name="rolloverPercentage"
+                    type="number"
+                    inputProps={{ 
+                      min: 0,
+                      step: 1,
+                      onKeyPress: (e) => {
+                        if (e.key === '-' || e.key === '+') {
+                          e.preventDefault();
+                        }
+                      }
+                    }}
+                    value={formik.values.rolloverPercentage}
+                    onChange={(e) => {
+                      const value = Math.max(0, parseInt(e.target.value) || '');
+                      formik.setFieldValue('rolloverPercentage', value);
+                    }}
+                    error={formik.touched.rolloverPercentage && Boolean(formik.errors.rolloverPercentage)}
+                    helperText={
+                      (formik.touched.rolloverPercentage && formik.errors.rolloverPercentage) ||
+                      (formik.values.rolloverPercentage > 0 && 
+                        `سيتم توزيع ${distributionAmount} ${settings?.defaultCurrency} على المساهمين وتدوير ${rolloverAmount} ${settings?.defaultCurrency}`)
+                    }
+                    disabled={loading}
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                    }}
+                    sx={{ mt: 2 }}
+                  />
+
+                  {!formik.values.autoRollover && (
+                    <TextField
+                      fullWidth
+                      label="تاريخ التدوير"
+                      name="autoRolloverDate"
+                      type="date"
+                      InputLabelProps={{ shrink: true }}
+                      value={formik.values.autoRolloverDate || ''}
+                      onChange={formik.handleChange}
+                      error={formik.touched.autoRolloverDate && Boolean(formik.errors.autoRolloverDate)}
+                      helperText={formik.touched.autoRolloverDate && formik.errors.autoRolloverDate}
+                      disabled={loading}
+                      sx={{ mt: 2 }}
+                    />
+                  )}
+                </>
+              )}
+            </Box>
           </Box>
         </DialogContent>
         

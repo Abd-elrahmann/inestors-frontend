@@ -63,7 +63,9 @@ const TransactionsSearchModal = ({ open, onClose, onSearch }) => {
 
   const transactionTypes = [
     { value: 'deposit', label: 'ايداع' },
-    { value: 'withdrawal', label: 'سحب' },
+    { value: 'withdrawal', label: 'سحب من مبلغ المساهمة' },
+    { value: 'withdraw_profit', label: 'سحب أرباح' },
+    { value: 'rollover_profit', label: 'تدوير أرباح' },
     { value: 'profit', label: 'أرباح' }
   ];
 

@@ -149,9 +149,13 @@ const Transactions = () => {
       case "deposit":
         return "ايداع";
       case "withdrawal":
-        return "سحب";
+        return "سحب من مبلغ المساهمة";
+      case "withdraw_profit":
+        return "سحب أرباح";  
       case "profit":
         return "أرباح";
+      case "rollover_profit":
+        return "تدوير أرباح";
       default:
         return "غير محدد";
     }
@@ -162,9 +166,12 @@ const Transactions = () => {
       case "deposit":
         return "success";
       case "withdrawal":
+      case "withdraw_profit":
         return "error";
       case "profit":
         return "info";
+      case "rollover_profit":
+        return "warning";
       default:
         return "default";
     }
@@ -187,11 +194,11 @@ const Transactions = () => {
         <meta name="description" content="المعاملات في نظام إدارة المساهمين" />
       </Helmet>
       <Box className="content-area">
-        {userId && investorDetails && (
+        {userId && (
           <Card sx={{ p: 2, mb: 3, mt: 2 }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="h6">
-                المساهم: {investorDetails.fullName}
+                المساهم: {investorDetails?.fullName}
               </Typography>
               <Typography variant="h6">
                 إجمالي المبالغ: {formatAmount(amount, currency, 'IQD')}
@@ -200,11 +207,21 @@ const Transactions = () => {
                 العملة: {currency}
               </Typography>
             </Stack>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" marginTop={2}>
-             <Fab variant="contained" color="primary" onClick={() => navigate('/investors')}>
-              الرجوع لصفحة المساهمين
-              <ArrowLeftOutlined style={{ marginRight: "10px" }} />
-             </Fab>
+            <Stack direction="row" justifyContent="flex-start" alignItems="center" marginTop={2}>
+              <Fab
+                variant="extended"
+                color="primary"
+                onClick={() => navigate('/investors')}
+                sx={{
+                  borderRadius: "8px",
+                  fontWeight: "bold",
+                  textTransform: "none",
+                  height: "40px",
+                }}
+              >
+                <ArrowLeftOutlined style={{ marginLeft: "10px" }} />
+                الرجوع لصفحة المساهمين
+              </Fab>
             </Stack>
           </Card>
         )}
@@ -279,7 +296,7 @@ const Transactions = () => {
                 <StyledTableCell align="center">
                   المبلغ ({currentCurrency})
                 </StyledTableCell>
-                <StyledTableCell align="center">التاريخ</StyledTableCell>
+                <StyledTableCell align="center">تاريخ المعاملة</StyledTableCell>
                 {isAdmin && <StyledTableCell align="center">حذف</StyledTableCell>}
               </TableRow>
             </TableHead>
@@ -324,7 +341,7 @@ const Transactions = () => {
                     </StyledTableCell>
                     <StyledTableCell align="center">
                       {dayjs(transaction.date)
-                        ? dayjs(transaction.date).format("DD/MM/YYYY")
+                        ? transaction.date
                         : "غير محدد"}
                     </StyledTableCell>
                     {isAdmin && (

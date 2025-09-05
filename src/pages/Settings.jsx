@@ -1,108 +1,84 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  Typography,
-  Form,
-  Select,
-  Button,
-  InputNumber,
-  Spin,
-  Row,
-  Col,
-  Space,
-  Layout,
-  Grid
-} from 'antd';
-import {
-  SaveOutlined,
-  DollarOutlined
-} from '@ant-design/icons';
-import { toast } from 'react-toastify';
-import { useCurrencyManager } from '../utils/globalCurrencyManager';
-import { Helmet } from 'react-helmet-async';
+import { Box, Typography, TextField, Container, Autocomplete, Tabs, Tab } from '@mui/material';
+import moment from 'moment-timezone';
 import Api from '../services/api';
-
-const { Title, Text } = Typography;
-const { Option } = Select;
-const { Content } = Layout;
-const { useBreakpoint } = Grid;
+import { toast } from 'react-toastify';
+import { Helmet } from 'react-helmet-async';
+import { Spin } from "antd";
+import { SaveOutlined } from '@ant-design/icons';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import Button from '@mui/material/Button';
+import { useCurrencyManager } from '../utils/globalCurrencyManager';
 
 const Settings = () => {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
+  const timezones = moment.tz.names();
+  const [tabIndex, setTabIndex] = useState(0);
   const { updateSettings: updateCurrencySettings, refreshPage } = useCurrencyManager();
-  // eslint-disable-next-line no-unused-vars
-  const screens = useBreakpoint();
-  const [form] = Form.useForm();
-  
+
+  const currencies = [
+    { value: 'IQD', label: 'دينار عراقي (د.ع)' },
+    { value: 'USD', label: 'دولار أمريكي ($)' }
+  ];
+
   const [settings, setSettings] = useState({
     defaultCurrency: 'USD',
-    USDtoIQD: 0
+    USDtoIQD: 0,
+    timezone: 'Asia/Baghdad'
   });
 
-  const fetchSettings = async () => {
-    try {
-      setLoading(true);
-      
+  const { data, isLoading } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => {
       const response = await Api.get('/api/settings');
-      
-      if (response.data) {
-        setSettings({
-          defaultCurrency: response.data.defaultCurrency,
-          USDtoIQD: response.data.USDtoIQD
-        });
-        form.setFieldsValue({
-          defaultCurrency: response.data.defaultCurrency,
-          USDtoIQD: response.data.USDtoIQD
-        });
-      } else {
-        throw new Error('تنسيق البيانات غير صحيح');
-      }
-    } catch (err) {
-      console.error('Error fetching settings:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return response.data;
+    },
+    staleTime: 30000,
+    gcTime: 30000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true
+  });
 
   useEffect(() => {
-    fetchSettings();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (data) {
+      setSettings({
+        defaultCurrency: data.defaultCurrency,
+        USDtoIQD: data.USDtoIQD || 0,
+        timezone: data.timezone || 'Asia/Baghdad'
+      });
+    }
+  }, [data]);
 
-  const handleSettingChange = (field, value) => {
+  const settingsMutation = useMutation({
+    mutationFn: async (settingsToSave) => {
+      return await Api.patch('/api/settings', settingsToSave);
+    },
+    onSuccess: async (response) => {
+      if (response.data) {
+        await updateCurrencySettings(settings);
+        toast.success('تم حفظ الإعدادات بنجاح');
+        refreshPage();
+        queryClient.invalidateQueries(['settings']);
+      }
+    },
+    onError: (error) => {
+      console.error('Error saving settings:', error);
+      toast.error(error.message || 'حدث خطأ أثناء حفظ الإعدادات');
+    }
+  });
+
+  const handleChange = (field, value) => {
     setSettings(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handleSaveSettings = async () => {
-    try {
-      setSaving(true);
-      
-      const response = await Api.patch('/api/settings', settings);
-      
-      if (response.data) {
-        await updateCurrencySettings(settings);
-        toast.success('تم حفظ الإعدادات بنجاح');
-        refreshPage();
-      } else {
-        throw new Error('فشل في حفظ الإعدادات');
-      }
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      toast.error(error.message || 'حدث خطأ أثناء حفظ الإعدادات');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
         <Spin size="large" />
-      </div>
+      </Box>
     );
   }
 
@@ -112,74 +88,129 @@ const Settings = () => {
         <title>الإعدادات</title>
         <meta name="description" content="الإعدادات في نظام إدارة المساهمين" />
       </Helmet>
-      <Content style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <Title level={2}>إعدادات النظام</Title>
-          <Text type="secondary">إدارة إعدادات العملة في النظام</Text>
-        </div>
 
-        <Row gutter={[16, 16]} justify="center">
-          <Col xs={24} md={16}>
-            <Card 
-              title={
-                <Space>
-                  <DollarOutlined />
-                  <span>إعدادات العملة</span>
-                </Space>
+      <Container maxWidth="sm" sx={{ py: 4, mt: 6,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center' }}>
+        <Typography variant="h4" align="center" gutterBottom>
+          إعدادات النظام
+        </Typography>
+        
+        <Tabs
+          value={tabIndex}
+          onChange={(e, newValue) => setTabIndex(newValue)}
+          centered
+          sx={{ 
+            mb: 3,
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#28a745'
+            },
+            '& .Mui-selected': {
+              color: '#28a745 !important'
+            }
+          }}
+        >
+          <Tab label="إعدادات العملة" />
+          <Tab label="إعدادات التوقيت" />
+        </Tabs>
+
+        {/* Currency Tab */}
+        {tabIndex === 0 && (
+          <Box sx={{ p: 2,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center' }}>
+            <Autocomplete
+              fullWidth
+              value={currencies.find(c => c.value === settings.defaultCurrency) || null}
+              onChange={(event, newValue) => {
+                handleChange('defaultCurrency', newValue?.value);
+              }}
+              options={currencies}
+              getOptionLabel={(option) => option.label}
+              renderInput={(params) => (
+                <TextField 
+                  {...params} 
+                  label="العملة الافتراضية"
+                  sx={{
+                    width: '300px',
+                    '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#28a745'
+                    },
+                    '& .MuiInputLabel-root.Mui-focused': {
+                      color: '#28a745'
+                    }
+                  }}
+                />
+              )}
+            />
+
+            <TextField
+              fullWidth
+              type="number"
+              label="سعر صرف الدولار"
+              value={settings.USDtoIQD}
+              onChange={(e) => handleChange('USDtoIQD', e.target.value)}
+              sx={{ 
+                width: '300px',
+                mt: 2,
+                '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#28a745'
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#28a745'
+                }
+              }}
+            />
+          </Box>
+        )}
+
+        {/* Timezone Tab */}
+        {tabIndex === 1 && (
+          <Box sx={{ p: 2,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center' }}>
+            <Autocomplete
+              fullWidth
+              value={settings.timezone}
+              onChange={(event, newValue) => {
+                handleChange('timezone', newValue || 'Asia/Baghdad');
+              }}
+              options={timezones}
+              getOptionLabel={(option) => `${option.replace(/_/g, ' ')} (UTC${moment.tz(option).format('Z')})`}
+              renderInput={(params) => (
+                <TextField 
+                  {...params} 
+                  label="التوقيت"
+                  sx={{
+                    display:'flex',
+                    justifyContent:'center',
+                    alignItems:'center',
+                    width: '300px',
+                    '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#28a745'
+                    },
+                    '& .MuiInputLabel-root.Mui-focused': {
+                      color: '#28a745'
+                    }
+                  }}
+                />
+              )}
+            />
+          </Box>
+        )}
+
+        <Box display="flex" justifyContent="center" sx={{ mt: 3 }}>
+          <Button
+            variant="contained"
+            onClick={() => settingsMutation.mutate(settings)}
+            disabled={settingsMutation.isPending}
+            startIcon={<SaveOutlined />}
+            sx={{ 
+              px: 4,
+              backgroundColor: '#28a745',
+              '&:hover': {
+                backgroundColor: '#218838'
               }
-            >
-              <Form
-                form={form}
-                layout="vertical"
-                initialValues={settings}
-                onFinish={handleSaveSettings}
-                style={{ maxWidth: '400px', margin: '0 auto' }}
-              >
-                <Form.Item 
-                  label="العملة الافتراضية" 
-                  name="defaultCurrency"
-                  rules={[{ required: true, message: 'الرجاء اختيار العملة الافتراضية' }]}
-                >
-                  <Select
-                    onChange={(value) => handleSettingChange('defaultCurrency', value)}
-                    style={{ width: '100%' }}
-                  >
-                    <Option value="IQD">دينار عراقي (د.ع)</Option>
-                    <Option value="USD">دولار أمريكي ($)</Option>
-                  </Select>
-                </Form.Item>
-
-                <Form.Item 
-                  label="سعر صرف الدولار" 
-                  name="USDtoIQD"
-                  rules={[{ required: true, message: 'الرجاء إدخال سعر الصرف' }]}
-                >
-                  <InputNumber
-                    style={{ width: '100%' }}
-                    onChange={(value) => handleSettingChange('USDtoIQD', value)}
-                    min={0}
-                    step={10}
-                  />
-                </Form.Item>
-
-                <Form.Item>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    icon={<SaveOutlined style={{marginLeft: '8px'}} />}
-                    loading={saving}
-                    block
-                    size="large"
-                    style={{ backgroundColor: '#28a745', borderColor: '#28a745',width: '150px',display: 'block',margin: '0 auto' }}
-                  >
-                    {saving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
-                  </Button>
-                </Form.Item>
-              </Form>
-            </Card>
-          </Col>
-        </Row>
-      </Content>
+            }}
+          >
+            {settingsMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+          </Button>
+        </Box>
+      </Container>
     </>
   );
 };

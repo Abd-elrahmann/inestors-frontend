@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Table,
@@ -15,9 +15,9 @@ import {
   Fab,
   LinearProgress,
   Typography,
-  ButtonGroup,
-  Button,
-  useMediaQuery
+  useMediaQuery,
+  Menu,
+  MenuItem
 } from '@mui/material';
 import {
   PlusOutlined,
@@ -25,14 +25,12 @@ import {
   DeleteOutlined,
   CalculatorOutlined,
   CheckCircleOutlined,
-  SyncOutlined,
-  DownloadOutlined,
-  SettingOutlined,
-  ClockCircleOutlined,
-  BellOutlined,
-  PlayCircleOutlined,StopOutlined,
   LockOutlined,MoreOutlined,
-  EyeOutlined
+  EyeOutlined,
+  FileTextOutlined,
+  BarChartOutlined,
+  CheckOutlined,
+  GiftOutlined
 } from '@ant-design/icons';
 import { Spin } from 'antd';
 import Api from '../services/api';
@@ -44,95 +42,76 @@ import { useCurrencyManager } from '../utils/globalCurrencyManager';
 import { Helmet } from 'react-helmet-async';
 import { useSettings } from '../hooks/useSettings';
 import dayjs from 'dayjs';
+import { useQuery, useQueryClient } from 'react-query';
+import debounce from 'lodash/debounce';
+
 const FinancialYear = () => {
-  const [financialYears, setFinancialYears] = useState([]);
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [distributionModalOpen, setDistributionModalOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState(null);
-  const [distributions, setDistributions] = useState(null);
-  const [totalPages, setTotalPages] = useState(0);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedYearForMenu, setSelectedYearForMenu] = useState(null);
   const { formatAmount } = useCurrencyManager();
   const { data: settings } = useSettings();
-  const [allDistributions, setAllDistributions] = useState({});
   const isMobile = useMediaQuery('(max-width: 480px)');
-  useEffect(() => {
-    fetchFinancialYears();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rowsPerPage, searchTerm]);
+  const queryClient = useQueryClient();
 
-  const fetchFinancialYears = async () => {
-    try {
-      setLoading(true);
-      const response = await Api.get('/api/financial-years', {
-        params: {
-          page,
-          limit: rowsPerPage,
-          search: searchTerm.trim()
-        }
-      });
-  
-      if (response?.data?.years) {
-        setFinancialYears(response.data.years);
-        setTotalPages(response.data.totalPages || 0);
-      } else {
-        toast.error('خطأ في تنسيق البيانات المستلمة');
+  const debouncedSearch = debounce((value) => {
+    setSearchTerm(value);
+  }, 500);
+
+  const { 
+    data: yearsData, 
+    isLoading,
+    isFetching 
+  } = useQuery(
+    ['financialYears', page, rowsPerPage, searchTerm],
+    () => Api.get('/api/financial-years', {
+      params: {
+        page,
+        limit: rowsPerPage,
+        search: searchTerm.trim()
       }
-    } catch (error) {
-      console.error('Error fetching financial years:', error);
-      toast.error('فشل في تحميل السنوات المالية');
-    } finally {
-      setLoading(false);
+    }).then(res => res.data),
+    {
+      keepPreviousData: true,
+      staleTime: 30000
     }
-  };
+  );
+
+  const { data: distributionsData } = useQuery(
+    ['distributions', selectedYear?.id],
+    () => Api.get(`/api/financial-years/${selectedYear?.id}/distributions`).then(res => res.data),
+    {
+      enabled: !!selectedYear?.id && distributionModalOpen,
+      staleTime: 60000
+    }
+  );
+
   const handleCalculate = async (yearId) => {
     try {
       await Api.patch(`/api/financial-years/${yearId}/distribute`);
       toast.success('تم حساب الأرباح بنجاح');
-      fetchFinancialYears();
+      queryClient.invalidateQueries('financialYears');
     } catch (error) {
       console.error('Error calculating profits:', error);
       toast.error('فشل في حساب الأرباح');
     }
   };
 
-  const handleViewDistributions = async (yearId) => {
-    const year = financialYears.find(y => y.id === yearId);
+  const handleViewDistributions = (year) => {
     setSelectedYear(year);
-  
-    if (allDistributions[yearId]) {
-      setDistributions(allDistributions[yearId]);
-      setDistributionModalOpen(true);
-      return;
-    }
-  
-    try {
-      setLoading(true);
-      const distRes = await Api.get(`/api/financial-years/${yearId}/distributions`);
-      const distributions = distRes.data || [];
-  
-      setAllDistributions(prev => ({
-        ...prev,
-        [yearId]: distributions
-      }));
-  
-      setDistributions(distributions);
-      setDistributionModalOpen(true);
-    } catch (error) {
-      console.error('Error fetching distributions:', error);
-      toast.error('فشل في تحميل التوزيعات');
-    } finally {
-      setLoading(false);
-    }
+    setDistributionModalOpen(true);
   };
+
   const handleApprove = async (yearId) => {
     try {
       await Api.post(`/api/financial-years/${yearId}/approve`);
       toast.success('تم اعتماد السنة المالية بنجاح');
-      fetchFinancialYears();
+      queryClient.invalidateQueries('financialYears');
     } catch (error) {
       console.error('Error approving financial year:', error);
       toast.error('فشل في اعتماد السنة المالية');
@@ -143,7 +122,7 @@ const FinancialYear = () => {
     try {
       await Api.post(`/api/financial-years/${yearId}/close`);
       toast.success('تم إغلاق السنة المالية بنجاح');
-      fetchFinancialYears();
+      queryClient.invalidateQueries('financialYears');
     } catch (error) {
       console.error('Error closing financial year:', error);
       toast.error('فشل في إغلاق السنة المالية');
@@ -154,37 +133,67 @@ const FinancialYear = () => {
     try {
       await Api.delete(`/api/financial-years/${yearId}`);
       toast.success('تم حذف السنة المالية بنجاح');
-      fetchFinancialYears();
+      queryClient.invalidateQueries('financialYears');
     } catch (error) {
       console.error('Error deleting financial year:', error);
       toast.error('فشل في حذف السنة المالية');
     }
   };
 
-  const filteredFinancialYears = useMemo(() => {
-    if (!Array.isArray(financialYears)) return [];
-    return financialYears.filter(year => 
-      year.periodName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      year.year.toString().includes(searchTerm)
+  const getRolloverChip = (rolloverEnabled) => {
+    return (
+      <Chip 
+        label={rolloverEnabled ? 'تم' : 'غير متدور'} 
+        color={rolloverEnabled ? 'success' : 'default'} 
+        size="small" 
+      />
     );
-  }, [financialYears, searchTerm]);
+  };
 
   const getStatusChip = (status) => {
     const statusConfig = {
-      draft: { label: 'مسودة', color: 'default' },
-      calculated: { label: 'محسوبة', color: 'info' },
-      approved: { label: 'معتمدة', color: 'primary' },
-      distributed: { label: 'موزعة', color: 'success' },
-      closed: { label: 'مغلقة', color: 'default' }
+      draft: { 
+        label: 'مسودة', 
+        color: 'default',
+        icon: <FileTextOutlined style={{marginRight: '5px'}} />
+      },
+      calculated: { 
+        label: 'محسوبة', 
+        color: 'info',
+        icon: <BarChartOutlined style={{marginRight: '5px'}} />
+      },
+      approved: { 
+        label: 'معتمدة', 
+        color: 'primary',
+        icon: <CheckOutlined style={{marginRight: '5px'}} />
+      },
+      distributed: { 
+        label: 'موزعة', 
+        color: 'success',
+        icon: <GiftOutlined style={{marginRight: '5px'}} />
+      },
+      closed: { 
+        label: 'مغلقة', 
+        color: 'default',
+        icon: <LockOutlined style={{marginRight: '5px'}} />
+      }
     };
     
     const config = statusConfig[status] || { label: status, color: 'default' };
-    return <Chip label={config.label} color={config.color} size="small" />;
+    return (
+      <Chip 
+        icon={config.icon}
+        label={config.label} 
+        color={config.color} 
+        size="small" 
+      />
+    );
   };
 
   const formatDate = (dateString) => {
     return dayjs(dateString).format('DD/MM/YYYY');
   };  
+
   const normalizeDate = (date) => {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
@@ -194,7 +203,6 @@ const FinancialYear = () => {
   const getDaysPassed = (startDate) => {
     const start = normalizeDate(startDate);
     const today = normalizeDate(new Date());
-  
     const oneDay = 1000 * 60 * 60 * 24;
     const diff = today - start;
     return Math.max(Math.floor(diff / oneDay), 0);
@@ -203,7 +211,6 @@ const FinancialYear = () => {
   const getDaysRemaining = (endDate) => {
     const end = normalizeDate(endDate);
     const today = normalizeDate(new Date());
-  
     const oneDay = 1000 * 60 * 60 * 24;
     const diff = end - today;
     return Math.max(Math.floor(diff / oneDay), 0);
@@ -213,14 +220,11 @@ const FinancialYear = () => {
     const start = normalizeDate(startDate);
     const end = normalizeDate(endDate);
     const today = normalizeDate(new Date());
-  
     const oneDay = 1000 * 60 * 60 * 24;
     const totalDays = Math.floor((end - start) / oneDay);
     const daysPassed = Math.floor((today - start) / oneDay);
-  
     if (daysPassed <= 0) return 0;
     if (daysPassed >= totalDays) return 100;
-    
     return Math.round((daysPassed / totalDays) * 100);
   };
 
@@ -267,8 +271,7 @@ const FinancialYear = () => {
                 justifyContent: 'center',
                 alignItems: 'center'
               }}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => debouncedSearch(e.target.value)}
             />
           </Box>
         </Stack>
@@ -280,28 +283,29 @@ const FinancialYear = () => {
                 <StyledTableCell align="center">المسلسل</StyledTableCell>
                 <StyledTableCell align="center">السنة</StyledTableCell>
                 <StyledTableCell align="center">الفترة</StyledTableCell>
-                <StyledTableCell align="center"> التقدم الزمني</StyledTableCell>
+                <StyledTableCell align="center">التقدم الزمني</StyledTableCell>
                 <StyledTableCell align="center">إجمالي الأرباح ({settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'})</StyledTableCell>
                 <StyledTableCell align="center">معدل الربح اليومي</StyledTableCell>
                 <StyledTableCell align="center">الحالة</StyledTableCell>
+                <StyledTableCell align="center">تدوير الأرباح</StyledTableCell>
                 <StyledTableCell align="center">الإجراءات</StyledTableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {loading ? (
+              {(isLoading || isFetching) ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={9} align="center">
+                  <StyledTableCell colSpan={10} align="center">
                     <Spin size="large" />
                   </StyledTableCell>
                 </StyledTableRow>
-              ) : !filteredFinancialYears.length ? (
+              ) : !yearsData?.years?.length ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={9} align="center">
+                  <StyledTableCell colSpan={10} align="center">
                     لا توجد سنوات مالية
                   </StyledTableCell>
                 </StyledTableRow>
               ) : (
-                filteredFinancialYears.map((year) => (
+                yearsData.years.map((year) => (
                   <StyledTableRow key={year.id}>
                     <StyledTableCell align="center">{year.id}</StyledTableCell>
                     <StyledTableCell align="center">{year.year}</StyledTableCell>
@@ -337,62 +341,24 @@ const FinancialYear = () => {
                     <StyledTableCell align="center">{year.dailyProfitRate ? `${(year.dailyProfitRate).toFixed(5)}%`+ ' لكل '+ settings?.defaultCurrency : '-'}</StyledTableCell>
                     <StyledTableCell align="center">{getStatusChip(year.status)}</StyledTableCell>
                     <StyledTableCell align="center">
-                      <ButtonGroup justifyContent="center" sx={{gap: 2}}>
-                        {year.status === 'draft' && (
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={() => handleCalculate(year.id)}
-                            title="حساب الأرباح"
-                          >
-                            <CalculatorOutlined />
-                          </IconButton>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                        {getRolloverChip(year.rolloverEnabled)}
+                        {year.rolloverEnabled && (
+                          <Typography variant="body" color="textSecondary">
+                            {year.rolloverPercentage}%
+                          </Typography>
                         )}
-                        
-                        {['calculated', 'approved', 'distributed'].includes(year.status) && (
-                          <IconButton
-                            size="small"
-                            color="info"
-                            onClick={() => handleViewDistributions(year.id)}
-                            title="عرض التوزيعات"
-                          >
-                            <EyeOutlined />
-                          </IconButton>
-                        )}
-
-                        {year.status === 'calculated' && (
-                          <IconButton
-                            size="small"
-                            color="success"
-                            onClick={() => handleApprove(year.id)}
-                            title="موافقة على التوزيعات"
-                          >
-                            <CheckCircleOutlined />
-                          </IconButton>
-                        )}
-
-                        {year.status === 'approved' && (
-                          <IconButton
-                            size="small"
-                            color="warning"
-                            onClick={() => handleCloseYear(year.id)}
-                            title="إغلاق السنة المالية"
-                          >
-                            <LockOutlined />
-                          </IconButton>
-                        )}
-
-                        {year.status !== 'closed' && (
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleDelete(year.id)}
-                            title="حذف السنة المالية"
-                          >
-                            <DeleteOutlined />
-                          </IconButton>
-                        )}
-                      </ButtonGroup>
+                      </Box>
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      <IconButton
+                        onClick={(event) => {
+                          setAnchorEl(event.currentTarget);
+                          setSelectedYearForMenu(year);
+                        }}
+                      >
+                        <MoreOutlined />
+                      </IconButton>
                     </StyledTableCell>
                   </StyledTableRow>
                 ))
@@ -401,7 +367,7 @@ const FinancialYear = () => {
           </Table>
           <TablePagination
             component="div"
-            count={totalPages}
+            count={yearsData?.totalPages || 0}
             page={page - 1}
             onPageChange={(e, newPage) => setPage(newPage + 1)}
             rowsPerPage={rowsPerPage}
@@ -411,20 +377,90 @@ const FinancialYear = () => {
           />
         </TableContainer>
 
+        <Menu
+          style={{fontSize: '14px'}}
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={() => setAnchorEl(null)}
+        >
+          {selectedYearForMenu?.status === 'draft' && (
+            <MenuItem onClick={() => {
+              handleCalculate(selectedYearForMenu.id);
+              setAnchorEl(null);
+            }}>
+              <CalculatorOutlined style={{marginLeft: 8,color:'green'}} />
+              حساب الأرباح
+            </MenuItem>
+          )}
+
+          {['calculated', 'approved', 'distributed'].includes(selectedYearForMenu?.status) && (
+            <MenuItem onClick={() => {
+              handleViewDistributions(selectedYearForMenu);
+              setAnchorEl(null);
+            }}>
+              <EyeOutlined style={{marginLeft: 8,color:'blue'}} />
+              عرض التوزيعات
+            </MenuItem>
+          )}
+
+          {selectedYearForMenu?.status === 'calculated' && (
+            <MenuItem onClick={() => {
+              handleApprove(selectedYearForMenu.id);
+              setAnchorEl(null);
+            }}>
+              <CheckCircleOutlined style={{marginLeft: 8,color:'green'}} />
+              موافقة على التوزيعات
+            </MenuItem>
+          )}
+
+          {selectedYearForMenu?.status === 'approved' && (
+            <MenuItem onClick={() => {
+              handleCloseYear(selectedYearForMenu.id);
+              setAnchorEl(null);
+            }}>
+              <LockOutlined style={{marginLeft: 8,color:'red'}} />
+              إغلاق السنة المالية
+            </MenuItem>
+          )}
+
+          {['draft', 'calculated', 'approved', 'distributed'].includes(selectedYearForMenu?.status) && (
+            <MenuItem onClick={() => {
+              handleDelete(selectedYearForMenu.id);
+              setAnchorEl(null);
+            }}>
+              <DeleteOutlined style={{marginLeft: 8,color:'red'}} />
+              حذف السنة المالية
+            </MenuItem>
+          )}
+
+          {selectedYearForMenu?.status === 'closed' && (
+            <MenuItem onClick={() => {
+              handleDelete(selectedYearForMenu.id);
+              setAnchorEl(null);
+            }}>
+              <DeleteOutlined style={{marginLeft: 8,color:'red'}} />
+              حذف السنة المالية
+            </MenuItem>
+          )}
+        </Menu>
+
         <AddFinancialYearModal
           open={addModalOpen}
           onClose={() => setAddModalOpen(false)}
           onSuccess={() => {
             setAddModalOpen(false);
-            fetchFinancialYears();
+            queryClient.invalidateQueries('financialYears');
           }}
         />
 
         <ProfitDistributionsModal
           open={distributionModalOpen}
-          onClose={() => setDistributionModalOpen(false)}
+          onClose={() => {
+            setDistributionModalOpen(false);
+            setSelectedYear(null);
+          }}
           financialYear={selectedYear}
-          distributions={distributions}
+          distributions={distributionsData}
         />
       </Box>
     </>

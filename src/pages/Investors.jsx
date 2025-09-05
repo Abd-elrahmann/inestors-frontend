@@ -23,7 +23,6 @@ import {
   EyeOutlined,
 } from "@ant-design/icons";
 import { Spin } from "antd";
-import dayjs from "dayjs";
 import AddInvestorModal from "../modals/AddInvestorModal";
 import { RestartAltOutlined } from "@mui/icons-material";
 import { StyledTableCell, StyledTableRow } from "../styles/TableLayout";
@@ -254,7 +253,7 @@ const Investors = () => {
                         2
                       )}%`}</StyledTableCell>
                       <StyledTableCell align="center">
-                        {dayjs(investor.createdAt).format("DD/MM/YYYY")}
+                        {investor.createdAt}
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         <Link to={`/transactions/${investor.userId}`}>
