@@ -71,6 +71,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
     }),
     onSubmit: async (values) => {
       setLoading(true);
+      console.log(values);
       try {
         const formattedValues = {
           ...values,
@@ -78,7 +79,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
           endDate: new Date(values.endDate).toISOString(),
           autoRolloverDate: values.autoRolloverDate ? new Date(values.autoRolloverDate).toISOString() : null
         };
-        
+        console.log(formattedValues);
         await Api.post('/api/financial-years', formattedValues);
         toast.success('تم إضافة السنة المالية بنجاح');
         onSuccess();
@@ -161,6 +162,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
               fullWidth
               options={years}
               value={formik.values.year}
+              getOptionLabel={(option) => option?.toString() || ''}
               onChange={(_, newValue) => {
                 formik.setFieldValue('year', newValue);
               }}
@@ -332,7 +334,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
                     sx={{ mt: 2 }}
                   />
 
-                  {!formik.values.autoRollover && (
+                  {formik.values.autoRollover && (
                     <TextField
                       fullWidth
                       label="تاريخ التدوير"

@@ -149,7 +149,7 @@ const Transactions = () => {
       case "deposit":
         return "ايداع";
       case "withdrawal":
-        return "سحب من مبلغ المساهمة";
+        return "سحب (رأس المال)";
       case "withdraw_profit":
         return "سحب أرباح";  
       case "profit":
@@ -247,7 +247,7 @@ const Transactions = () => {
                 height: "40px",
               }}
             >
-              <PlusOutlined style={{ marginRight: 8 }} />
+              <PlusOutlined style={{ marginLeft: 8 }} />
               إضافة عملية جديدة
             </Fab>
           )}

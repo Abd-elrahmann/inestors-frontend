@@ -198,7 +198,7 @@ const Settings = () => {
             variant="contained"
             onClick={() => settingsMutation.mutate(settings)}
             disabled={settingsMutation.isPending}
-            startIcon={<SaveOutlined />}
+            startIcon={<SaveOutlined style={{marginLeft: '8px'}} />}
             sx={{ 
               px: 4,
               backgroundColor: '#28a745',

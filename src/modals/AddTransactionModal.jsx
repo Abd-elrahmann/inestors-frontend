@@ -39,7 +39,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
 
   const transactionTypes = [
     { value: 'deposit', label: 'إيداع' },
-    { value: 'withdrawal', label: 'سحب من مبلغ المساهمة' },
+    { value: 'withdrawal', label: 'سحب (رأس المال)' },
     { value: 'withdraw_profit', label: 'سحب أرباح' },
     { value: 'rollover_profit', label: 'تدوير أرباح' },
     { value: 'profit', label: 'أرباح' }

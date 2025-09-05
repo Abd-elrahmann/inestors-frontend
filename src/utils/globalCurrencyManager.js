@@ -66,29 +66,30 @@ class GlobalCurrencyManager {
     
     if (fromCurrency === targetCurrency) return amount;
     
-    // التحويل من IQD إلى USD
+    if (typeof amount !== 'number' || isNaN(amount)) return amount;
+    
     if (fromCurrency === 'IQD' && targetCurrency === 'USD') {
       const exchangeRate = this.currentSettings.USDtoIQD;
       if (exchangeRate && exchangeRate > 0) {
         return amount / exchangeRate;
       }
-      return amount; // إذا لم يكن هناك سعر صرف، نعود بالمبلغ كما هو
+      return amount;
     }
     
-    // التحويل من USD إلى IQD
     if (fromCurrency === 'USD' && targetCurrency === 'IQD') {
       const exchangeRate = this.currentSettings.USDtoIQD;
       if (exchangeRate && exchangeRate > 0) {
         return amount * exchangeRate;
       }
-      return amount; // إذا لم يكن هناك سعر صرف، نعود بالمبلغ كما هو
+      return amount;
     }
     
-    return amount; // للعملات الأخرى أو إذا كان التحويل غير مدعوم
+    return amount; 
   }
   
   formatAmount(amount, originalCurrency = 'IQD', targetCurrency = null) {
     const displayCurrency = targetCurrency || this.getCurrentDisplayCurrency();
+    
     const convertedAmount = this.convertAmount(amount, originalCurrency, displayCurrency);
     
     const formatted = convertedAmount.toLocaleString('en-US', {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Table,
@@ -25,18 +25,24 @@ import {
   DeleteOutlined,
   CalculatorOutlined,
   CheckCircleOutlined,
-  LockOutlined,MoreOutlined,
+  LockOutlined,
+  MoreOutlined,
   EyeOutlined,
   FileTextOutlined,
   BarChartOutlined,
   CheckOutlined,
-  GiftOutlined
+  GiftOutlined,
+  FilterOutlined,
+  EditOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import { Spin } from 'antd';
 import Api from '../services/api';
 import {toast} from 'react-toastify';
 import AddFinancialYearModal from '../modals/AddFinancialYearModal';
 import ProfitDistributionsModal from '../modals/ProfitDistributionsModal';
+import FinancialSearchModal from '../modals/FinancialSearchModal';
+import EditRolloverModal from '../modals/EditRolloverModal';
 import { StyledTableCell, StyledTableRow } from '../styles/TableLayout';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
 import { Helmet } from 'react-helmet-async';
@@ -51,10 +57,14 @@ const FinancialYear = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [distributionModalOpen, setDistributionModalOpen] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [editRolloverModalOpen, setEditRolloverModalOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedYearForMenu, setSelectedYearForMenu] = useState(null);
-  const { formatAmount } = useCurrencyManager();
+  const [filters, setFilters] = useState({});
+  const { formatAmount, currentCurrency } = useCurrencyManager();
+  // eslint-disable-next-line no-unused-vars
   const { data: settings } = useSettings();
   const isMobile = useMediaQuery('(max-width: 480px)');
   const queryClient = useQueryClient();
@@ -68,12 +78,12 @@ const FinancialYear = () => {
     isLoading,
     isFetching 
   } = useQuery(
-    ['financialYears', page, rowsPerPage, searchTerm],
-    () => Api.get('/api/financial-years', {
+    ['financialYears', page, rowsPerPage, searchTerm, filters, currentCurrency],
+    () => Api.get(`/api/financial-years/${page}`, {
       params: {
-        page,
         limit: rowsPerPage,
-        search: searchTerm.trim()
+        search: searchTerm.trim(),
+        ...filters
       }
     }).then(res => res.data),
     {
@@ -90,6 +100,20 @@ const FinancialYear = () => {
       staleTime: 60000
     }
   );
+
+  // إضافة useEffect لتحديث البيانات عند تغيير العملة
+  useEffect(() => {
+    queryClient.invalidateQueries('financialYears');
+  }, [currentCurrency, queryClient]);
+
+  const handleApplyFilters = (newFilters) => {
+    setFilters(newFilters);
+    setSearchModalOpen(false);
+  };
+
+  const handleResetFilters = () => {
+    setFilters({});
+  };
 
   const handleCalculate = async (yearId) => {
     try {
@@ -138,6 +162,11 @@ const FinancialYear = () => {
       console.error('Error deleting financial year:', error);
       toast.error('فشل في حذف السنة المالية');
     }
+  };
+
+  const handleEditRollover = (year) => {
+    setSelectedYear(year);
+    setEditRolloverModalOpen(true);
   };
 
   const getRolloverChip = (rolloverEnabled) => {
@@ -248,7 +277,7 @@ const FinancialYear = () => {
               width: isMobile ? '50%' : '180px',
             }}
           >
-            <PlusOutlined style={{ marginRight: 8 }} />
+            <PlusOutlined style={{ marginLeft: 8 }} />
             إضافة سنة مالية
           </Fab>
 
@@ -256,14 +285,14 @@ const FinancialYear = () => {
             width: isMobile ? '100%' : '250px', 
             display: 'flex', 
             justifyContent: isMobile ? 'center' : 'end',
-            alignItems: 'center'
+            alignItems: 'center',
+            gap: 1
           }}>
             <InputBase
               placeholder="بحث عن سنة مالية"
               startAdornment={<SearchOutlined style={{marginLeft: '10px', marginRight: '10px'}} />}
               sx={{
                 width: isMobile ? '80%' : '250px',
-                padding: '8px 15px',
                 marginLeft: isMobile ? 0 : '5px', 
                 borderRadius: '4px',
                 fontSize: '16px',
@@ -273,6 +302,14 @@ const FinancialYear = () => {
               }}
               onChange={(e) => debouncedSearch(e.target.value)}
             />
+            <IconButton onClick={() => setSearchModalOpen(true)}>
+              <FilterOutlined style={{color: Object.keys(filters).length > 0 ? 'green' : 'inherit'}} />
+            </IconButton>
+            {Object.keys(filters).length > 0 && (
+              <IconButton onClick={handleResetFilters}>
+                <ReloadOutlined style={{color: 'red'}} />
+              </IconButton>
+            )}
           </Box>
         </Stack>
 
@@ -284,7 +321,7 @@ const FinancialYear = () => {
                 <StyledTableCell align="center">السنة</StyledTableCell>
                 <StyledTableCell align="center">الفترة</StyledTableCell>
                 <StyledTableCell align="center">التقدم الزمني</StyledTableCell>
-                <StyledTableCell align="center">إجمالي الأرباح ({settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'})</StyledTableCell>
+                <StyledTableCell align="center">إجمالي الأرباح ({currentCurrency === 'USD' ? '$' : 'د.ع'})</StyledTableCell>
                 <StyledTableCell align="center">معدل الربح اليومي</StyledTableCell>
                 <StyledTableCell align="center">الحالة</StyledTableCell>
                 <StyledTableCell align="center">تدوير الأرباح</StyledTableCell>
@@ -337,8 +374,15 @@ const FinancialYear = () => {
                         </Box>
                       </Box>
                     </StyledTableCell>
-                    <StyledTableCell align="center">{formatAmount(year.totalProfit, settings?.defaultCurrency)}</StyledTableCell>
-                    <StyledTableCell align="center">{year.dailyProfitRate ? `${(year.dailyProfitRate).toFixed(5)}%`+ ' لكل '+ settings?.defaultCurrency : '-'}</StyledTableCell>
+                    <StyledTableCell align="center">
+                      {formatAmount(year.totalProfit, 'IQD')}
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {year.dailyProfitRate ? 
+                        `${year.dailyProfitRate.toFixed(5)}% لكل ${currentCurrency === 'USD' ? '$' : 'د.ع'}` 
+                        : '-'
+                      }
+                    </StyledTableCell>
                     <StyledTableCell align="center">{getStatusChip(year.status)}</StyledTableCell>
                     <StyledTableCell align="center">
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
@@ -383,6 +427,17 @@ const FinancialYear = () => {
           open={Boolean(anchorEl)}
           onClose={() => setAnchorEl(null)}
         >
+          {/* Edit Rollover Option - Only show for draft years with rollover disabled */}
+          {selectedYearForMenu?.status === 'draft' && !selectedYearForMenu?.rolloverEnabled && (
+            <MenuItem onClick={() => {
+              handleEditRollover(selectedYearForMenu);
+              setAnchorEl(null);
+            }}>
+              <EditOutlined style={{marginLeft: 8, color: 'orange'}} />
+              تعديل التدوير
+            </MenuItem>
+          )}
+
           {selectedYearForMenu?.status === 'draft' && (
             <MenuItem onClick={() => {
               handleCalculate(selectedYearForMenu.id);
@@ -461,6 +516,25 @@ const FinancialYear = () => {
           }}
           financialYear={selectedYear}
           distributions={distributionsData}
+        />
+
+        <FinancialSearchModal
+          open={searchModalOpen}
+          onClose={() => setSearchModalOpen(false)}
+          onApplyFilters={handleApplyFilters}
+          initialFilters={filters}
+        />
+
+        <EditRolloverModal
+          open={editRolloverModalOpen}
+          onClose={() => {
+            setEditRolloverModalOpen(false);
+            setSelectedYear(null);
+          }}
+          financialYear={selectedYear}
+          onSuccess={() => {
+            queryClient.invalidateQueries('financialYears');
+          }}
         />
       </Box>
     </>

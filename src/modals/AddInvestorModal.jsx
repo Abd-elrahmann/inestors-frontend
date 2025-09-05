@@ -15,35 +15,37 @@ import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
 import Api from '../services/api';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
-import PhoneIcon from '@mui/icons-material/Phone';
 import { toast } from 'react-toastify';
-const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'normal' }) => {
+const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'normal', investorData = null }) => {
   const [loading, setLoading] = useState(false);
   const { formatAmount, currentCurrency } = useCurrencyManager();
   const [formData, setFormData] = useState({
-    id: '',
+    userId: '',
     fullName: '',
-    phone: '',
     amount: ''
   });
 
   useEffect(() => {
     if (mode === 'fromUser' && userData) {
       setFormData({
-        id: userData.id || '',
+        userId: userData.userId || '',
         fullName: userData.fullName || userData.userName || '',
-        phone: userData.phone || '',
         amount: ''
+      });
+    } else if (mode === 'edit' && investorData) {
+      setFormData({
+        userId: investorData.userId || '',
+        fullName: investorData.fullName || '',
+        amount: investorData.amount || ''
       });
     } else {
       setFormData({
-        id: '',
+        userId: '',
         fullName: '',
-        phone: '',
         amount: ''
       });
     }
-  }, [mode, userData]);
+  }, [mode, userData, investorData]);
 
   const [errors, setErrors] = useState({});
 
@@ -58,15 +60,12 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
       newErrors.amount = 'يجب أن يكون المبلغ رقماً موجباً';
     }
 
-    if (mode !== 'fromUser') {
+    if (mode !== 'fromUser' && mode !== 'edit') {
       if (!formData.fullName.trim()) {
         newErrors.fullName = 'اسم المستثمر مطلوب';
       }
       
-      if (!formData.phone.trim()) {
-        newErrors.phone = 'رقم الهاتف مطلوب';
-      }
-    }
+    } 
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -100,12 +99,17 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
         amount: parseFloat(formData.amount)
       };
 
-      const result = await Api.post(`/api/investors/${userData.id}`, payload);
-      toast.success('تم إضافة المستثمر بنجاح');
+      let result;
+      if (mode === 'edit') {
+        result = await Api.put(`/api/investors/${investorData.userId}`, payload);
+        toast.success('تم تعديل المستثمر بنجاح');
+      } else {
+        result = await Api.post(`/api/investors/${userData.userId}`, payload);
+        toast.success('تم إضافة المستثمر بنجاح');
+      }
       
       setFormData({
         fullName: '',
-        phone: '',
         amount: ''
       });
       
@@ -131,7 +135,6 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
     if (!loading) {
       setFormData({
         fullName: '',
-        phone: '',
         amount: ''
       });
       setErrors({});
@@ -166,7 +169,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <PersonIcon />
-          <span>إضافة مستثمر جديد</span>
+          <span>{mode === 'edit' ? 'تعديل مستثمر' : 'إضافة مستثمر جديد'}</span>
         </Box>
         <IconButton onClick={handleClose} disabled={loading} sx={{ color: 'black' }}>
           <CloseIcon />
@@ -180,11 +183,11 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
             <TextField
               sx={{width:'300px'}}
               label="مسلسل المستثمر"
-              value={formData.id}
+              value={formData.userId}
               onChange={(e) => handleInputChange('userId', e.target.value)}
-              error={!!errors.id}
-              helperText={errors.id}
-              disabled={loading || mode === 'fromUser'}
+              error={!!errors.userId}
+              helperText={errors.userId}
+              disabled={loading || mode === 'fromUser' || mode === 'edit'}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -201,7 +204,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
               onChange={(e) => handleInputChange('fullName', e.target.value)}
               error={!!errors.fullName}
               helperText={errors.fullName}
-              disabled={loading || mode === 'fromUser'}
+              disabled={loading || mode === 'fromUser' || mode === 'edit'}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -210,24 +213,6 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
                 ),
               }}
             />
-
-            <TextField
-              sx={{width:'300px'}}
-              label="رقم الهاتف"
-              value={formData.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
-              error={!!errors.phone}
-              helperText={errors.phone}
-              disabled={loading || mode === 'fromUser'}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <PhoneIcon sx={{ color: '#28a745' }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
-
             <TextField
               sx={{width:'300px'}}
               type="number"
@@ -269,7 +254,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
             {loading ? (
               <CircularProgress size={24} color="inherit" />
             ) : (
-              'إضافة'
+              mode === 'edit' ? 'تعديل' : 'إضافة'
             )}
           </Button>
         </DialogActions>

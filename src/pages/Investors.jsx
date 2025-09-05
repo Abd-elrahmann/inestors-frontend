@@ -148,24 +148,9 @@ const Investors = () => {
         justifyContent= {isMobile ? 'center' : "space-between"}
         alignItems="center"
         mb={1}
-        mr={3}
         mt={5}
         spacing={2}
       >
-        <Fab
-          color="primary"
-          variant="extended"
-          onClick={() => setShowAddModal(true)}
-          sx={{
-            borderRadius: "8px",
-            fontWeight: "bold",
-            textTransform: "none",
-            height: "40px",
-          }}
-        >
-          <PlusOutlined style={{ marginRight: 8 }} />
-          إضافة مساهم
-        </Fab>
         <Stack direction={isMobile ? 'column' : 'row'} spacing={1}>
           <InputBase
             placeholder="بحث عن مساهم"
@@ -176,8 +161,6 @@ const Investors = () => {
             }
             sx={{
               width: isMobile ? '100%' : '250px',
-              padding: "8px 15px",
-              marginLeft: "5px",
               borderRadius: "4px",
               fontSize: "16px",
             }}
@@ -217,9 +200,11 @@ const Investors = () => {
                 <StyledTableCell align="center">
                   المبلغ المساهم ({currentCurrency})
                 </StyledTableCell>
+                <StyledTableCell align="center"> مبلغ الربح ({currentCurrency})</StyledTableCell>
                 <StyledTableCell align="center">نسبة المساهمة</StyledTableCell>
                 <StyledTableCell align="center">تاريخ الانضمام</StyledTableCell>
                 <StyledTableCell align="center">عرض المعاملات</StyledTableCell>
+                <StyledTableCell align="center">تعديل</StyledTableCell>
                 <StyledTableCell align="center">حذف</StyledTableCell>
               </TableRow>
             </TableHead>
@@ -249,6 +234,9 @@ const Investors = () => {
                       <StyledTableCell align="center">
                         {formatAmount(investor.amount, "IQD")}
                       </StyledTableCell>
+                      <StyledTableCell align="center">
+                        {formatAmount(investor.profit, "IQD")}
+                      </StyledTableCell>
                       <StyledTableCell align="center">{`${investor.sharePercentage.toFixed(
                         2
                       )}%`}</StyledTableCell>
@@ -261,6 +249,18 @@ const Investors = () => {
                             <EyeOutlined style={{ color: "green" }} />
                           </IconButton>
                         </Link>
+                      </StyledTableCell>
+                      <StyledTableCell align="center">
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => {
+                            setSelectedInvestor(investor);
+                            setShowAddModal(true);
+                          }}
+                        >
+                          <EditOutlined style={{ color: "blue" }} />
+                        </IconButton>
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         <IconButton
@@ -282,15 +282,12 @@ const Investors = () => {
                       الإجمالي
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
-                      {formatAmount(
-                        filteredInvestors.reduce(
-                          (total, investor) => total + investor.amount,
-                          0
-                        ),
-                        "IQD"
-                      )}
+                      {formatAmount(investorsData?.totalAmount || 0, "IQD")}
                     </StyledTableCell>
-                    <StyledTableCell colSpan={3} />
+                    <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
+                      {formatAmount(investorsData?.totalProfit || 0, "IQD")}
+                    </StyledTableCell>
+                    <StyledTableCell colSpan={5} />
                   </StyledTableRow>
                 </>
               )}
@@ -312,8 +309,8 @@ const Investors = () => {
           open={showAddModal}
           onClose={handleCloseModal}
           onSuccess={handleAddSuccess}
-          mode="normal"
           investorData={selectedInvestor}
+          mode={selectedInvestor ? 'edit' : 'add'}
         />
 
         <DeleteModal

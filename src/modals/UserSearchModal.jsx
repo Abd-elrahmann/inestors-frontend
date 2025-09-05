@@ -93,8 +93,7 @@ const UserSearchModal = ({ open, onClose, onSearch }) => {
         alignItems: 'center'
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <SearchOutlined />
-          <span>بحث متقدم في المستخدمين</span>
+          <span>بحث</span>
         </Box>
         <IconButton onClick={onClose}>
           <CloseIcon />
