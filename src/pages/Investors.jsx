@@ -253,7 +253,7 @@ const Investors = () => {
                   {filteredInvestors.map((investor) => (
                     <StyledTableRow key={investor.id}>
                       <StyledTableCell align="center">
-                        {investor.userId}
+                        {investor.id}
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         {investor.fullName}
@@ -271,7 +271,7 @@ const Investors = () => {
                         {investor.createdAt}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        <Link to={`/transactions/${investor.userId}`}>
+                        <Link to={`/transactions/${investor.id}`}>
                           <IconButton size="small">
                             <EyeOutlined style={{ color: "green" }} />
                           </IconButton>
@@ -309,7 +309,7 @@ const Investors = () => {
                       الإجمالي
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
-                      {formatAmount(investorsData?.totalAmount.toFixed(2) || 0, "IQD")}
+                      {formatAmount(investorsData?.totalAmount || 0, "IQD")}
                     </StyledTableCell>
                     <StyledTableCell colSpan={5} />
                   </StyledTableRow>

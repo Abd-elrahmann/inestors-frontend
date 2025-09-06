@@ -18,7 +18,8 @@ import {
   TransactionOutlined,
   BarChartOutlined,
   LineChartOutlined,
-  PieChartOutlined
+  PieChartOutlined,
+  TrophyOutlined
 } from '@ant-design/icons';
 import {
   Chart as ChartJS,
@@ -64,7 +65,12 @@ const Dashboard = () => {
     totalAmount: 0,
     totalProfit: 0,
     totalTransactions: 0,
-    monthlyIncreasePercentage: 0
+    weeklyIncreases: {
+      investors: 0,
+      amount: 0,
+      profit: 0,
+      transactions: 0
+    }
   });
   
   const [aggregatesData, setAggregatesData] = useState({
@@ -84,14 +90,16 @@ const Dashboard = () => {
   });
   
   const [financialYearsData, setFinancialYearsData] = useState([]);
+  const [topInvestorsData, setTopInvestorsData] = useState([]);
   
   const isMobile = useMediaQuery('(max-width: 480px)');
-  const { formatAmount, currentCurrency } = useCurrencyManager();
+  const { formatAmount, currentCurrency, convertAmount } = useCurrencyManager();
 
   useEffect(() => {
     fetchDashboardData();
     const interval = setInterval(fetchDashboardData, 15 * 60 * 1000);
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentCurrency]);
 
   const fetchDashboardData = async () => {
@@ -102,40 +110,81 @@ const Dashboard = () => {
         overviewResponse,
         aggregatesResponse,
         transactionsResponse,
-        financialYearsResponse
+        financialYearsResponse,
+        topInvestorsResponse
       ] = await Promise.allSettled([
         Api.get('/api/dashboard/overview'),
         Api.get('/api/dashboard/aggregates'),
         Api.get('/api/dashboard/transactions-range'),
-        Api.get('/api/dashboard/financial-years')
+        Api.get('/api/dashboard/financial-years'),
+        Api.get('/api/dashboard/top-investors')
       ]);
 
       // Handle overview data
       if (overviewResponse.status === 'fulfilled') {
-        setOverviewData(overviewResponse.value.data);
+        const data = overviewResponse.value.data;
+        setOverviewData({
+          ...data,
+          totalAmount: convertAmount(data.totalAmount, 'IQD', currentCurrency),
+          totalProfit: convertAmount(data.totalProfit, 'IQD', currentCurrency)
+        });
       } else {
         console.error('Error fetching overview:', overviewResponse.reason);
       }
 
       // Handle aggregates data
       if (aggregatesResponse.status === 'fulfilled') {
-        setAggregatesData(aggregatesResponse.value.data);
+        const data = aggregatesResponse.value.data;
+        setAggregatesData({
+          ...data,
+          totalAmount: convertAmount(data.totalAmount, 'IQD', currentCurrency),
+          totalProfit: convertAmount(data.totalProfit, 'IQD', currentCurrency)
+        });
       } else {
         console.error('Error fetching aggregates:', aggregatesResponse.reason);
       }
 
       // Handle transactions data
       if (transactionsResponse.status === 'fulfilled') {
-        setTransactionsData(transactionsResponse.value.data);
+        const data = transactionsResponse.value.data;
+        const convertedDays = data.days.map(day => ({
+          ...day,
+          averageDeposit: convertAmount(day.averageDeposit, 'IQD', currentCurrency),
+          averageWithdraw: convertAmount(day.averageWithdraw, 'IQD', currentCurrency)
+        }));
+        setTransactionsData({
+          ...data,
+          days: convertedDays
+        });
       } else {
         console.error('Error fetching transactions:', transactionsResponse.reason);
       }
 
       // Handle financial years data
       if (financialYearsResponse.status === 'fulfilled') {
-        setFinancialYearsData(financialYearsResponse.value.data);
+        const data = financialYearsResponse.value.data;
+        const convertedData = data.map(year => ({
+          ...year,
+          financialYears: year.financialYears.map(fy => ({
+            ...fy,
+            totalProfit: convertAmount(fy.totalProfit, 'IQD', currentCurrency)
+          }))
+        }));
+        setFinancialYearsData(convertedData);
       } else {
         console.error('Error fetching financial years:', financialYearsResponse.reason);
+      }
+
+      // Handle top investors data
+      if (topInvestorsResponse.status === 'fulfilled') {
+        const data = topInvestorsResponse.value.data.topInvestors;
+        const convertedInvestors = data.map(investor => ({
+          ...investor,
+          amount: convertAmount(investor.amount, 'IQD', currentCurrency)
+        }));
+        setTopInvestorsData(convertedInvestors);
+      } else {
+        console.error('Error fetching top investors:', topInvestorsResponse.reason);
       }
       
     } catch (error) {
@@ -190,6 +239,29 @@ const Dashboard = () => {
           data,
           backgroundColor: '#10B981',
           borderColor: '#10B981',
+          borderWidth: 1,
+          borderRadius: 4,
+        }
+      ]
+    };
+  };
+
+  const prepareTopInvestorsChartData = () => {
+    if (!topInvestorsData.length) {
+      return {
+        labels: [],
+        datasets: []
+      };
+    }
+
+    return {
+      labels: topInvestorsData.map(investor => investor.fullName),
+      datasets: [
+        {
+          label: `المبلغ (${currentCurrency})`,
+          data: topInvestorsData.map(investor => investor.amount),
+          backgroundColor: '#6366F1',
+          borderColor: '#6366F1',
           borderWidth: 1,
           borderRadius: 4,
         }
@@ -255,32 +327,32 @@ const Dashboard = () => {
     {
       title: 'إجمالي المساهمين',
       value: overviewData.totalInvestors,
-      icon: <UserOutlined style={{ color: '#28a745', fontSize: '24px' }} />,
-      trend: overviewData.monthlyIncreasePercentage||0,
+      icon: <UserOutlined style={{ color: '#28a745', fontSize: '20px' }} />,
+      trend: overviewData.weeklyIncreases?.investors || 0,
       color: '#28a745',
       suffix: null
     },
     {
       title: `إجمالي رأس المال`,
       value: formatAmount(overviewData.totalAmount, currentCurrency),
-      icon: <DollarOutlined style={{ color: '#007bff', fontSize: '24px' }} />,
-      trend: overviewData.monthlyIncreasePercentage,
+      icon: <DollarOutlined style={{ color: '#007bff', fontSize: '20px' }} />,
+      trend: overviewData.weeklyIncreases?.amount || 0,
       color: '#007bff',
       suffix: null
     },
     {
       title: `الأرباح المحققة`,
       value: formatAmount(overviewData.totalProfit, currentCurrency),
-      icon: <RiseOutlined style={{ color: '#ffc107', fontSize: '24px' }} />,
-      trend: overviewData.monthlyIncreasePercentage||0,
+      icon: <RiseOutlined style={{ color: '#ffc107', fontSize: '20px' }} />,
+      trend: overviewData.weeklyIncreases?.profit || 0,
       color: '#ffc107',
       suffix: null
     },
     {
       title: 'إجمالي المعاملات',
       value: overviewData.totalTransactions,
-      icon: <TransactionOutlined style={{ color: '#dc3545', fontSize: '24px' }} />,
-      trend: overviewData.monthlyIncreasePercentage||0,
+      icon: <TransactionOutlined style={{ color: '#dc3545', fontSize: '20px' }} />,
+      trend: overviewData.weeklyIncreases?.transactions || 0,
       color: '#dc3545',
       suffix: null
     }
@@ -399,6 +471,26 @@ const Dashboard = () => {
               ))}
             </Row>
 
+            {/* Top Investors Chart */}
+            {topInvestorsData.length > 0 && (
+              <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+                <Col xs={24}>
+                  <Card
+                    title={
+                      <Space>
+                        <TrophyOutlined style={{ color: '#28a745', fontSize: '20px' }} />
+                        <span>أعلى المستثمرين</span>
+                      </Space>
+                    }
+                  >
+                    <div style={{ height: '400px' }}>
+                      <Bar data={prepareTopInvestorsChartData()} options={chartOptions} />
+                    </div>
+                  </Card>
+                </Col>
+              </Row>
+            )}
+
             {/* Charts Section */}
             <Row gutter={[16, 16]}>
               {/* البيانات المالية */}
@@ -406,7 +498,7 @@ const Dashboard = () => {
                 <Card 
                   title={
                     <Space>
-                      <BarChartOutlined />
+                      <BarChartOutlined style={{ color: '#28a745', fontSize: '20px' }} />
                       <span>البيانات المالية</span>
                     </Space>
                   }
@@ -430,7 +522,7 @@ const Dashboard = () => {
                   <Card 
                     title={
                       <Space>
-                        <BarChartOutlined />
+                        <BarChartOutlined style={{ color: '#28a745', fontSize: '20px' }} />
                         <span>توزيعات السنة المالية</span>
                       </Space>
                     }
@@ -448,7 +540,7 @@ const Dashboard = () => {
                   <Card 
                     title={
                       <Space>
-                        <LineChartOutlined />
+                        <LineChartOutlined style={{ color: '#28a745', fontSize: '20px' }} />
                         <span>مؤشرات العمليات اليومية</span>
                       </Space>
                     }

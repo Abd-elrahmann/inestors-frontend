@@ -19,9 +19,8 @@ import { toast } from 'react-toastify';
 import EmailIcon from '@mui/icons-material/Email';
 const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'normal', investorData = null }) => {
   const [loading, setLoading] = useState(false);
-  const { currentCurrency } = useCurrencyManager();
+  const { currentCurrency, convertAmount } = useCurrencyManager();
   const [formData, setFormData] = useState({
-    userId: '',
     fullName: '',
     email: '',
     amount: ''
@@ -30,27 +29,28 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
   useEffect(() => {
     if (mode === 'fromUser' && userData) {
       setFormData({
-        userId: userData.userId || '',
+        id: userData.id || '',
         fullName: userData.fullName || userData.userName || '',
         email: userData.email || '',
         amount: ''
       });
     } else if (mode === 'edit' && investorData) {
+      const convertedAmount = convertAmount(investorData.amount, 'IQD', currentCurrency);
       setFormData({
-        userId: investorData.userId || '',
+        id: investorData.id || '',
         fullName: investorData.fullName || '',
         email: investorData.email || '',
-        amount: investorData.amount?.toString() || '' // Convert amount to string
+        amount: currentCurrency === 'USD' ? convertedAmount?.toFixed(2) : convertedAmount?.toString() || ''
       });
     } else {
       setFormData({
-        userId: '',
+        id: '',
         fullName: '',
         email: '',
         amount: ''
       });
     }
-  }, [mode, userData, investorData]);
+  }, [mode, userData, investorData, currentCurrency]);
 
   const [errors, setErrors] = useState({});
 
@@ -79,6 +79,13 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
   };
 
   const handleInputChange = (field, value) => {
+    if (field === 'amount' && currentCurrency === 'USD') {
+      const numValue = parseFloat(value);
+      if (!isNaN(numValue)) {
+        value = numValue.toFixed(2);
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -102,21 +109,25 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
     setLoading(true);
     
     try {
+      const convertedAmount = convertAmount(parseFloat(formData.amount), currentCurrency, 'IQD');
+      
       const payload = {
-        amount: parseFloat(formData.amount)
+        fullName: formData.fullName,
+        email: formData.email,
+        amount: convertedAmount
       };
 
       let result;
       if (mode === 'edit') {
-        result = await Api.put(`/api/investors/${investorData.userId}`, payload);
+        result = await Api.put(`/api/investors/${investorData.id}`, payload);
         toast.success('تم تعديل المستثمر بنجاح');
       } else {
-        result = await Api.post(`/api/investors/${userData.userId}`, payload);
+        result = await Api.post('/api/investors', payload);
         toast.success('تم إضافة المستثمر بنجاح');
       }
       
       setFormData({
-        userId: '',
+        id: '',
         fullName: '',
         email: '',
         amount: ''
@@ -143,7 +154,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
   const handleClose = () => {
     if (!loading) {
       setFormData({
-        userId: '',
+        id: '',
         fullName: '',
         email: '',
         amount: ''
@@ -193,11 +204,11 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
             {mode === 'edit' && (
             <TextField
               sx={{width:'300px'}}
-              label="مسلسل المستثمر"
-              value={formData.userId}
-              onChange={(e) => handleInputChange('userId', e.target.value)}
-              error={!!errors.userId}
-              helperText={errors.userId}
+              label="المستثمر المرتبط"
+              value={formData.id}
+              onChange={(e) => handleInputChange('id', e.target.value)}
+              error={!!errors.userId} 
+              helperText={errors.id}
               disabled={mode === 'edit'}
               InputProps={{
                 startAdornment: (
@@ -245,7 +256,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
               sx={{width:'300px'}}
               type="number"
               label={`المبلغ (${currentCurrency})`}
-              value={formData.amount} // Remove formatAmount here
+              value={formData.amount}
               onChange={(e) => handleInputChange('amount', e.target.value)}
               error={!!errors.amount}
               helperText={errors.amount}

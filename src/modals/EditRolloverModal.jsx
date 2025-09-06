@@ -27,20 +27,26 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     rolloverEnabled: false,
-    rolloverPercentage: ''
+    rolloverPercentage: '',
+    totalProfit: ''
   });
 
   useEffect(() => {
     if (financialYear && open) {
       setFormData({
         rolloverEnabled: financialYear.rolloverEnabled || false,
-        rolloverPercentage: financialYear.rolloverPercentage || ''
+        rolloverPercentage: financialYear.rolloverPercentage || '',
+        totalProfit: financialYear.totalProfit || ''
       });
     }
   }, [financialYear, open]);
 
   const validateForm = () => {
     const newErrors = {};
+
+    if (!formData.totalProfit || formData.totalProfit < 1) {
+      newErrors.totalProfit = 'يجب أن يكون الربح أكبر من 0';
+    }
 
     if (formData.rolloverEnabled) {
       if (!formData.rolloverPercentage) {
@@ -65,9 +71,10 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
 
     setLoading(true);
     try {
-      await Api.patch(`/api/financial-years/${financialYear.id}/rollover`, {
+      await Api.put(`/api/financial-years/${financialYear.id}`, {
         rolloverEnabled: formData.rolloverEnabled,
-        rolloverPercentage: formData.rolloverPercentage
+        rolloverPercentage: formData.rolloverPercentage,
+        totalProfit: formData.totalProfit
       });
       toast.success('تم تحديث إعدادات التدوير بنجاح');
       onSuccess();
@@ -84,7 +91,8 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
     if (!loading) {
       setFormData({
         rolloverEnabled: false,
-        rolloverPercentage: ''
+        rolloverPercentage: '',
+        totalProfit: ''
       });
       setErrors({});
       onClose();
@@ -92,11 +100,11 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
   };
 
   const calculateRolloverAmount = () => {
-    if (!formData.rolloverEnabled || !financialYear?.totalProfit || !formData.rolloverPercentage) {
+    if (!formData.rolloverEnabled || !formData.totalProfit || !formData.rolloverPercentage) {
       return { rolloverAmount: 0, distributionAmount: 0 };
     }
-    const rolloverAmount = (financialYear.totalProfit * formData.rolloverPercentage) / 100;
-    const distributionAmount = financialYear.totalProfit - rolloverAmount;
+    const rolloverAmount = (formData.totalProfit * formData.rolloverPercentage) / 100;
+    const distributionAmount = formData.totalProfit - rolloverAmount;
     return { rolloverAmount, distributionAmount };
   };
 
@@ -148,8 +156,28 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
             mx: 'auto'
           }}>
             <Alert severity="info" sx={{ mb: 2 }}>
-              يمكنك تعديل إعدادات التدوير للسنة المالية {financialYear?.year}
+              يمكنك تعديل إعدادات التدوير للسنة المالية {financialYear?.year} في حاله انها محسوبة.
             </Alert>
+
+            <TextField
+              fullWidth
+              label="إجمالي الأرباح"
+              type="number"
+              value={formData.totalProfit}
+              onChange={(e) => {
+                const value = Math.max(0, parseFloat(e.target.value) || '');
+                setFormData(prev => ({
+                  ...prev,
+                  totalProfit: value
+                }));
+              }}
+              error={!!errors.totalProfit}
+              helperText={errors.totalProfit}
+              disabled={loading}
+              InputProps={{
+                endAdornment: <InputAdornment position="end">{settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</InputAdornment>,
+              }}
+            />
 
             <FormControlLabel
               control={
@@ -194,7 +222,7 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
                 error={!!errors.rolloverPercentage}
                 helperText={
                   errors.rolloverPercentage ||
-                  (formData.rolloverPercentage > 0 && financialYear?.totalProfit && 
+                  (formData.rolloverPercentage > 0 && formData.totalProfit && 
                     `سيتم توزيع ${distributionAmount.toLocaleString()} ${settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'} على المساهمين وتدوير ${rolloverAmount.toLocaleString()} ${settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}`)
                 }
                 disabled={loading}
@@ -206,9 +234,6 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
             
             {financialYear && (
               <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-                <Typography variant="body2" gutterBottom>
-                  إجمالي أرباح السنة: {financialYear.totalProfit?.toLocaleString()} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
-                </Typography>
                 <Typography variant="body2">
                   الحالة الحالية: {financialYear.rolloverEnabled ? `مفعل (${financialYear.rolloverPercentage}%)` : 'غير مفعل'}
                 </Typography>

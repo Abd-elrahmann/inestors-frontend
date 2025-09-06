@@ -137,7 +137,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const handleClose = () => {
     if (!loading) {
       setFormData({
-        userId: null,
+        id: null,
         type: 'deposit',
         amount: ''
       });
@@ -201,10 +201,10 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
 
             <Autocomplete
               options={investors}
-              getOptionLabel={(option) => option.userId + ' - ' + option.fullName || ''}
-              value={investors.find(inv => inv.userId === formData.userId) || null}
+              getOptionLabel={(option) => option.id + ' - ' + option.fullName || ''}
+              value={investors.find(inv => inv.id === formData.id) || null}
               onChange={(event, newValue) => {
-                handleInputChange('userId', newValue ? newValue.userId : null);
+                handleInputChange('id', newValue ? newValue.id : null);
               }}
               loading={investorsLoading}
               disabled={loading || investorsLoading}
@@ -212,8 +212,8 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
                 <TextField
                   {...params}
                   label="اختر المساهم"
-                  error={!!errors.userId}
-                  helperText={errors.userId}
+                  error={!!errors.id}
+                  helperText={errors.id}
                   InputProps={{
                     ...params.InputProps,
                     startAdornment: (

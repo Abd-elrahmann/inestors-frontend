@@ -208,7 +208,7 @@ const Users = () => {
                 <StyledTableCell align="center">المسلسل</StyledTableCell>
                 <StyledTableCell align="center">الاسم الكامل</StyledTableCell>
                 <StyledTableCell align="center">البريد الإلكتروني</StyledTableCell>
-                <StyledTableCell align="center">الدور</StyledTableCell>
+                <StyledTableCell align="center">الهاتف</StyledTableCell>
                 <StyledTableCell align="center">تعديل</StyledTableCell>
                 <StyledTableCell align="center">حذف</StyledTableCell>
               </TableRow>
@@ -232,17 +232,7 @@ const Users = () => {
                     <StyledTableCell align="center">{user.id}</StyledTableCell>
                     <StyledTableCell align="center">{user.fullName}</StyledTableCell>
                     <StyledTableCell align="center">{user.email}</StyledTableCell>
-                    <StyledTableCell align="center">
-                      <Chip
-                        label="مدير"
-                        variant="outlined"
-                        sx={{
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                          color: '#ffc107'
-                        }}
-                      />
-                    </StyledTableCell>
+                    <StyledTableCell align="center">{user.phone}</StyledTableCell>
                     <StyledTableCell align="center">
                       <IconButton
                         size="small"

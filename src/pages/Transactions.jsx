@@ -289,6 +289,7 @@ const Transactions = () => {
                 <StyledTableCell align="center">
                   المبلغ ({currentCurrency})
                 </StyledTableCell>
+                <StyledTableCell align="center">العملة</StyledTableCell>
                 <StyledTableCell align="center">تاريخ المعاملة</StyledTableCell>
                 {isAdmin && <StyledTableCell align="center">حذف</StyledTableCell>}
               </TableRow>
@@ -310,10 +311,10 @@ const Transactions = () => {
                 transactions.map((transaction) => (
                   <StyledTableRow key={transaction.id}>
                     <StyledTableCell align="center">
-                      {transaction.userId || "غير محدد"}
+                      {transaction.investorId || "غير محدد"}
                     </StyledTableCell>
                     <StyledTableCell align="center">
-                      {transaction.user?.fullName || "غير محدد"}
+                      {transaction.investors?.fullName || "غير محدد"}
                     </StyledTableCell>
                     <StyledTableCell align="center">
                       <Chip
@@ -331,6 +332,9 @@ const Transactions = () => {
                         transaction.amount,
                         transaction.currency || "IQD"
                       )}
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {transaction.currency || "IQD"}
                     </StyledTableCell>
                     <StyledTableCell align="center">
                       {dayjs(transaction.date)

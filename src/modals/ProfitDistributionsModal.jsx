@@ -22,7 +22,8 @@ import {
   Chip,
   CircularProgress,
   Alert,
-  Tooltip
+  Tooltip,
+  Switch
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -31,11 +32,17 @@ import {
   Person as PersonIcon,
   TrendingUp as ProfitIcon,
   CalendarToday as CalendarIcon,
-  AccountBalance as AccountBalanceIcon
+  AccountBalance as AccountBalanceIcon,
+  Check as CheckIcon,
+  Clear as ClearIcon
 } from '@mui/icons-material';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
 import { StyledTableCell, StyledTableRow } from '../styles/TableLayout';
 import dayjs from 'dayjs';
+import Api from '../services/api';
+import { toast } from 'react-toastify';
+import { useQueryClient } from 'react-query';
+
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
 
@@ -54,9 +61,10 @@ const TabPanel = (props) => {
 
 const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions }) => {
   const [tabValue, setTabValue] = useState(0);
-  // eslint-disable-next-line no-unused-vars
   const [loading, setLoading] = useState(false);
+  const [updatingRollover, setUpdatingRollover] = useState(null);
   const { formatAmount, convertAmount } = useCurrencyManager();
+  const queryClient = useQueryClient();
 
   if (!distributions || !financialYear) return null;
 
@@ -64,13 +72,14 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
     setTabValue(newValue);
   };
 
-  const formatDate1 = (date) => {
+  const formatDate = (date) => {
     return dayjs(date).format('DD/MM/YYYY');
   }
 
   const getStatusColor = (status) => {
     const colors = {
       'pending': 'warning',
+      'calculated': 'info',
       'approved': 'success',
       'distributed': 'info',
       'cancelled': 'error'
@@ -81,6 +90,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
   const getStatusText = (status) => {
     const statusMap = {
       'pending': 'في الانتظار',
+      'calculated': 'تم الحساب',
       'approved': 'موافق عليه',
       'distributed': 'موزع',
       'cancelled': 'ملغي'
@@ -88,11 +98,31 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
     return statusMap[status] || status;
   };
 
+  const handleRolloverToggle = async (distribution) => {
+    try {
+      setUpdatingRollover(distribution.id);
+      
+      // Update the rollover status using the correct endpoint
+      await Api.patch(`/api/financial-years/${financialYear.id}/distribute`, {
+        isRollover: distribution.isRollover ? false : true // Toggle rollover status
+      });
+      
+      // Refresh data after update
+      queryClient.invalidateQueries(['distributions', financialYear.id]);
+      toast.success('تم تحديث حالة التدوير بنجاح');
+    } catch (error) {
+      console.error('Error updating rollover status:', error);
+      toast.error('فشل في تحديث حالة التدوير');
+    } finally {
+      setUpdatingRollover(null);
+    }
+  };
   return (
     <Dialog 
       open={open} 
       onClose={onClose} 
-      maxWidth="lg" 
+      maxWidth="lg"
+      sx={{marginRight: '250px'}} 
       fullWidth
       TransitionProps={{
           timeout: { enter: 200, exit: 150 }
@@ -130,14 +160,12 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
             <Typography variant="body2" component="div" sx={{mb: 2}}>
               <strong >💰 إجمالي الربح:</strong> {formatAmount(convertAmount(financialYear.totalProfit, financialYear.currency, 'USD'), 'USD')}
               <br />
-              <strong>🧮 طريقة حساب الارباح للمستثمر:</strong> مبلغ المساهمة × معدل الربح اليومي × عدد الايام حتى الآن
-              <br />
-              • <strong>هام:</strong> يتم احتساب الأرباح لكل مساهم بدءًا من تاريخ مساهمته الفعلي
+              <strong>🧮 طريقة حساب الارباح للمستثمر:</strong> اجمالي الربح x نسبة المساهمة
               <br />
             </Typography>
           </Box>
 
-          <Grid container spacing={3} sx={{ mb: 3, justifyContent: 'space-between' }}>
+          <Grid container spacing={4} sx={{ mb: 3, justifyContent: 'center' }}>
             <Grid item xs={12} sm={6} md={3}>
               <Card sx={{ width: '200px', height: '110px' }}>
                 <CardContent>
@@ -162,7 +190,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                   <Box display="flex" alignItems="center" justifyContent="space-between">
                     <Box>
                       <Typography color="textSecondary" gutterBottom>
-                        إجمالي الربح اليومي
+                        إجمالي الربح
                       </Typography>
                       <Typography variant="h5" component="div">
                         {formatAmount(convertAmount(distributions.summary.totalDailyProfit, financialYear.currency, 'USD'), 'USD')}
@@ -180,31 +208,13 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                   <Box display="flex" alignItems="center" justifyContent="space-between">
                     <Box>
                       <Typography color="textSecondary" gutterBottom>
-                        متوسط الربح اليومي
+                        متوسط الربح
                       </Typography>
                       <Typography variant="h5" component="div">
                         {formatAmount(convertAmount(distributions.summary.averageDailyProfit, financialYear.currency, 'USD'), 'USD')}
                       </Typography>
                     </Box>
                     <AccountBalanceIcon color="info" sx={{ fontSize: 40 }} />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ width: '220px', height: '110px' }}>
-                <CardContent>
-                  <Box display="flex" alignItems="center" justifyContent="space-between">
-                    <Box>
-                      <Typography color="textSecondary" gutterBottom>
-                        معدل الربح اليومي
-                      </Typography>
-                      <Typography variant="h6" component="div">
-                        {(distributions.summary.dailyProfitRate||0).toFixed(5)}%
-                      </Typography>
-                    </Box>
-                    <CalendarIcon color="secondary" sx={{ fontSize: 40 }} />
                   </Box>
                 </CardContent>
               </Card>
@@ -220,26 +230,10 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
               <Grid container spacing={2} sx={{justifyContent:'space-between', height:'50px'}}>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center' }}>
-                    الأيام حتى الآن
-                  </Typography>
-                  <Typography variant="body1" sx={{ textAlign: 'center' }}>
-                    {distributions.summary.daysSoFar||0} {distributions.summary.daysSoFar===1 ? 'يوم' : 'ايام'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center' }}>
-                    الأيام المتبقية
-                  </Typography>
-                  <Typography variant="body1" sx={{ textAlign: 'center' }}>
-                    {Math.max((distributions.summary.totalDays || 0) - (distributions.summary.daysSoFar || 0), 0)} {Math.max((distributions.summary.totalDays || 0) - (distributions.summary.daysSoFar || 0), 0) === 1 ? 'يوم' : 'ايام'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center' }}>
                      الفترة الزمنية
                   </Typography>
                   <Typography variant="body1" sx={{ textAlign: 'center' }}>
-                    {formatDate1(financialYear.startDate)} - {formatDate1(financialYear.endDate)}
+                    {formatDate(financialYear.startDate)} - {formatDate(financialYear.endDate)}
                     <br />
                     {`(${distributions.summary.totalDays||0} يوم)`}
                   </Typography>
@@ -249,8 +243,8 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                     حالة السنة المالية
                   </Typography>
                   <Chip 
-                    label={getStatusText(financialYear.status)} 
-                    color={getStatusColor(financialYear.status)}
+                    label={getStatusText(distributions.status)} 
+                    color={getStatusColor(distributions.status)}
                     size="small"
                   />
                 </Grid>
@@ -276,24 +270,39 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                     <StyledTableCell align="center">المستثمر</StyledTableCell>
                     <StyledTableCell align="center">رأس المال</StyledTableCell>
                     <StyledTableCell align="center">نسبة المساهمة</StyledTableCell>
-                    <StyledTableCell align="center">الربح اليومي</StyledTableCell>
-                    <StyledTableCell align="center">الأيام حتى الآن</StyledTableCell>
+                    <StyledTableCell align="center">الربح</StyledTableCell>
                     <StyledTableCell align='center'>تاريخ المساهمة</StyledTableCell>
                     <StyledTableCell align='center'>تاريخ التوزيع</StyledTableCell>
-                    <StyledTableCell align="center">اخر تحديث</StyledTableCell>
+                    <StyledTableCell align='center'>تدوير الأرباح</StyledTableCell>
                   </StyledTableRow>
                 </TableHead>
                 <TableBody>
                   {distributions.distributions.map((distribution) => (
                     <StyledTableRow key={distribution.id}>
-                      <StyledTableCell align="center">{distribution.user.fullName}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.investors.fullName}</StyledTableCell>
                       <StyledTableCell align="center">{formatAmount(convertAmount(distribution.amount, financialYear.currency, 'USD'), 'USD')}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.percentage.toFixed(2)}%</StyledTableCell>
-                      <StyledTableCell align="center">{formatAmount(convertAmount(distribution.dailyProfit, financialYear.currency, 'USD'), 'USD')}</StyledTableCell>
-                      <StyledTableCell align="center">{distribution.daysSoFar}</StyledTableCell>
-                      <StyledTableCell align="center">{distribution.createdAt}</StyledTableCell>
+                      <StyledTableCell align="center">{formatAmount(convertAmount(distribution.totalProfit, financialYear.currency, 'USD'), 'USD')}</StyledTableCell>
+                      <StyledTableCell align="center">{dayjs(distribution.investors.createdAt).format('MMM DD, YYYY, hh:mm A')}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.distributedAt}</StyledTableCell>
-                      <StyledTableCell align="center">{distribution.updatedAt}</StyledTableCell>
+                      <StyledTableCell align="center">
+                        <Tooltip title={distribution.isRollover ? 'تم التدوير' : 'غير متدور'}>
+                          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                              {updatingRollover === distribution.id ? (
+                              <CircularProgress size={24} color="success" />
+                            ) : (
+                              <IconButton
+                                onClick={() => handleRolloverToggle(distribution)}
+                                disabled={loading}
+                                color={distribution.isRollover ? "success" : "default"}
+                                size="small"
+                              >
+                                {distribution.isRollover ? <ClearIcon color="error" /> : <CheckIcon color="success" />}
+                              </IconButton>
+                            )}
+                          </Box>
+                        </Tooltip>
+                      </StyledTableCell>
                     </StyledTableRow>
                   ))}
                 </TableBody>

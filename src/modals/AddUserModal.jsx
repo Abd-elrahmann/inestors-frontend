@@ -24,6 +24,7 @@ import Api from '../services/api';
 import { toast } from 'react-toastify';
 import { useQueryClient } from 'react-query';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import PhoneIcon from '@mui/icons-material/Phone';
 const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -33,6 +34,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
+    phone: '',
     password: '',
     role: 'ADMIN',
     confirmPassword: ''
@@ -43,6 +45,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
       setFormData({
         fullName: user.fullName || '',
         email: user.email || '',
+        phone: user.phone || '',
         password: '',
         role: user.role || 'ADMIN',
         confirmPassword: ''
@@ -59,6 +62,12 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
       newErrors.fullName = 'الاسم الكامل مطلوب';
     } else if (formData.fullName.trim().length < 2) {
       newErrors.fullName = 'الاسم الكامل يجب أن يكون على الأقل حرفان';
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'الهاتف مطلوب';
+    } else if (!/^[0-9]+$/.test(formData.phone)) {
+      newErrors.phone = 'الهاتف يجب أن يكون رقماً';
     }
 
     if (mode === 'add') {
@@ -102,6 +111,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
           fullName: formData.fullName.trim(),
           email: formData.email.trim().toLowerCase(),
           password: formData.password,
+          phone: formData.phone,
           role: formData.role
         };
         result = await Api.post('/api/users', userData);
@@ -110,6 +120,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
       } else {
         const updateData = {
           fullName: formData.fullName.trim(),
+          phone: formData.phone,
           role: formData.role
         };
         result = await Api.put(`/api/users/${user.id}`, updateData);
@@ -135,6 +146,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
       setFormData({
         fullName: '',
         email: '',
+        phone: '',
         password: '',
         role: 'ADMIN',
         confirmPassword: ''
@@ -236,6 +248,22 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
               
             
 
+                <TextField
+                  sx={{width:'300px'}}
+                  label="الهاتف"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  error={!!errors.phone}
+                  helperText={errors.phone}
+                  disabled={loading}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PhoneIcon sx={{ color: primaryColor }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
                 <TextField
                   sx={{width:'300px'}}
                   type="email"

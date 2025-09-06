@@ -1,555 +1,693 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Card,
-  Typography,
-  Button,
-  Select,
-  DatePicker,
   Row,
   Col,
+  Button,
+  Typography,
   Space,
+  Divider,
   Spin,
-  Alert,
-  Grid,
-  Layout,
-  Statistic,
-  Divider
-} from "antd";
+  message,
+  Select,
+  DatePicker,
+} from 'antd';
 import {
-  FileTextOutlined,
   DownloadOutlined,
-  PrinterOutlined,
+  EyeOutlined,
   UserOutlined,
-  DollarOutlined,
+  UsergroupAddOutlined,
   TransactionOutlined,
-  RiseOutlined,
-  CalendarOutlined
+  CalendarOutlined,
 } from '@ant-design/icons';
-import Api from '../services/api';
+import { Table, TableBody, TableHead, TableRow, TableContainer, Paper } from '@mui/material';
+import {
+  exportToExcel,
+  exportIndividualInvestorToPDF,
+  exportFinancialYearToPDF,
+  exportAllInvestorsToPDF,
+  exportTransactionsToPDF,
+} from '../utils/reportExporter';
+import api from '../services/api';
+import { StyledTableRow, StyledTableCell } from '../styles/TableLayout';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
-import { Helmet } from 'react-helmet-async';
-import ReportTypeSelector from '../components/Reports/ReportTypeSelector';
-import QuickStats from '../components/Reports/QuickStats';
-import ReportFilters from '../components/Reports/ReportFilters';
-import ReportPreview from '../components/Reports/ReportPreview';
-import IndividualReportModal from '../components/Reports/IndividualReportModal';
-import { exportInvestorsSummaryToPDF, exportTransactionsToPDF, exportIndividualInvestorToPDF, exportFinancialYearToPDF, exportToExcel, printIndividualReport } from '../utils/reportExporter';
+
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
-const { Content } = Layout;
-const { useBreakpoint } = Grid;
 
 const Reports = () => {
-  const [selectedReport, setSelectedReport] = useState("");
-  const [dateRange, setDateRange] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [reportGenerating, setReportGenerating] = useState(false);
-  const [reportData, setReportData] = useState(null);
-  const { formatAmount, currentCurrency } = useCurrencyManager();
-  // eslint-disable-next-line no-unused-vars
-  const screens = useBreakpoint();
-  
+  const { formatAmount } = useCurrencyManager();
+  const [reportType, setReportType] = useState('');
   const [investors, setInvestors] = useState([]);
-  const [selectedInvestor, setSelectedInvestor] = useState(null);
-  const [individualReportOpen, setIndividualReportOpen] = useState(false);
-  const [individualReportLoading, setIndividualReportLoading] = useState(false);
-  const [individualReportData, setIndividualReportData] = useState(null);
-  const [quickStats, setQuickStats] = useState({
-    totalInvestors: 0,
-    totalCapital: 0,
-    monthlyOperations: 0,
-    totalProfits: 0
-  });
-
   const [financialYears, setFinancialYears] = useState([]);
+  const [selectedInvestor, setSelectedInvestor] = useState(null);
   const [selectedFinancialYear, setSelectedFinancialYear] = useState(null);
-  const [financialYearReportData, setFinancialYearReportData] = useState(null);
-  const [financialYearReportLoading, setFinancialYearReportLoading] = useState(false);
+  const [dateRange, setDateRange] = useState([]);
+  const [reportData, setReportData] = useState([]);
+  const [_loading, _setLoading] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   useEffect(() => {
-    loadInitialData();
+    fetchInvestors();
+    fetchFinancialYears();
   }, []);
 
-  const loadInitialData = async () => {
+  const fetchInvestors = async () => {
     try {
-      setLoading(true);
-      
-      const [investorsResponse, transactionsResponse, financialYearsResponse] = await Promise.all([
-        Api.get('/investors?limit=200&includeInactive=true'),
-        Api.get('/transactions?limit=500'),
-        Api.get('/financial-years?limit=10&sort=-startDate')
-      ]);
-      
-      const investorsData = investorsResponse?.data?.investors || [];
-      const transactionsData = transactionsResponse?.data?.transactions || [];
-      const financialYearsData = financialYearsResponse?.data?.financialYears || [];
-            
-      setInvestors(Array.isArray(investorsData) ? investorsData : []);
-      setFinancialYears(Array.isArray(financialYearsData) ? financialYearsData : []);
-      
-      const totalCapital = investorsData.reduce((sum, investor) => sum + (investor.amountContributed || 0), 0);
-      const totalProfits = financialYearsData.reduce((sum, year) => sum + (year.totalProfit || 0), 0);
-      
-      setQuickStats({
-        totalInvestors: investorsData.length,
-        totalCapital: totalCapital,
-        monthlyOperations: transactionsData.length,
-        totalProfits: totalProfits
-      });
-      
-      setLoading(false);
-    } catch (err) {
-      console.error('Error loading reports data:', err);
-      setLoading(false);
+      const response = await api.get('/api/investors/1');
+      setInvestors(response.data?.investors || []);
+    } catch (error) {
+      console.error('Error fetching investors:', error);
+      message.error('فشل في تحميل قائمة المستثمرين');
     }
   };
 
-  const handleGenerateReport = async () => {
+  const fetchFinancialYears = async () => {
     try {
-      setReportGenerating(true);
-      
-      if (selectedReport === "individual_investor") {
-        setIndividualReportOpen(true);
-        setReportGenerating(false);
-        return;
+      const response = await api.get('/api/financial-years/1');
+      setFinancialYears(response.data?.years || []);
+    } catch (error) {
+      console.error('Error fetching financial years:', error);
+      message.error('فشل في تحميل قائمة السنوات المالية');
+    }
+  };
+
+  const generateReport = async () => {
+    setPreviewLoading(true);
+    try {
+      let url = '';
+      const params = {};
+
+      if (dateRange && dateRange.length === 2) {
+        params.startDate = dateRange[0].format('YYYY-MM-DD');
+        params.endDate = dateRange[1].format('YYYY-MM-DD');
       }
 
-      if (selectedReport === "financial_year") {
-        if (!selectedFinancialYear) {
-          setReportGenerating(false);
-          return;
-        }
-
-        try {
-          setFinancialYearReportLoading(true);
-          const [yearResponse, distributionsResponse] = await Promise.all([
-            Api.get(`/financial-years/${selectedFinancialYear._id}`),
-            Api.get(`/financial-years/${selectedFinancialYear._id}/distributions`)
-          ]);
-          
-          const yearData = yearResponse?.data?.financialYear || {};
-          const distributions = distributionsResponse?.data?.distributions || [];
-          
-          setFinancialYearReportData({
-            ...yearData,
-            distributions: distributions
-          });
-        } catch (err) {
-          console.error('Error loading financial year data:', err);
-        } finally {
-          setFinancialYearReportLoading(false);
-          setReportGenerating(false);
-        }
-        return;
-      }
-      
-      let reportData = {
-        type: selectedReport,
-        dateRange: dateRange.length === 2 ? `${dateRange[0].format('YYYY-MM-DD')} - ${dateRange[1].format('YYYY-MM-DD')}` : 'كل الفترات',
-        data: []
-      };
-
-      switch (selectedReport) {
-        case "investors_summary": {
-          const investorsResponse = await Api.get('/investors?limit=200&includeInactive=true');
-          const investorsData = investorsResponse?.data?.investors || [];
-          reportData.data = investorsData.map(investor => ({
-            id: investor._id,
-            name: investor.fullName,
-            nationalId: investor.nationalId,
-            totalInvestment: investor.amountContributed || 0,
-            sharePercentage: parseFloat((investor.sharePercentage || 0).toFixed(2)),
-          }));
+      switch (reportType) {
+        case 'investors':
+          url = '/api/reports/investors';
           break;
-        }
-          
-        case "financial_transactions": {
-          if (dateRange.length !== 2) {
-            setReportGenerating(false);
+        case 'individual':
+          if (!selectedInvestor) {
+            message.warning('يرجى اختيار مستثمر');
+            setPreviewLoading(false);
             return;
           }
-          const transactionsResponse = await Api.get('/transactions?limit=500');
-          const transactionsData = transactionsResponse?.data?.transactions || [];
-          reportData.data = transactionsData.map(transaction => ({
-            id: transaction._id,
-            date: new Date(transaction.transactionDate).toLocaleDateString('en-US'),
-            investor: transaction.investorId?.fullName || 'N/A',
-            type: transaction.type,
-            amount: transaction.amount || 0,
-          }));
+          url = `/api/reports/investors/${selectedInvestor.id}`;
           break;
-        }
-          
+        case 'transactions':
+          url = '/api/reports/transactions';
+          break;
+        case 'financial-year':
+          if (!selectedFinancialYear) {
+            message.warning('يرجى اختيار سنة مالية');
+            setPreviewLoading(false);
+            return;
+          }
+          url = `/api/reports/financial-years/${encodeURIComponent(selectedFinancialYear.periodName)}`;
+          break;
         default:
-          reportData.data = [];
+          break;
       }
-      
-      setReportData(reportData);
-    } catch (err) {
-      console.error('Error generating report:', err);
+
+      const response = await api.get(url, { params });
+      setReportData(response.data || []);
+      message.success('تم توليد التقرير بنجاح');
+    } catch (error) {
+      console.error('Error generating report:', error);
+      message.error('فشل في توليد التقرير');
     } finally {
-      setReportGenerating(false);
+      setPreviewLoading(false);
     }
   };
 
-  const handleGenerateIndividualReport = async () => {
-    if (!selectedInvestor) {
+  const exportReport = (format) => {
+    if (
+      !reportData ||
+      (Array.isArray(reportData) && reportData.length === 0) ||
+      (typeof reportData === 'object' && Object.keys(reportData).length === 0)
+    ) {
+      message.warning('لا توجد بيانات للتصدير');
       return;
     }
 
     try {
-      setIndividualReportLoading(true);
+      switch (format) {
+        case 'excel':
+          exportToExcel(reportData, reportType);
+          break;
+        case 'pdf':
+          if (reportType === 'individual') {
+            exportIndividualInvestorToPDF(reportData);
+          } else if (reportType === 'financial-year') {
+            exportFinancialYearToPDF(reportData);
+          } else if (reportType === 'investors') {
+            exportAllInvestorsToPDF(reportData);
+          } else if (reportType === 'transactions') {
+            exportTransactionsToPDF(reportData);
+          } else {
+            message.warning('التصدير إلى PDF غير متاح لهذا النوع من التقارير');
+          }
+          break;
+        default:
+          break;
+      }
+      message.success('تم تصدير التقرير بنجاح');
+    } catch (error) {
+      console.error('Error exporting report:', error);
+      message.error('فشل في تصدير التقرير');
+    }
+  };
 
-      const [investorResponse, transactionsResponse, financialYearsResponse] = await Promise.all([
-        Api.get(`/investors/${selectedInvestor._id}`),
-        Api.get(`/transactions?investorId=${selectedInvestor._id}`),
-        Api.get('/financial-years')
-      ]);
-
-      const investorData = investorResponse?.data?.investor || investorResponse?.data || {};
-      const transactionsData = transactionsResponse?.data?.transactions || transactionsResponse?.data || [];
-      const financialYears = financialYearsResponse?.data?.financialYears || [];
-
-      const profitsPromises = financialYears.map(year => 
-        Api.get(`/financial-years/${year._id}/distributions`)
-          .then(response => {
-            const distributions = response?.data?.distributions || [];
-            const investorDistribution = distributions.find(d => 
-              d.investorId?._id === selectedInvestor._id || 
-              d.investorId === selectedInvestor._id
-            );
-            
-            if (investorDistribution) {
-              return {
-                year: year,
-                investmentAmount: investorDistribution.calculation?.investmentAmount || 0,
-                totalDays: year.totalDays || 0,
-                calculatedProfit: investorDistribution.calculation?.calculatedProfit || 0,
-                currency: investorDistribution.currency || year.currency || 'IQD',
-                status: investorDistribution.status || 'calculated'
-              };
-            }
-            return null;
-          })
-          .catch(() => null)
+  const renderReportPreview = () => {
+    if (previewLoading) {
+      return (
+        <div style={{ textAlign: 'center', padding: 50 }}>
+          <Spin size="large" />
+        </div>
       );
+    }
 
-      const profitsResults = await Promise.all(profitsPromises);
-      const profitsData = profitsResults.filter(Boolean);
+    if (
+      !reportData ||
+      (Array.isArray(reportData) && reportData.length === 0) ||
+      (typeof reportData === 'object' && Object.keys(reportData).length === 0)
+    ) {
+      return (
+        <div style={{ textAlign: 'center', padding: 50 }}>
+          <Text>لا توجد بيانات للعرض</Text>
+        </div>
+      );
+    }
 
-      setIndividualReportData({
-        investor: investorData,
-        transactions: Array.isArray(transactionsData) ? transactionsData : [],
-        profits: profitsData,
-        generated: new Date().toLocaleString('ar-SA')
-      });
+    switch (reportType) {
+      case 'investors':
+        return (
+          <TableContainer component={Paper} sx={{ maxHeight: 650, marginTop: 2 }}>
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                    الاسم
+                  </StyledTableCell>
+                  <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                    البريد الإلكتروني
+                  </StyledTableCell>
+                  <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                    المبلغ
+                  </StyledTableCell>
+                  <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                    تاريخ الإنشاء
+                  </StyledTableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {Array.isArray(reportData) && reportData.map((row) => (
+                  <StyledTableRow key={row.id}>
+                    <StyledTableCell align="center">{row.fullName}</StyledTableCell>
+                    <StyledTableCell align="center">{row.email}</StyledTableCell>
+                    <StyledTableCell align="center">{formatAmount(row.amount || 0, 'USD')}</StyledTableCell>
+                    <StyledTableCell align="center">{row.createdAt}</StyledTableCell>
+                  </StyledTableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        );
 
-    } catch (err) {
-      console.error('Error generating individual report:', err);
-    } finally {
-      setIndividualReportLoading(false);
+      case 'individual':
+        return (
+          <div>
+            <Divider orientation="left" dashed>
+              معلومات المستثمر
+            </Divider>
+            <TableContainer component={Paper} sx={{ marginTop: 2, marginBottom: 4 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      المعلومة
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      القيمة
+                    </StyledTableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <StyledTableRow>
+                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
+                      الاسم
+                    </StyledTableCell>
+                    <StyledTableCell align="center">{reportData.fullName}</StyledTableCell>
+                  </StyledTableRow>
+                  <StyledTableRow>
+                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
+                      البريد الإلكتروني
+                    </StyledTableCell>
+                    <StyledTableCell align="center">{reportData.email}</StyledTableCell>
+                  </StyledTableRow>
+                  <StyledTableRow>
+                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
+                      المبلغ
+                    </StyledTableCell>
+                    <StyledTableCell align="center">{formatAmount(reportData.amount || 0, 'USD')}</StyledTableCell>
+                  </StyledTableRow>
+                  <StyledTableRow>
+                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
+                      تاريخ الإنشاء
+                    </StyledTableCell>
+                    <StyledTableCell align="center">{reportData.createdAt}</StyledTableCell>
+                  </StyledTableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <Divider orientation="left" dashed>
+              المعاملات
+            </Divider>
+            <TableContainer component={Paper} sx={{ marginTop: 2 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      النوع
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      المبلغ
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      العملة
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      التاريخ
+                    </StyledTableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(reportData.transactions || []).map((transaction) => (
+                    <StyledTableRow key={transaction.id}>
+                      <StyledTableCell align="center">{transaction.type === 'deposit' ? 'إيداع' : 'سحب'}</StyledTableCell>
+                      <StyledTableCell align="center">{formatAmount(transaction.amount || 0, transaction.currency || 'USD')}</StyledTableCell>
+                      <StyledTableCell align="center">{transaction.currency || 'USD'}</StyledTableCell>
+                      <StyledTableCell align="center">{transaction.date}</StyledTableCell>
+                    </StyledTableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </div>
+        );
+
+      case 'transactions':
+        return (
+          <TableContainer component={Paper} sx={{ marginTop: 2 }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                    المستثمر
+                  </StyledTableCell>
+                  <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                    النوع
+                  </StyledTableCell>
+                  <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                    المبلغ
+                  </StyledTableCell>
+                  <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                    العملة
+                  </StyledTableCell>
+                  <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                    التاريخ
+                  </StyledTableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {Array.isArray(reportData) &&
+                  reportData.map((transaction) => (
+                    <StyledTableRow key={transaction.id}>
+                      <StyledTableCell align="center">{transaction.investors?.fullName}</StyledTableCell>
+                      <StyledTableCell align="center">{transaction.type === 'deposit' ? 'إيداع' : 'سحب'}</StyledTableCell>
+                      <StyledTableCell align="center">{formatAmount(transaction.amount || 0, transaction.currency || 'USD')}</StyledTableCell>
+                      <StyledTableCell align="center">{transaction.currency || 'USD'}</StyledTableCell>
+                      <StyledTableCell align="center">{transaction.date}</StyledTableCell>
+                    </StyledTableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        );
+
+      case 'financial-year':
+        return (
+          <div>
+            <Divider orientation="left" dashed>
+              معلومات السنة المالية
+            </Divider>
+            <TableContainer component={Paper} sx={{ marginTop: 2, marginBottom: 4 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      المعلومة
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      القيمة
+                    </StyledTableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <StyledTableRow>
+                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
+                      السنة
+                    </StyledTableCell>
+                    <StyledTableCell align="center">{reportData.year}</StyledTableCell>
+                  </StyledTableRow>
+                  <StyledTableRow>
+                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
+                      الفترة
+                    </StyledTableCell>
+                    <StyledTableCell align="center">{reportData.periodName}</StyledTableCell>
+                  </StyledTableRow>
+                  <StyledTableRow>
+                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
+                      إجمالي الربح
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {formatAmount(reportData.totalProfit || 0, reportData.currency || 'IQD')}
+                    </StyledTableCell>
+                  </StyledTableRow>
+                  <StyledTableRow>
+                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
+                      الحالة
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {reportData.status === 'calculated'
+                        ? 'محسوب'
+                        : reportData.status === 'approved'
+                        ? 'معتمد'
+                        : reportData.status === 'distributed'
+                        ? 'موزع'
+                        : reportData.status}
+                    </StyledTableCell>
+                  </StyledTableRow>
+                  <StyledTableRow>
+                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
+                      تاريخ البداية
+                    </StyledTableCell>
+                    <StyledTableCell align="center">{reportData.startDate}</StyledTableCell>
+                  </StyledTableRow>
+                  <StyledTableRow>
+                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
+                      تاريخ النهاية
+                    </StyledTableCell>
+                    <StyledTableCell align="center">{reportData.endDate}</StyledTableCell>
+                  </StyledTableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <Divider orientation="left" dashed>
+              توزيعات الأرباح
+            </Divider>
+            <TableContainer component={Paper} sx={{ marginTop: 2 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      المستثمر
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      المبلغ
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      التاريخ
+                    </StyledTableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(reportData.profitDistributions || []).map((distribution, index) => (
+                    <StyledTableRow key={index}>
+                      <StyledTableCell align="center">{distribution.investorId || 'غير معروف'}</StyledTableCell>
+                      <StyledTableCell align="center">
+                        {formatAmount(distribution.amount || 0, reportData.currency || 'IQD')}
+                      </StyledTableCell>
+                      <StyledTableCell align="center">
+                        {distribution.distributionDate ? distribution.distributionDate : 'غير محدد'}
+                      </StyledTableCell>
+                    </StyledTableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </div>
+        );
+      default:
+        return null;
     }
   };
 
-  const handleDownloadPDF = () => {
-    if (!reportData && !financialYearReportData && !individualReportData) {
-      return;
-    }
-    
-    try {
-      if (selectedReport === "individual_investor" && individualReportData) {
-        exportIndividualInvestorToPDF(individualReportData);
-      } else if (selectedReport === "financial_year" && financialYearReportData) {
-        exportFinancialYearToPDF(financialYearReportData);
-      } else if (reportData) {
-        switch (selectedReport) {
-          case 'investors_summary':
-            exportInvestorsSummaryToPDF(reportData.data);
-            break;
-          case 'financial_transactions':
-            exportTransactionsToPDF(reportData.data);
-            break;
-          default:
-        }
-      }
-    } catch (err) {
-      console.error('Error downloading PDF:', err);
-    }
-  };
-  
-  const handleDownloadExcel = () => {
-    if (!reportData && !financialYearReportData && !individualReportData) {
-      return;
-    }
-    
-    try {
-      if (selectedReport === "financial_year" && financialYearReportData) {
-        exportToExcel(financialYearReportData, 'financial_year');
-      } else if (selectedReport === "individual_investor" && individualReportData) {
-        exportToExcel(individualReportData, 'individual_investor');
-      } else if (reportData) {
-        exportToExcel(reportData.data, selectedReport);
-      }
-    } catch (err) {
-      console.error('Error downloading Excel:', err);
-    }
-  };
-  
-  const handlePrintReport = () => {
-    if (!reportData && !individualReportData) {
-      return;
-    }
+  const renderReportOptions = () => {
+    const cardStyle = (active) => ({
+      textAlign: 'center',
+      cursor: 'pointer',
+      borderRadius: 12,
+      boxShadow: active ? '0 0 10px #28a745' : '0 2px 8px rgba(0,0,0,0.1)',
+      border: active ? '2px solid #28a745' : '1px solid #f0f0f0',
+      transition: 'all 0.3s ease',
+      padding: 24,
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+    });
 
-    const generatePrintableReport = () => {
-      if (selectedReport === "individual_investor" && individualReportData) {
-        return individualReportData;
-      }
-      return reportData;
-    };
+    const iconStyle = { fontSize: 40, color: '#28a745', marginBottom: 16 };
 
-    try {
-      if (selectedReport === "individual_investor" && individualReportData) {
-        printIndividualReport(individualReportData);
-      } else {
-        // Handle other report types if needed
-        const printWindow = window.open('', '_blank');
-        const reportContent = generatePrintableReport();
-        
-        printWindow.document.write(`
-          <!DOCTYPE html>
-          <html dir="rtl" lang="ar">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>طباعة التقرير</title>
-            <style>
-              * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-              }
-              
-              body {
-                font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: white;
-                color: black;
-                padding: 40px;
-                line-height: 1.6;
-                direction: rtl;
-              }
-              
-              .report-header {
-                text-align: center;
-                margin-bottom: 40px;
-                border-bottom: 3px solid #28a745;
-                padding-bottom: 20px;
-              }
-              
-              .report-title {
-                font-size: 28px;
-                font-weight: bold;
-                color: #28a745;
-                margin-bottom: 10px;
-              }
-              
-              .report-subtitle {
-                font-size: 16px;
-                color: #666;
-                margin-bottom: 10px;
-              }
-              
-              .report-date {
-                font-size: 14px;
-                color: #888;
-              }
-              
-              table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 20px 0;
-                background: white;
-              }
-              
-              th, td {
-                border: 1px solid #ddd;
-                padding: 12px;
-                text-align: center;
-                font-size: 14px;
-              }
-              
-              th {
-                background-color: #28a745;
-                color: white;
-                font-weight: bold;
-              }
-              
-              tr:nth-child(even) {
-                background-color: #f9f9f9;
-              }
-              
-              .stats-grid {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 20px;
-                margin: 30px 0;
-              }
-              
-              .stat-card {
-                border: 2px solid #28a745;
-                padding: 20px;
-                text-align: center;
-                border-radius: 8px;
-                background: #f8f9fa;
-              }
-              
-              .stat-value {
-                font-size: 24px;
-                font-weight: bold;
-                color: #28a745;
-                margin-bottom: 5px;
-              }
-              
-              .stat-label {
-                font-size: 14px;
-                color: #666;
-              }
-              
-              .chip {
-                display: inline-block;
-                padding: 4px 12px;
-                border-radius: 16px;
-                font-size: 12px;
-                font-weight: bold;
-              }
-              
-              .chip-success {
-                background-color: #d4edda;
-                color: #155724;
-              }
-              
-              .chip-warning {
-                background-color: #fff3cd;
-                color: #856404;
-              }
-              
-              .chip-default {
-                background-color: #e2e3e5;
-                color: #383d41;
-              }
-              
-              @media print {
-                body {
-                  padding: 20px;
-                }
-                
-                .report-header {
-                  margin-bottom: 20px;
-                }
-                
-                table {
-                  font-size: 12px;
-                }
-                
-                th, td {
-                  padding: 8px;
-                }
-              }
-            </style>
-          </head>
-          <body>
-            ${reportContent}
-          </body>
-          </html>
-        `);
-        
-        printWindow.document.close();
-        
-        setTimeout(() => {
-          printWindow.print();
-        }, 500);
-      }
-    } catch (err) {
-      console.error('Error printing report:', err);
-    }
-  };
-
-  if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
-        <Spin size="large" />
-      </div>
+      <Row gutter={[24, 24]} justify="center" style={{ marginBottom: 32 }}>
+        <Col xs={24} sm={12} md={6}>
+          <Card
+            hoverable
+            style={cardStyle(reportType === 'investors')}
+            onClick={() => setReportType('investors')}
+            bordered={false}
+          >
+            <UsergroupAddOutlined style={iconStyle} />
+            <Title level={4}>جميع المستثمرين</Title>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card
+            hoverable
+            style={cardStyle(reportType === 'individual')}
+            onClick={() => setReportType('individual')}
+            bordered={false}
+          >
+            <UserOutlined style={iconStyle} />
+            <Title level={4}>مستثمر فردي</Title>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card
+            hoverable
+            style={cardStyle(reportType === 'transactions')}
+            onClick={() => setReportType('transactions')}
+            bordered={false}
+          >
+            <TransactionOutlined style={iconStyle} />
+            <Title level={4}>تقرير المعاملات</Title>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card
+            hoverable
+            style={cardStyle(reportType === 'financial-year')}
+            onClick={() => setReportType('financial-year')}
+            bordered={false}
+          >
+            <CalendarOutlined style={iconStyle} />
+            <Title level={4}>سنة مالية</Title>
+          </Card>
+        </Col>
+      </Row>
     );
-  }
+  };
 
+  const renderReportFilters = () => {
+    if (!reportType) return null;
+
+    return (
+      <Card
+        style={{
+          marginBottom: 32,
+          borderRadius: 12,
+          boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
+        }}
+        bodyStyle={{ padding: 24 }}
+      >
+        <Row gutter={[24, 24]} align="middle" justify="center">
+          {reportType === 'individual' && (
+            <Col xs={24} sm={12} md={8}>
+              <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                اختر مستثمر
+              </Text>
+              <Select
+                showSearch
+                placeholder="اختر مستثمر"
+                optionFilterProp="children"
+                value={selectedInvestor?.id}
+                onChange={(value) => {
+                  const investor = investors.find((inv) => inv.id === value);
+                  setSelectedInvestor(investor || null);
+                }}
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+                style={{ width: '100%' }}
+                allowClear
+              >
+                {investors.map((inv) => (
+                  <Option key={inv.id} value={inv.id}>
+                    {inv.fullName}
+                  </Option>
+                ))}
+              </Select>
+            </Col>
+          )}
+
+          {reportType === 'financial-year' && (
+            <Col xs={24} sm={12} md={8}>
+              <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                اختر سنة مالية
+              </Text>
+              <Select
+                showSearch
+                placeholder="اختر سنة مالية"
+                optionFilterProp="children"
+                value={selectedFinancialYear?.periodName}
+                onChange={(value) => {
+                  const year = financialYears.find((fy) => fy.periodName === value);
+                  setSelectedFinancialYear(year || null);
+                }}
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+                style={{ width: '100%' }}
+                allowClear
+              >
+                {financialYears.map((fy) => (
+                  <Option key={fy.periodName} value={fy.periodName}>
+                    {fy.periodName}
+                  </Option>
+                ))}
+              </Select>
+            </Col>
+          )}
+
+          {(reportType === 'investors' || reportType === 'transactions') && (
+            <Col xs={24} sm={16} md={8}>
+              <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                اختر نطاق التاريخ
+              </Text>
+              <RangePicker
+                style={{ width: '100%' }}
+                value={dateRange}
+                onChange={(dates) => {
+                  if (dates && dates.length === 2) {
+                    setDateRange(dates);
+                  } else {
+                    setDateRange([]);
+                  }
+                }}
+                placeholder={['تاريخ البداية', 'تاريخ النهاية']}
+                allowClear
+              />
+            </Col>
+          )}
+
+          <Col xs={24} sm={24} md={8}>
+            <Space style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}>
+              <Button
+                type="primary"
+                icon={<EyeOutlined />}
+                onClick={generateReport}
+                loading={previewLoading}
+                style={{
+                  backgroundColor: '#28a745',
+                  borderColor: '#28a745',
+                  width: 140,
+                }}
+              >
+                معاينة التقرير
+              </Button>
+              <Button
+                onClick={() => {
+                  setReportType('');
+                  setReportData([]);
+                  setSelectedInvestor(null);
+                  setSelectedFinancialYear(null);
+                  setDateRange([]);
+                }}
+                style={{ width: 100 }}
+              >
+                إلغاء
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+    );
+  };
 
   return (
-    <>
-      <Helmet>
-        <title>التقارير والإحصائيات</title>
-        <meta name="description" content="التقارير والإحصائيات في نظام إدارة المساهمين" />
-      </Helmet>
-      <Content style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <Title level={2}>التقارير والإحصائيات</Title>
-          <Text type="secondary">قم باختيار نوع التقرير وتحديد الفترة الزمنية للحصول على تقارير مفصلة وإحصائيات دقيقة</Text>
-        </div>
+    <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
+      <Title level={2} style={{ textAlign: 'center', marginBottom: 32 }}>
+        التقارير
+      </Title>
 
-        <QuickStats 
-          quickStats={quickStats} 
-          currentCurrency={currentCurrency} 
-          formatAmount={formatAmount} 
-        />
+      {renderReportOptions()}
+      {renderReportFilters()}
 
-        <ReportTypeSelector 
-          selectedReport={selectedReport}
-          setSelectedReport={setSelectedReport}
-        />
+      {reportData &&
+        (Array.isArray(reportData) ? reportData.length > 0 : Object.keys(reportData).length > 0) && (
+          <>
+            <Row justify="end" style={{ marginBottom: 16 }}>
+              <Space>
+                <Button
+                  icon={<DownloadOutlined />}
+                  onClick={() => exportReport('excel')}
+                  style={{
+                    color: '#28a745',
+                    borderColor: '#28a745',
+                  }}
+                >
+                  تصدير لإكسل
+                </Button>
+                <Button
+                  icon={<DownloadOutlined />}
+                  onClick={() => exportReport('pdf')}
+                  style={{
+                    color: '#28a745',
+                    borderColor: '#28a745',
+                  }}
+                >
+                  تصدير لPDF
+                </Button>
+              </Space>
+            </Row>
 
-        <ReportFilters
-          selectedReport={selectedReport}
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-          investors={investors}
-          selectedInvestor={selectedInvestor}
-          setSelectedInvestor={setSelectedInvestor}
-          financialYears={financialYears}
-          selectedFinancialYear={selectedFinancialYear}
-          setSelectedFinancialYear={setSelectedFinancialYear}
-          reportGenerating={reportGenerating}
-          financialYearReportLoading={financialYearReportLoading}
-          handleGenerateReport={handleGenerateReport}
-          handleGenerateIndividualReport={handleGenerateIndividualReport}
-          setIndividualReportOpen={setIndividualReportOpen}
-        />
-
-        {(reportData || financialYearReportData) && (
-          <ReportPreview
-            selectedReport={selectedReport}
-            reportData={reportData}
-            financialYearReportData={financialYearReportData}
-            currentCurrency={currentCurrency}
-            formatAmount={formatAmount}
-            handleDownloadPDF={handleDownloadPDF}
-            handleDownloadExcel={handleDownloadExcel}
-            handlePrintReport={handlePrintReport}
-          />
+            <Card
+              style={{
+                borderRadius: 12,
+                boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
+              }}
+            >
+              {renderReportPreview()}
+            </Card>
+          </>
         )}
-
-        <IndividualReportModal
-          individualReportOpen={individualReportOpen}
-          setIndividualReportOpen={setIndividualReportOpen}
-          selectedInvestor={selectedInvestor}
-          individualReportData={individualReportData}
-          individualReportLoading={individualReportLoading}
-          currentCurrency={currentCurrency}
-          formatAmount={formatAmount}
-          handleDownloadPDF={handleDownloadPDF}
-          handleDownloadExcel={handleDownloadExcel}
-          handlePrintReport={handlePrintReport}
-        />
-      </Content>
-    </>
+    </div>
   );
 };
 
