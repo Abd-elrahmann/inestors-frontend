@@ -34,7 +34,8 @@ import {
   GiftOutlined,
   FilterOutlined,
   EditOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  RedoOutlined
 } from '@ant-design/icons';
 import { Spin } from 'antd';
 import Api from '../services/api';
@@ -133,7 +134,7 @@ const FinancialYear = () => {
 
   const handleApprove = async (yearId) => {
     try {
-      await Api.post(`/api/financial-years/${yearId}/approve`);
+      await Api.patch(`/api/financial-years/${yearId}/approve`);
       toast.success('تم اعتماد السنة المالية بنجاح');
       queryClient.invalidateQueries('financialYears');
     } catch (error) {
@@ -142,9 +143,20 @@ const FinancialYear = () => {
     }
   };
 
+  const handleRollover = async (yearId) => {
+    try {
+      await Api.patch(`/api/financial-years/${yearId}/rollover`);
+      toast.success('تم تدوير الأرباح بنجاح');
+      queryClient.invalidateQueries('financialYears');
+    } catch (error) {
+      console.error('Error rolling over profits:', error);
+      toast.error('فشل في تدوير الأرباح');
+    }
+  };
+
   const handleCloseYear = async (yearId) => {
     try {
-      await Api.post(`/api/financial-years/${yearId}/close`);
+      await Api.patch(`/api/financial-years/${yearId}/close`);
       toast.success('تم إغلاق السنة المالية بنجاح');
       queryClient.invalidateQueries('financialYears');
     } catch (error) {
@@ -169,11 +181,11 @@ const FinancialYear = () => {
     setEditRolloverModalOpen(true);
   };
 
-  const getRolloverChip = (rolloverEnabled) => {
+  const getRolloverChip = (status) => {
     return (
       <Chip 
-        label={rolloverEnabled ? 'تم' : 'غير متدور'} 
-        color={rolloverEnabled ? 'success' : 'default'} 
+        label={status === 'approved' ? 'غير مدور' : status === 'distributed' ? 'تم التدوير' : 'غير مدور'} 
+        color={status === 'distributed' ? 'success' : 'default'} 
         size="small" 
       />
     );
@@ -320,11 +332,12 @@ const FinancialYear = () => {
                 <StyledTableCell align="center">المسلسل</StyledTableCell>
                 <StyledTableCell align="center">السنة</StyledTableCell>
                 <StyledTableCell align="center">الفترة</StyledTableCell>
+                <StyledTableCell align="center">الفترة الزمنية</StyledTableCell>
                 <StyledTableCell align="center">التقدم الزمني</StyledTableCell>
                 <StyledTableCell align="center">إجمالي الأرباح ({currentCurrency === 'USD' ? '$' : 'د.ع'})</StyledTableCell>
                 <StyledTableCell align="center">معدل الربح اليومي</StyledTableCell>
                 <StyledTableCell align="center">الحالة</StyledTableCell>
-                <StyledTableCell align="center">تدوير الأرباح</StyledTableCell>
+                <StyledTableCell align="center">حالة التدوير</StyledTableCell>
                 <StyledTableCell align="center">الإجراءات</StyledTableCell>
               </TableRow>
             </TableHead>
@@ -348,12 +361,14 @@ const FinancialYear = () => {
                     <StyledTableCell align="center">{year.year}</StyledTableCell>
                     <StyledTableCell align="center">{year.periodName}</StyledTableCell>
                     <StyledTableCell align="center">
-                      <Box sx={{ width: '80%', margin: '0 auto' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 1 }}>
-                          <span>{formatDate(year.startDate)}</span>
-                          <span>-</span>
-                          <span>{formatDate(year.endDate)}</span>
-                        </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                        <span>{formatDate(year.startDate)}</span>
+                        <span>-</span>
+                        <span>{formatDate(year.endDate)}</span>
+                      </Box>
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      <Box sx={{ width: '100%', margin: '0 auto' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                           <LinearProgress 
                             variant="determinate"
@@ -385,14 +400,7 @@ const FinancialYear = () => {
                     </StyledTableCell>
                     <StyledTableCell align="center">{getStatusChip(year.status)}</StyledTableCell>
                     <StyledTableCell align="center">
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-                        {getRolloverChip(year.rolloverEnabled)}
-                        {year.rolloverEnabled && (
-                          <Typography variant="body" color="textSecondary">
-                            {year.rolloverPercentage}%
-                          </Typography>
-                        )}
-                      </Box>
+                      {getRolloverChip(year.status)}
                     </StyledTableCell>
                     <StyledTableCell align="center">
                       <IconButton
@@ -428,7 +436,7 @@ const FinancialYear = () => {
           onClose={() => setAnchorEl(null)}
         >
           {/* Edit Rollover Option - Only show for draft years with rollover disabled */}
-          {selectedYearForMenu?.status === 'draft' && !selectedYearForMenu?.rolloverEnabled && (
+          {selectedYearForMenu?.status === 'draft' && (
             <MenuItem onClick={() => {
               handleEditRollover(selectedYearForMenu);
               setAnchorEl(null);
@@ -470,22 +478,41 @@ const FinancialYear = () => {
 
           {selectedYearForMenu?.status === 'approved' && (
             <MenuItem onClick={() => {
+              handleRollover(selectedYearForMenu.id);
+              setAnchorEl(null);
+            }}>
+              <RedoOutlined style={{marginLeft: 8,color:'green'}} />
+              تدوير الأرباح
+            </MenuItem>
+          )}
+
+          {selectedYearForMenu?.status === 'approved' && (
+            <MenuItem onClick={() => {
               handleCloseYear(selectedYearForMenu.id);
               setAnchorEl(null);
             }}>
               <LockOutlined style={{marginLeft: 8,color:'red'}} />
-              إغلاق السنة المالية
+              اغلاق السنة المالية
             </MenuItem>
           )}
 
-          {['draft', 'calculated', 'approved', 'distributed'].includes(selectedYearForMenu?.status) && (
-            <MenuItem onClick={() => {
-              handleDelete(selectedYearForMenu.id);
-              setAnchorEl(null);
-            }}>
-              <DeleteOutlined style={{marginLeft: 8,color:'red'}} />
-              حذف السنة المالية
-            </MenuItem>
+          {selectedYearForMenu?.status === 'distributed' && (
+            <>
+              <MenuItem onClick={() => {
+                handleCloseYear(selectedYearForMenu.id);
+                setAnchorEl(null);
+              }}>
+                <LockOutlined style={{marginLeft: 8,color:'red'}} />
+                إغلاق السنة المالية
+              </MenuItem>
+              <MenuItem onClick={() => {
+                handleDelete(selectedYearForMenu.id);
+                setAnchorEl(null);
+              }}>
+                <DeleteOutlined style={{marginLeft: 8,color:'red'}} />
+                حذف السنة المالية
+              </MenuItem>
+            </>
           )}
 
           {selectedYearForMenu?.status === 'closed' && (
@@ -499,13 +526,14 @@ const FinancialYear = () => {
           )}
         </Menu>
 
-        <AddFinancialYearModal
+       <AddFinancialYearModal
           open={addModalOpen}
           onClose={() => setAddModalOpen(false)}
           onSuccess={() => {
-            setAddModalOpen(false);
             queryClient.invalidateQueries('financialYears');
           }}
+          financialYear={selectedYear}
+          mode={selectedYear ? 'edit' : 'add'}
         />
 
         <ProfitDistributionsModal

@@ -16,12 +16,14 @@ import PersonIcon from '@mui/icons-material/Person';
 import Api from '../services/api';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
 import { toast } from 'react-toastify';
+import EmailIcon from '@mui/icons-material/Email';
 const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'normal', investorData = null }) => {
   const [loading, setLoading] = useState(false);
-  const { formatAmount, currentCurrency } = useCurrencyManager();
+  const { currentCurrency } = useCurrencyManager();
   const [formData, setFormData] = useState({
     userId: '',
     fullName: '',
+    email: '',
     amount: ''
   });
 
@@ -30,26 +32,27 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
       setFormData({
         userId: userData.userId || '',
         fullName: userData.fullName || userData.userName || '',
+        email: userData.email || '',
         amount: ''
       });
     } else if (mode === 'edit' && investorData) {
       setFormData({
         userId: investorData.userId || '',
         fullName: investorData.fullName || '',
-        amount: investorData.amount || ''
+        email: investorData.email || '',
+        amount: investorData.amount?.toString() || '' // Convert amount to string
       });
     } else {
       setFormData({
         userId: '',
         fullName: '',
+        email: '',
         amount: ''
       });
     }
   }, [mode, userData, investorData]);
 
   const [errors, setErrors] = useState({});
-
-  
 
   const validateForm = () => {
     const newErrors = {};
@@ -64,7 +67,11 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
       if (!formData.fullName.trim()) {
         newErrors.fullName = 'اسم المستثمر مطلوب';
       }
-      
+      if (!formData.email.trim()) {
+        newErrors.email = 'البريد الإلكتروني مطلوب';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        newErrors.email = 'البريد الإلكتروني غير صحيح';
+      }
     } 
 
     setErrors(newErrors);
@@ -109,7 +116,9 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
       }
       
       setFormData({
+        userId: '',
         fullName: '',
+        email: '',
         amount: ''
       });
       
@@ -134,7 +143,9 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
   const handleClose = () => {
     if (!loading) {
       setFormData({
+        userId: '',
         fullName: '',
+        email: '',
         amount: ''
       });
       setErrors({});
@@ -179,7 +190,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
       <form onSubmit={handleSubmit}>
         <DialogContent sx={{ mt: 1, px: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
-            
+            {mode === 'edit' && (
             <TextField
               sx={{width:'300px'}}
               label="مسلسل المستثمر"
@@ -187,7 +198,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
               onChange={(e) => handleInputChange('userId', e.target.value)}
               error={!!errors.userId}
               helperText={errors.userId}
-              disabled={loading || mode === 'fromUser' || mode === 'edit'}
+              disabled={mode === 'edit'}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -196,7 +207,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
                 ),
               }}
             />
-            
+            )}
             <TextField
               sx={{width:'300px'}}
               label="اسم المستثمر"
@@ -215,9 +226,26 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
             />
             <TextField
               sx={{width:'300px'}}
+              type="email"
+              label="البريد الإلكتروني"
+              value={formData.email}
+              onChange={(e) => handleInputChange('email', e.target.value)}
+              error={!!errors.email}
+              helperText={errors.email}
+              disabled={loading || mode === 'fromUser' || mode === 'edit'}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <EmailIcon sx={{ color: '#28a745' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              sx={{width:'300px'}}
               type="number"
               label={`المبلغ (${currentCurrency})`}
-              value={formatAmount(formData.amount, currentCurrency)}
+              value={formData.amount} // Remove formatAmount here
               onChange={(e) => handleInputChange('amount', e.target.value)}
               error={!!errors.amount}
               helperText={errors.amount}

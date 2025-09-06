@@ -12,8 +12,6 @@ import {
   IconButton,
   InputAdornment,
   CircularProgress,
-  Select,
-  MenuItem,
   useMediaQuery
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -25,7 +23,6 @@ import { MdVisibility as Visibility, MdVisibilityOff as VisibilityOff } from 're
 import Api from '../services/api';
 import { toast } from 'react-toastify';
 import { useQueryClient } from 'react-query';
-import PhoneIcon from '@mui/icons-material/Phone';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
   const [loading, setLoading] = useState(false);
@@ -36,9 +33,8 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    phone: '',
     password: '',
-    role: 'USER',
+    role: 'ADMIN',
     confirmPassword: ''
   });
 
@@ -47,9 +43,8 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
       setFormData({
         fullName: user.fullName || '',
         email: user.email || '',
-        phone: user.phone || '',
         password: '',
-        role: user.role || 'USER',
+        role: user.role || 'ADMIN',
         confirmPassword: ''
       });
     }
@@ -71,10 +66,6 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
         newErrors.email = 'البريد الإلكتروني مطلوب';
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
         newErrors.email = 'البريد الإلكتروني غير صحيح';
-      }
-
-      if (!formData.phone.trim()) {
-        newErrors.phone = 'رقم الهاتف مطلوب';
       }
 
       if (!formData.password) {
@@ -110,7 +101,6 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
         const userData = {
           fullName: formData.fullName.trim(),
           email: formData.email.trim().toLowerCase(),
-          phone: formData.phone.trim(),
           password: formData.password,
           role: formData.role
         };
@@ -145,9 +135,8 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
       setFormData({
         fullName: '',
         email: '',
-        phone: '',
         password: '',
-        role: 'USER',
+        role: 'ADMIN',
         confirmPassword: ''
       });
       setErrors({});
@@ -200,7 +189,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <PersonAddIcon />
-          <span>{mode === 'add' ? 'إضافة مستخدم جديد' : 'تعديل المستخدم'}</span>
+          <span>{mode === 'add' ? 'إضافة مدير جديد' : 'تعديل المدير'}</span>
         </Box>
         <IconButton 
           onClick={handleClose}
@@ -255,7 +244,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   error={!!errors.email}
                   helperText={errors.email}
-                  disabled={mode === 'edit' || loading}
+                  disabled={loading}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -264,29 +253,15 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
                     ),
                   }}
                 />
-
                 <TextField
                   sx={{width:'300px'}}
-                  label="رقم الهاتف"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  error={!!errors.phone}
-                  helperText={errors.phone}
-                  disabled={loading}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PhoneIcon sx={{ color: primaryColor }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <Select
-                  sx={{width:'300px'}}
                   label="الدور"
+                  placeholder="الدور"
                   value={formData.role}
                   onChange={(e) => handleInputChange('role', e.target.value)}
                   error={!!errors.role}
+                  disabled={true}
+                  type="text"
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -294,10 +269,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
                       </InputAdornment>
                     ),
                   }}
-                >
-                  <MenuItem value="ADMIN">مدير</MenuItem>
-                  <MenuItem value="USER">مستخدم</MenuItem>
-                </Select>
+                />
                 
               </Box>
             </Grid>
@@ -439,7 +411,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
                 <span>جاري الحفظ...</span>
               </Box>
             ) : (
-              mode === 'add' ? 'إضافة المستخدم' : 'تحديث المستخدم'
+              mode === 'add' ? 'إضافة المدير' : 'تحديث المدير'
             )}
           </Button>
         </DialogActions>

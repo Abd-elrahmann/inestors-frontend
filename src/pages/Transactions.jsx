@@ -59,7 +59,7 @@ const Transactions = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
-  const { data: settingsData } = useSettings();
+  const { data: settingsData = {} } = useSettings();
   const { formatAmount, currentCurrency } = useCurrencyManager();
   const isMobile = useMediaQuery('(max-width: 480px)');
   // Fetch transactions query
@@ -149,13 +149,9 @@ const Transactions = () => {
       case "deposit":
         return "ايداع";
       case "withdrawal":
-        return "سحب (رأس المال)";
-      case "withdraw_profit":
-        return "سحب أرباح";  
+        return "سحب";
       case "profit":
         return "أرباح";
-      case "rollover_profit":
-        return "تدوير أرباح";
       default:
         return "غير محدد";
     }
@@ -166,12 +162,9 @@ const Transactions = () => {
       case "deposit":
         return "success";
       case "withdrawal":
-      case "withdraw_profit":
         return "error";
       case "profit":
         return "info";
-      case "rollover_profit":
-        return "warning";
       default:
         return "default";
     }
@@ -183,7 +176,7 @@ const Transactions = () => {
   const amount = transactions.reduce((total, transaction) => {
     return total + transaction.amount;
   }, 0);
-  const currency = settingsData.defaultCurrency;
+  const currency = settingsData?.defaultCurrency || 'IQD';
 
   const isAdmin = profile?.role === 'ADMIN';  
 
@@ -201,7 +194,7 @@ const Transactions = () => {
                 المساهم: {investorDetails?.fullName}
               </Typography>
               <Typography variant="h6">
-                إجمالي المبالغ: {formatAmount(amount, currency, 'IQD')}
+                إجمالي المبالغ: {formatAmount(amount, currency)}
               </Typography>
               <Typography variant="h6">
                 العملة: {currency}
@@ -230,9 +223,8 @@ const Transactions = () => {
           direction={isMobile ? 'column' : 'row'}
           justifyContent="space-between"
           alignItems="center"
-          mb={3}
-          mr={isMobile ? 0 : 1}
-          mt={2}
+          mb={1}
+          mt={5}
           spacing={2}
         >
           {isAdmin && (
@@ -245,6 +237,7 @@ const Transactions = () => {
                 fontWeight: "bold",
                 textTransform: "none",
                 height: "40px",
+                width: isMobile ? '100%' : '180px',
               }}
             >
               <PlusOutlined style={{ marginLeft: 8 }} />
@@ -252,7 +245,7 @@ const Transactions = () => {
             </Fab>
           )}
 
-          <Stack direction={isMobile ? 'column' : 'row'} spacing={1}>
+          <Stack direction={isMobile ? 'column' : 'row'} justifyContent={isMobile ? 'center' : 'space-between'} spacing={1}>
             {isAdmin && (
               <>
                 <InputBase

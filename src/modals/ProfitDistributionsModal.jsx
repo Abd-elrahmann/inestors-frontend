@@ -56,7 +56,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
   const [tabValue, setTabValue] = useState(0);
   // eslint-disable-next-line no-unused-vars
   const [loading, setLoading] = useState(false);
-  const { formatAmount } = useCurrencyManager();
+  const { formatAmount, convertAmount } = useCurrencyManager();
 
   if (!distributions || !financialYear) return null;
 
@@ -67,7 +67,6 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
   const formatDate1 = (date) => {
     return dayjs(date).format('DD/MM/YYYY');
   }
-
 
   const getStatusColor = (status) => {
     const colors = {
@@ -129,7 +128,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
               📊 معلومات السنة المالية
             </Typography>
             <Typography variant="body2" component="div" sx={{mb: 2}}>
-              <strong >💰 إجمالي الربح:</strong> {formatAmount(financialYear.totalProfit, financialYear.currency)}
+              <strong >💰 إجمالي الربح:</strong> {formatAmount(convertAmount(financialYear.totalProfit, financialYear.currency, 'USD'), 'USD')}
               <br />
               <strong>🧮 طريقة حساب الارباح للمستثمر:</strong> مبلغ المساهمة × معدل الربح اليومي × عدد الايام حتى الآن
               <br />
@@ -166,7 +165,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                         إجمالي الربح اليومي
                       </Typography>
                       <Typography variant="h5" component="div">
-                        {formatAmount(distributions.summary.totalDailyProfit, financialYear.currency)}
+                        {formatAmount(convertAmount(distributions.summary.totalDailyProfit, financialYear.currency, 'USD'), 'USD')}
                       </Typography>
                     </Box>
                     <ProfitIcon color="success" sx={{ fontSize: 40 }} />
@@ -184,7 +183,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                         متوسط الربح اليومي
                       </Typography>
                       <Typography variant="h5" component="div">
-                        {formatAmount(distributions.summary.averageDailyProfit, financialYear.currency)}
+                        {formatAmount(convertAmount(distributions.summary.averageDailyProfit, financialYear.currency, 'USD'), 'USD')}
                       </Typography>
                     </Box>
                     <AccountBalanceIcon color="info" sx={{ fontSize: 40 }} />
@@ -288,9 +287,9 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                   {distributions.distributions.map((distribution) => (
                     <StyledTableRow key={distribution.id}>
                       <StyledTableCell align="center">{distribution.user.fullName}</StyledTableCell>
-                      <StyledTableCell align="center">{formatAmount(distribution.amount, financialYear.currency)}</StyledTableCell>
+                      <StyledTableCell align="center">{formatAmount(convertAmount(distribution.amount, financialYear.currency, 'USD'), 'USD')}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.percentage.toFixed(2)}%</StyledTableCell>
-                      <StyledTableCell align="center">{formatAmount(distribution.dailyProfit, financialYear.currency)}</StyledTableCell>
+                      <StyledTableCell align="center">{formatAmount(convertAmount(distribution.dailyProfit, financialYear.currency, 'USD'), 'USD')}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.daysSoFar}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.createdAt}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.distributedAt}</StyledTableCell>

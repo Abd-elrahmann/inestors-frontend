@@ -78,11 +78,11 @@ const Investors = () => {
     {
       onSuccess: () => {
         queryClient.invalidateQueries("investors");
-        toast.success("تم حذف المساهم بنجاح");
+        toast.success("تم حذف المستثمر بنجاح");
       },
       onError: (error) => {
         console.error("Error deleting investor:", error);
-        toast.error("فشل في حذف المساهم");
+        toast.error("فشل في حذف المستثمر");
       },
     }
   );
@@ -101,6 +101,10 @@ const Investors = () => {
   const handleCloseDeleteModal = () => {
     setShowDeleteModal(false);
     setSelectedInvestor(null);
+  };
+
+  const handleAddInvestor = () => {
+    setShowAddModal(true);
   };
 
   const handleOpenDeleteModal = (investor) => {
@@ -140,20 +144,43 @@ const Investors = () => {
   return (
     <>
       <Helmet>
-        <title>المساهمين</title>
-        <meta name="description" content="المساهمين في نظام إدارة المساهمين" />
+        <title>المستثمرين</title>
+        <meta name="description" content="المستثمرين في نظام إدارة المستثمرين" />
       </Helmet>
       <Stack
         direction={isMobile ? 'column' : 'row'}
-        justifyContent= {isMobile ? 'center' : "space-between"}
+        justifyContent="space-between"
         alignItems="center"
         mb={1}
         mt={5}
         spacing={2}
       >
-        <Stack direction={isMobile ? 'column' : 'row'} spacing={1}>
+        <Fab
+          color="primary"
+          variant="extended"
+          onClick={handleAddInvestor}
+          sx={{
+            width: isMobile ? '100%' : '150px',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+            textTransform: 'none',
+            height: '40px',
+            order: isMobile ? 1 : 0
+          }}
+        >
+          <PlusOutlined style={{ marginLeft: 8 }} />
+          إضافة مستثمر
+        </Fab>
+
+        <Stack 
+          direction={isMobile ? 'column' : 'row'} 
+          spacing={1}
+          sx={{
+            order: isMobile ? 0 : 1
+          }}
+        >
           <InputBase
-            placeholder="بحث عن مساهم"
+            placeholder="بحث عن مستثمر"
             startAdornment={
               <SearchOutlined
                 style={{ marginLeft: "10px", marginRight: "10px" }}
@@ -195,13 +222,13 @@ const Investors = () => {
           <Table stickyHeader>
             <TableHead>
               <TableRow>
-                <StyledTableCell align="center"> مسلسل المساهم</StyledTableCell>
-                <StyledTableCell align="center">اسم المساهم</StyledTableCell>
+                <StyledTableCell align="center"> مسلسل المستثمر</StyledTableCell>
+                <StyledTableCell align="center">اسم المستثمر</StyledTableCell>
+                <StyledTableCell align="center">البريد الإلكتروني</StyledTableCell>
                 <StyledTableCell align="center">
-                  المبلغ المساهم ({currentCurrency})
+                  المبلغ المستثمر ({currentCurrency})
                 </StyledTableCell>
-                <StyledTableCell align="center"> مبلغ الربح ({currentCurrency})</StyledTableCell>
-                <StyledTableCell align="center">نسبة المساهمة</StyledTableCell>
+                <StyledTableCell align="center">نسبة المستثمر</StyledTableCell>
                 <StyledTableCell align="center">تاريخ الانضمام</StyledTableCell>
                 <StyledTableCell align="center">عرض المعاملات</StyledTableCell>
                 <StyledTableCell align="center">تعديل</StyledTableCell>
@@ -217,8 +244,8 @@ const Investors = () => {
                 </StyledTableRow>
               ) : !investorsData?.investors?.length ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={6} align="center">
-                    لا يوجد مساهمين
+                  <StyledTableCell colSpan={10} align="center">
+                    لا يوجد مستثمرين
                   </StyledTableCell>
                 </StyledTableRow>
               ) : (
@@ -232,10 +259,10 @@ const Investors = () => {
                         {investor.fullName}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {formatAmount(investor.amount, "IQD")}
+                        {investor.email}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {formatAmount(investor.profit, "IQD")}
+                        {formatAmount(investor.amount, "IQD")}
                       </StyledTableCell>
                       <StyledTableCell align="center">{`${investor.sharePercentage.toFixed(
                         2
@@ -275,17 +302,14 @@ const Investors = () => {
                   ))}
                   <StyledTableRow>
                     <StyledTableCell
-                      colSpan={2}
+                      colSpan={3}
                       align="center"
                       sx={{ fontWeight: "bold" }}
                     >
                       الإجمالي
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
-                      {formatAmount(investorsData?.totalAmount || 0, "IQD")}
-                    </StyledTableCell>
-                    <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
-                      {formatAmount(investorsData?.totalProfit || 0, "IQD")}
+                      {formatAmount(investorsData?.totalAmount.toFixed(2) || 0, "IQD")}
                     </StyledTableCell>
                     <StyledTableCell colSpan={5} />
                   </StyledTableRow>
@@ -317,8 +341,8 @@ const Investors = () => {
           open={showDeleteModal}
           onClose={handleCloseDeleteModal}
           onConfirm={() => handleDeleteInvestor(selectedInvestor)}
-          title="حذف المساهم"
-          message={`هل أنت متأكد من حذف المساهم؟`}
+          title="حذف المستثمر"
+          message={`هل أنت متأكد من حذف المستثمر؟`}
           isLoading={deleteInvestorMutation.isLoading}
           ButtonText="حذف"
         />

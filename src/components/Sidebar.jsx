@@ -68,17 +68,17 @@ const Sidebar = ({ isOpen, onClose }) => {
         path: '/dashboard',
         label: 'لوحة التحكم',
         icon: <Dashboard size={22} />,
-        roles: ['ADMIN', 'USER'] 
+        roles: ['ADMIN'] 
       },
       {
         path: '/users',
-        label: 'إدارة المستخدمين',
+        label: 'المديرين',
         icon: <Group size={22} />,
         roles: ['ADMIN'] 
       },
       {
         path: '/investors',
-        label: 'المساهمين',
+        label: 'المستثمرين',
         icon: <People size={22} />,
         roles: ['ADMIN'] 
       },
@@ -86,7 +86,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         path: '/transactions',
         label: userRole === 'ADMIN' ? 'العمليات المالية' : '  معاملاتك المالية',
         icon: <AccountBalance size={22} />,
-        roles: ['ADMIN', 'USER'] 
+        roles: ['ADMIN'] 
       },
       {
         path: '/financial-years',

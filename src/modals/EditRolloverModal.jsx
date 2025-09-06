@@ -17,8 +17,6 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
 import Api from '../services/api';
 import { toast } from 'react-toastify';
 import { useSettings } from '../hooks/useSettings';
@@ -26,64 +24,78 @@ import { useSettings } from '../hooks/useSettings';
 const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const { data: settings } = useSettings();
+  const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({
+    rolloverEnabled: false,
+    rolloverPercentage: ''
+  });
 
   useEffect(() => {
     if (financialYear && open) {
-      formik.setValues({
+      setFormData({
         rolloverEnabled: financialYear.rolloverEnabled || false,
-        rolloverPercentage: financialYear.rolloverPercentage || '',
+        rolloverPercentage: financialYear.rolloverPercentage || ''
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [financialYear, open]);
 
-  const formik = useFormik({
-    enableReinitialize: true,
-    initialValues: {
-      rolloverEnabled: false,
-      rolloverPercentage: '',
-    },
-    validationSchema: Yup.object({
-      rolloverPercentage: Yup.number()
-        .when('rolloverEnabled', {
-          is: true,
-          then: Yup.number()
-            .min(1, 'يجب أن تكون النسبة أكبر من 0')
-            .max(100, 'يجب أن تكون النسبة أقل من أو تساوي 100')
-            .required('نسبة التدوير مطلوبة')
-        }),
-    }),
-    onSubmit: async (values) => {
-      setLoading(true);
-      try {
-        await Api.patch(`/api/financial-years/${financialYear.id}/rollover`, {
-          rolloverEnabled: values.rolloverEnabled,
-          rolloverPercentage: values.rolloverPercentage
-        });
-        toast.success('تم تحديث إعدادات التدوير بنجاح');
-        onSuccess();
-        onClose();
-      } catch (error) {
-        console.error('Error updating rollover:', error);
-        toast.error('فشل في تحديث إعدادات التدوير');
-      } finally {
-        setLoading(false);
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (formData.rolloverEnabled) {
+      if (!formData.rolloverPercentage) {
+        newErrors.rolloverPercentage = 'نسبة التدوير مطلوبة';
+      } else if (formData.rolloverPercentage < 1) {
+        newErrors.rolloverPercentage = 'يجب أن تكون النسبة أكبر من 0';
+      } else if (formData.rolloverPercentage > 100) {
+        newErrors.rolloverPercentage = 'يجب أن تكون النسبة أقل من أو تساوي 100';
       }
     }
-  });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await Api.patch(`/api/financial-years/${financialYear.id}/rollover`, {
+        rolloverEnabled: formData.rolloverEnabled,
+        rolloverPercentage: formData.rolloverPercentage
+      });
+      toast.success('تم تحديث إعدادات التدوير بنجاح');
+      onSuccess();
+      handleClose();
+    } catch (error) {
+      console.error('Error updating rollover:', error);
+      toast.error('فشل في تحديث إعدادات التدوير');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleClose = () => {
     if (!loading) {
-      formik.resetForm();
+      setFormData({
+        rolloverEnabled: false,
+        rolloverPercentage: ''
+      });
+      setErrors({});
       onClose();
     }
   };
 
   const calculateRolloverAmount = () => {
-    if (!formik.values.rolloverEnabled || !financialYear?.totalProfit || !formik.values.rolloverPercentage) {
+    if (!formData.rolloverEnabled || !financialYear?.totalProfit || !formData.rolloverPercentage) {
       return { rolloverAmount: 0, distributionAmount: 0 };
     }
-    const rolloverAmount = (financialYear.totalProfit * formik.values.rolloverPercentage) / 100;
+    const rolloverAmount = (financialYear.totalProfit * formData.rolloverPercentage) / 100;
     const distributionAmount = financialYear.totalProfit - rolloverAmount;
     return { rolloverAmount, distributionAmount };
   };
@@ -126,7 +138,7 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
         </IconButton>
       </DialogTitle>
       
-      <form onSubmit={formik.handleSubmit}>
+      <form onSubmit={handleSubmit}>
         <DialogContent sx={{ mt: 2, px: 3 }}>
           <Box sx={{ 
             display: 'flex', 
@@ -142,12 +154,13 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
             <FormControlLabel
               control={
                 <Switch
-                  checked={formik.values.rolloverEnabled}
+                  checked={formData.rolloverEnabled}
                   onChange={(e) => {
-                    formik.setFieldValue('rolloverEnabled', e.target.checked);
-                    if (!e.target.checked) {
-                      formik.setFieldValue('rolloverPercentage', '');
-                    }
+                    setFormData(prev => ({
+                      ...prev,
+                      rolloverEnabled: e.target.checked,
+                      rolloverPercentage: e.target.checked ? prev.rolloverPercentage : ''
+                    }));
                   }}
                   disabled={loading}
                 />
@@ -155,11 +168,10 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
               label="تفعيل التدوير"
             />
 
-            {formik.values.rolloverEnabled && (
+            {formData.rolloverEnabled && (
               <TextField
                 fullWidth
                 label="نسبة التدوير"
-                name="rolloverPercentage"
                 type="number"
                 inputProps={{ 
                   min: 0,
@@ -171,15 +183,18 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
                     }
                   }
                 }}
-                value={formik.values.rolloverPercentage}
+                value={formData.rolloverPercentage}
                 onChange={(e) => {
                   const value = Math.max(0, Math.min(100, parseInt(e.target.value) || ''));
-                  formik.setFieldValue('rolloverPercentage', value);
+                  setFormData(prev => ({
+                    ...prev,
+                    rolloverPercentage: value
+                  }));
                 }}
-                error={formik.touched.rolloverPercentage && Boolean(formik.errors.rolloverPercentage)}
+                error={!!errors.rolloverPercentage}
                 helperText={
-                  (formik.touched.rolloverPercentage && formik.errors.rolloverPercentage) ||
-                  (formik.values.rolloverPercentage > 0 && financialYear?.totalProfit && 
+                  errors.rolloverPercentage ||
+                  (formData.rolloverPercentage > 0 && financialYear?.totalProfit && 
                     `سيتم توزيع ${distributionAmount.toLocaleString()} ${settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'} على المساهمين وتدوير ${rolloverAmount.toLocaleString()} ${settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}`)
                 }
                 disabled={loading}

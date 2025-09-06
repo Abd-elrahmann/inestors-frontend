@@ -22,7 +22,6 @@ import {
   DeleteOutlined,
   PlusOutlined,
   SearchOutlined,
-  UserAddOutlined,
   FilterOutlined
 } from '@ant-design/icons';
 import { Spin } from 'antd';
@@ -34,13 +33,11 @@ import { Helmet } from 'react-helmet-async';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import DeleteModal from '../modals/DeleteModal';
 import UserSearchModal from '../modals/UserSearchModal';
-import AddInvestorModal from '../modals/AddInvestorModal';
 import { RestartAltOutlined } from '@mui/icons-material';
 
 const Users = () => {
   const queryClient = useQueryClient();
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [addInvestorModalOpen, setAddInvestorModalOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -49,6 +46,7 @@ const Users = () => {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
   const isMobile = useMediaQuery('(max-width: 480px)');
+
   // Fetch users query
   const { data: usersData, isLoading, isFetching } = useQuery(
     ['users', page, rowsPerPage, search, advancedFilters],
@@ -56,6 +54,7 @@ const Users = () => {
       const params = {
         limit: rowsPerPage,
         search: search,
+        role: 'ADMIN',
         ...advancedFilters
       };
       
@@ -75,11 +74,11 @@ const Users = () => {
     {
       onSuccess: () => {
         queryClient.invalidateQueries('users');
-        toast.success('تم حذف المستخدم بنجاح');
+        toast.success('تم حذف المدير بنجاح');
       },
       onError: (error) => {
         console.error('Error deleting user:', error);
-        toast.error('فشل في حذف المستخدم');
+        toast.error('فشل في حذف المدير');
       }
     }
   );
@@ -91,11 +90,6 @@ const Users = () => {
   const handleEditUser = (user) => {
     setSelectedUser(user);
     setAddModalOpen(true);
-  };
-
-  const handleAddAsInvestor = (user) => {
-    setSelectedUser(user);
-    setAddInvestorModalOpen(true);
   };
 
   const handleCloseDeleteModal = () => {
@@ -110,16 +104,13 @@ const Users = () => {
 
   const handleDeleteUser = async (user) => {
     deleteUserMutation.mutate(user.id);
+    setShowDeleteModal(false);
+    setSelectedUser(null);
   };
 
   const handleAddSuccess = () => {
     queryClient.invalidateQueries('users');
     setAddModalOpen(false);
-  };
-
-  const handleInvestorAddSuccess = () => {
-    setAddInvestorModalOpen(false);
-    setSelectedUser(null);
   };
 
   const handleChangeRowsPerPage = (event) => {
@@ -155,26 +146,26 @@ const Users = () => {
         <meta name="description" content="المستخدمين في نظام إدارة المساهمين" />
       </Helmet>
       <Box className="content-area">
-        <Stack direction={isMobile ? 'column' : 'row'} justifyContent="space-between" alignItems="center" mb={3} mr={1} mt={2} spacing={2}>
+        <Stack direction={isMobile ? 'column' : 'row'} justifyContent="space-between" alignItems="center" mb={1} mr={1} mt={5} spacing={2}>
         <Fab
-  color="primary"
-  variant="extended"
-  onClick={handleAddUser}
-  sx={{
-    borderRadius: '8px',
-    fontWeight: 'bold',
-    textTransform: 'none',
-    height: '40px',
-  }}
->
-  <PlusOutlined style={{ marginLeft: 8 }} />
-  إضافة مستخدم
-</Fab>
+          color="primary"
+          variant="extended"
+          onClick={handleAddUser}
+          sx={{
+            borderRadius: '8px',
+            fontWeight: 'bold',
+            textTransform: 'none',
+            height: '40px',
+          }}
+        >
+          <PlusOutlined style={{ marginLeft: 8 }} />
+          إضافة مدير
+        </Fab>
 
           
           <Stack direction="row" spacing={1}>
             <InputBase
-              placeholder="بحث عن مستخدم"
+              placeholder="بحث عن مدير"
               startAdornment={<SearchOutlined style={{marginLeft: '10px', marginRight: '10px'}} />}
               sx={{
                 width: '250px',
@@ -217,9 +208,7 @@ const Users = () => {
                 <StyledTableCell align="center">المسلسل</StyledTableCell>
                 <StyledTableCell align="center">الاسم الكامل</StyledTableCell>
                 <StyledTableCell align="center">البريد الإلكتروني</StyledTableCell>
-                <StyledTableCell align="center">الهاتف</StyledTableCell>
                 <StyledTableCell align="center">الدور</StyledTableCell>
-                <StyledTableCell align="center">إضافة كمساهم</StyledTableCell>
                 <StyledTableCell align="center">تعديل</StyledTableCell>
                 <StyledTableCell align="center">حذف</StyledTableCell>
               </TableRow>
@@ -227,14 +216,14 @@ const Users = () => {
             <TableBody>
               {isLoading || isFetching ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={7} align="center">
+                  <StyledTableCell colSpan={6} align="center">
                     <Spin size="large" />
                   </StyledTableCell>
                 </StyledTableRow>
               ) : !filteredUsers.length ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={7} align="center">
-                    لا يوجد مستخدمين
+                  <StyledTableCell colSpan={6} align="center">
+                    لا يوجد مدراء
                   </StyledTableCell>
                 </StyledTableRow>
               ) : (
@@ -243,27 +232,16 @@ const Users = () => {
                     <StyledTableCell align="center">{user.id}</StyledTableCell>
                     <StyledTableCell align="center">{user.fullName}</StyledTableCell>
                     <StyledTableCell align="center">{user.email}</StyledTableCell>
-                    <StyledTableCell align="center">{user.phone}</StyledTableCell>
                     <StyledTableCell align="center">
                       <Chip
-                        label={user.role === 'ADMIN' ? 'مدير' : 'مستخدم'} 
+                        label="مدير"
                         variant="outlined"
                         sx={{
                           fontSize: '12px',
                           fontWeight: 'bold',
-                          color: user.role === 'ADMIN' ? '#ffc107' : '#6c757d'
-                          
+                          color: '#ffc107'
                         }}
                       />
-                    </StyledTableCell>
-                    <StyledTableCell align="center">
-                      <IconButton
-                        size="small"
-                        color="success"
-                        onClick={() => handleAddAsInvestor(user)}
-                      >
-                        <UserAddOutlined />
-                      </IconButton>
                     </StyledTableCell>
                     <StyledTableCell align="center">
                       <IconButton
@@ -308,23 +286,12 @@ const Users = () => {
           mode={selectedUser ? 'edit' : 'add'}
         />  
 
-        <AddInvestorModal
-          open={addInvestorModalOpen}
-          onClose={() => {
-            setAddInvestorModalOpen(false);
-            setSelectedUser(null);
-          }}
-          onSuccess={handleInvestorAddSuccess}
-          userData={selectedUser}
-          mode="fromUser"
-        />
-
         <DeleteModal
           open={showDeleteModal}
           onClose={handleCloseDeleteModal}
           onConfirm={() => handleDeleteUser(selectedUser)}
-          title="حذف المستخدم"
-          message={`هل أنت متأكد من حذف المستخدم؟`}  
+          title="حذف المدير؟"
+          message={`هل أنت متأكد من حذف المدير؟`}  
           isLoading={deleteUserMutation.isLoading}
           ButtonText="حذف"
         />

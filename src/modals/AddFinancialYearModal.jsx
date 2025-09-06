@@ -20,8 +20,6 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
 import Api from '../services/api';
 import { toast } from 'react-toastify';
 import {useSettings} from '../hooks/useSettings';
@@ -29,83 +27,129 @@ import {useSettings} from '../hooks/useSettings';
 const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const { data: settings } = useSettings();
-
   const years = Array.from({length: 16}, (_, i) => 2025 + i);
-  
-  const formik = useFormik({
-    initialValues: {
-      year: new Date().getFullYear(),
-      periodName: '',
-      totalProfit: '',
-      startDate: new Date().toISOString().split('T')[0], 
-      endDate: new Date().toISOString().split('T')[0],
-      rolloverEnabled: false,
-      rolloverPercentage: '',
-      autoRollover: false,
-      autoRolloverDate: null,
-      autoRolloverStatus: 'pending'
-    },
-    validationSchema: Yup.object({
-      year: Yup.number().required('السنة مطلوبة'),
-      periodName: Yup.string().required('اسم الفترة مطلوب'),
-      totalProfit: Yup.number().min(1, 'يجب أن يكون الربح أكبر من 0').required('إجمالي الربح مطلوب'),
-      startDate: Yup.date().required('تاريخ البداية مطلوب'),
-      endDate: Yup.date()
-        .required('تاريخ النهاية مطلوب')
-        .min(Yup.ref('startDate'), 'يجب أن يكون تاريخ النهاية بعد تاريخ البداية'),
-      rolloverPercentage: Yup.number()
-        .when('rolloverEnabled', {
-          is: true,
-          then: Yup.number()
-            .min(1, 'يجب أن تكون النسبة أكبر من 0')
-            .max(100, 'يجب أن تكون النسبة أقل من أو تساوي 100')
-            .required('نسبة التدوير مطلوبة')
-        }),
-      autoRolloverDate: Yup.date()
-        .when(['rolloverEnabled', 'autoRollover'], {
-          is: (rolloverEnabled, autoRollover) => rolloverEnabled && !autoRollover,
-          then: Yup.date()
-            .required('تاريخ التدوير مطلوب')
-            .min(Yup.ref('startDate'), 'يجب أن يكون تاريخ التدوير بعد تاريخ البداية')
-        })
-    }),
-    onSubmit: async (values) => {
-      setLoading(true);
-      console.log(values);
-      try {
-        const formattedValues = {
-          ...values,
-          startDate: new Date(values.startDate).toISOString(),
-          endDate: new Date(values.endDate).toISOString(),
-          autoRolloverDate: values.autoRolloverDate ? new Date(values.autoRolloverDate).toISOString() : null
-        };
-        console.log(formattedValues);
-        await Api.post('/api/financial-years', formattedValues);
-        toast.success('تم إضافة السنة المالية بنجاح');
-        onSuccess();
-        formik.resetForm();
-      } catch (error) {
-        console.error('Error adding financial year:', error);
-        toast.error('فشل في إضافة السنة المالية');
-      } finally {
-        setLoading(false);
+
+  const [formData, setFormData] = useState({
+    year: new Date().getFullYear(),
+    periodName: '',
+    totalProfit: '',
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+    rolloverEnabled: false,
+    rolloverPercentage: '',
+    autoRollover: false,
+    autoRolloverDate: null,
+    autoRolloverStatus: 'pending'
+  });
+
+  const [errors, setErrors] = useState({});
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.year) {
+      newErrors.year = 'السنة مطلوبة';
+    }
+
+    if (!formData.periodName.trim()) {
+      newErrors.periodName = 'اسم الفترة مطلوب';
+    }
+
+    if (!formData.totalProfit || formData.totalProfit < 1) {
+      newErrors.totalProfit = 'يجب أن يكون الربح أكبر من 0';
+    }
+
+    if (!formData.startDate) {
+      newErrors.startDate = 'تاريخ البداية مطلوب';
+    }
+
+    if (!formData.endDate) {
+      newErrors.endDate = 'تاريخ النهاية مطلوب';
+    } else if (new Date(formData.endDate) <= new Date(formData.startDate)) {
+      newErrors.endDate = 'يجب أن يكون تاريخ النهاية بعد تاريخ البداية';
+    }
+
+    if (formData.rolloverEnabled) {
+      if (formData.autoRollover) {
+        if (!formData.autoRolloverDate) {
+          newErrors.autoRolloverDate = 'تاريخ التدوير مطلوب';
+        } else if (new Date(formData.autoRolloverDate) <= new Date(formData.startDate)) {
+          newErrors.autoRolloverDate = 'تاريخ التدوير يجب أن يكون بعد تاريخ البداية';
+        }
+      } else {
+        if (!formData.rolloverPercentage || formData.rolloverPercentage < 1 || formData.rolloverPercentage > 100) {
+          newErrors.rolloverPercentage = 'يجب أن تكون النسبة بين 1 و 100';
+        }
       }
     }
-  });
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      const formattedValues = {
+        ...formData,
+        startDate: new Date(formData.startDate).toISOString(),
+        endDate: new Date(formData.endDate).toISOString(),
+        autoRolloverDate: formData.autoRolloverDate ? new Date(formData.autoRolloverDate).toISOString() : null
+      };
+      
+      await Api.post('/api/financial-years', formattedValues);
+      toast.success('تم إضافة السنة المالية بنجاح');
+      
+      onSuccess();
+      handleClose();
+      
+    } catch (error) {
+      console.error('Error adding financial year:', error);
+      toast.error('فشل في إضافة السنة المالية');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleClose = () => {
     if (!loading) {
-      formik.resetForm();
+      setFormData({
+        year: new Date().getFullYear(),
+        periodName: '',
+        totalProfit: '',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+        rolloverEnabled: false,
+        rolloverPercentage: '',
+        autoRollover: false,
+        autoRolloverDate: null,
+        autoRolloverStatus: 'pending'
+      });
+      setErrors({});
       onClose();
     }
   };
 
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   const calculateRolloverAmount = () => {
-    if (!formik.values.rolloverEnabled || !formik.values.totalProfit || !formik.values.rolloverPercentage) {
+    if (!formData.rolloverEnabled || !formData.totalProfit || !formData.rolloverPercentage) {
       return { rolloverAmount: 0, distributionAmount: 0 };
     }
-    const rolloverAmount = (formik.values.totalProfit * formik.values.rolloverPercentage) / 100;
-    const distributionAmount = formik.values.totalProfit - rolloverAmount;
+    const rolloverAmount = (formData.totalProfit * formData.rolloverPercentage) / 100;
+    const distributionAmount = formData.totalProfit - rolloverAmount;
     return { rolloverAmount, distributionAmount };
   };
 
@@ -149,7 +193,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
         </IconButton>
       </DialogTitle>
       
-      <form onSubmit={formik.handleSubmit}>
+      <form onSubmit={handleSubmit}>
         <DialogContent sx={{ mt: 2, px: 3 }}>
           <Box sx={{ 
             display: 'flex', 
@@ -161,18 +205,15 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
             <Autocomplete
               fullWidth
               options={years}
-              value={formik.values.year}
+              value={formData.year}
               getOptionLabel={(option) => option?.toString() || ''}
-              onChange={(_, newValue) => {
-                formik.setFieldValue('year', newValue);
-              }}
+              onChange={(_, newValue) => handleInputChange('year', newValue)}
               renderInput={(params) => (
                 <TextField
                   {...params}
                   label="السنة"
-                  name="year"
-                  error={formik.touched.year && Boolean(formik.errors.year)}
-                  helperText={formik.touched.year && formik.errors.year}
+                  error={!!errors.year}
+                  helperText={errors.year}
                   disabled={loading}
                 />
               )}
@@ -181,18 +222,16 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
             <TextField
               fullWidth
               label="اسم الفترة"
-              name="periodName"
-              value={formik.values.periodName}
-              onChange={formik.handleChange}
-              error={formik.touched.periodName && Boolean(formik.errors.periodName)}
-              helperText={formik.touched.periodName && formik.errors.periodName}
+              value={formData.periodName}
+              onChange={(e) => handleInputChange('periodName', e.target.value)}
+              error={!!errors.periodName}
+              helperText={errors.periodName}
               disabled={loading}
             />
             
             <TextField
               fullWidth
               label="إجمالي الربح"
-              name="totalProfit"
               type="number"
               inputProps={{ 
                 min: 0,
@@ -203,13 +242,13 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
                   }
                 }
               }}
-              value={formik.values.totalProfit}
+              value={formData.totalProfit}
               onChange={(e) => {
                 const value = Math.max(0, parseInt(e.target.value) || 0);
-                formik.setFieldValue('totalProfit', value);
+                handleInputChange('totalProfit', value);
               }}
-              error={formik.touched.totalProfit && Boolean(formik.errors.totalProfit)}
-              helperText={formik.touched.totalProfit && formik.errors.totalProfit}
+              error={!!errors.totalProfit}
+              helperText={errors.totalProfit}
               disabled={loading}
               InputProps={{
                 startAdornment: (
@@ -223,35 +262,32 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
             <TextField
               fullWidth
               label="تاريخ البداية"
-              name="startDate"
               type="date"
               InputLabelProps={{ shrink: true }}
-              value={formik.values.startDate}
-              onChange={formik.handleChange}
-              error={formik.touched.startDate && Boolean(formik.errors.startDate)}
-              helperText={formik.touched.startDate && formik.errors.startDate}
+              value={formData.startDate}
+              onChange={(e) => handleInputChange('startDate', e.target.value)}
+              error={!!errors.startDate}
+              helperText={errors.startDate}
               disabled={loading}
             />
             
             <TextField
               fullWidth
               label="تاريخ النهاية"
-              name="endDate"
               type="date"
               InputLabelProps={{ shrink: true }}
-              value={formik.values.endDate}
-              onChange={formik.handleChange}
-              error={formik.touched.endDate && Boolean(formik.errors.endDate)}
-              helperText={formik.touched.endDate && formik.errors.endDate}
+              value={formData.endDate}
+              onChange={(e) => handleInputChange('endDate', e.target.value)}
+              error={!!errors.endDate}
+              helperText={errors.endDate}
               disabled={loading}
             />
 
             <TextField
               fullWidth
               label="الفترة"
-              name="periodType"
-              value={formik.values.endDate && formik.values.startDate ? 
-                `${Math.ceil((new Date(formik.values.endDate) - new Date(formik.values.startDate)) / (1000 * 60 * 60 * 24))} يوم` : ''}
+              value={formData.endDate && formData.startDate ? 
+                `${Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24))} يوم` : ''}
               disabled={true}
             />
 
@@ -269,13 +305,13 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
               <FormControlLabel
                 control={
                   <Switch
-                    checked={formik.values.rolloverEnabled}
+                    checked={formData.rolloverEnabled}
                     onChange={(e) => {
-                      formik.setFieldValue('rolloverEnabled', e.target.checked);
+                      handleInputChange('rolloverEnabled', e.target.checked);
                       if (!e.target.checked) {
-                        formik.setFieldValue('autoRollover', false);
-                        formik.setFieldValue('rolloverPercentage', '');
-                        formik.setFieldValue('autoRolloverDate', null);
+                        handleInputChange('autoRollover', false);
+                        handleInputChange('rolloverPercentage', '');
+                        handleInputChange('autoRolloverDate', null);
                       }
                     }}
                     disabled={loading}
@@ -284,16 +320,16 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
                 label="تفعيل التدوير"
               />
 
-              {formik.values.rolloverEnabled && (
+              {formData.rolloverEnabled && (
                 <>
                   <FormControlLabel
                     control={
                       <Switch
-                        checked={formik.values.autoRollover}
+                        checked={formData.autoRollover}
                         onChange={(e) => {
-                          formik.setFieldValue('autoRollover', e.target.checked);
+                          handleInputChange('autoRollover', e.target.checked);
                           if (e.target.checked) {
-                            formik.setFieldValue('autoRolloverDate', null);
+                            handleInputChange('autoRolloverDate', null);
                           }
                         }}
                         disabled={loading}
@@ -305,7 +341,6 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
                   <TextField
                     fullWidth
                     label="نسبة التدوير"
-                    name="rolloverPercentage"
                     type="number"
                     inputProps={{ 
                       min: 0,
@@ -316,15 +351,15 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
                         }
                       }
                     }}
-                    value={formik.values.rolloverPercentage}
+                    value={formData.rolloverPercentage}
                     onChange={(e) => {
                       const value = Math.max(0, parseInt(e.target.value) || '');
-                      formik.setFieldValue('rolloverPercentage', value);
+                      handleInputChange('rolloverPercentage', value);
                     }}
-                    error={formik.touched.rolloverPercentage && Boolean(formik.errors.rolloverPercentage)}
+                    error={!!errors.rolloverPercentage}
                     helperText={
-                      (formik.touched.rolloverPercentage && formik.errors.rolloverPercentage) ||
-                      (formik.values.rolloverPercentage > 0 && 
+                      errors.rolloverPercentage ||
+                      (formData.rolloverPercentage > 0 && 
                         `سيتم توزيع ${distributionAmount} ${settings?.defaultCurrency} على المساهمين وتدوير ${rolloverAmount} ${settings?.defaultCurrency}`)
                     }
                     disabled={loading}
@@ -334,17 +369,16 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
                     sx={{ mt: 2 }}
                   />
 
-                  {formik.values.autoRollover && (
+                  {formData.autoRollover && (
                     <TextField
                       fullWidth
                       label="تاريخ التدوير"
-                      name="autoRolloverDate"
                       type="date"
                       InputLabelProps={{ shrink: true }}
-                      value={formik.values.autoRolloverDate || ''}
-                      onChange={formik.handleChange}
-                      error={formik.touched.autoRolloverDate && Boolean(formik.errors.autoRolloverDate)}
-                      helperText={formik.touched.autoRolloverDate && formik.errors.autoRolloverDate}
+                      value={formData.autoRolloverDate || ''}
+                      onChange={(e) => handleInputChange('autoRolloverDate', e.target.value)}
+                      error={!!errors.autoRolloverDate}
+                      helperText={errors.autoRolloverDate}
                       disabled={loading}
                       sx={{ mt: 2 }}
                     />
@@ -383,5 +417,4 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
     </Dialog>
   );
 };
-
 export default AddFinancialYearModal;

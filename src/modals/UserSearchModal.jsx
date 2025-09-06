@@ -8,10 +8,6 @@ import {
   Box,
   IconButton,
   TextField,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
   Autocomplete,
   InputAdornment,
   CircularProgress
@@ -43,7 +39,6 @@ const UserSearchModal = ({ open, onClose, onSearch }) => {
 
   const [filters, setFilters] = useState({
     email: null,
-    role: ''
   });
 
   const handleFilterChange = (field, value) => {
@@ -58,23 +53,18 @@ const UserSearchModal = ({ open, onClose, onSearch }) => {
       if (filters.email && filters.email.email) {
       searchFilters.email = filters.email.email;
     }
-    
-    if (filters.role) {
-      searchFilters.role = filters.role;
-    }
+
     
     onSearch(searchFilters);
     onClose();
     setFilters({
       email: null,
-      role: ''
     });
   };
 
   const handleReset = () => {
     setFilters({
       email: null,
-      role: ''
     });
     onSearch({});
     onClose();
@@ -137,19 +127,6 @@ const UserSearchModal = ({ open, onClose, onSearch }) => {
               />
             )}
           />
-          
-          <FormControl fullWidth>
-            <InputLabel>الدور</InputLabel>
-            <Select
-              value={filters.role}
-              label="الدور"
-              onChange={(e) => handleFilterChange('role', e.target.value)}
-            >
-              <MenuItem value="">الكل</MenuItem>
-              <MenuItem value="ADMIN">مدير</MenuItem>
-              <MenuItem value="USER">مستخدم</MenuItem>
-            </Select>
-          </FormControl>
         </Box>
       </DialogContent>
 
