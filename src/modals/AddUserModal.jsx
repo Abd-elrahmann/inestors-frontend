@@ -123,7 +123,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
           phone: formData.phone,
           role: formData.role
         };
-        result = await Api.put(`/api/users/${user.id}`, updateData);
+        result = await Api.patch(`/api/users/${user.id}`, updateData);
         toast.success('تم تحديث المستخدم بنجاح');
         queryClient.invalidateQueries('users');
       }

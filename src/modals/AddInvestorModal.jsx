@@ -226,7 +226,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
               onChange={(e) => handleInputChange('fullName', e.target.value)}
               error={!!errors.fullName}
               helperText={errors.fullName}
-              disabled={loading || mode === 'fromUser' || mode === 'edit'}
+              disabled={loading || mode === 'fromUser'}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">

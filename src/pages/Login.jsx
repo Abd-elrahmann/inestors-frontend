@@ -49,18 +49,36 @@ const Login = () => {
     setShowPassword(!showPassword);
   };
 
+  const loadUserProfile = async () => {
+    try {
+      const response = await Api.get("/api/profile");
+      if (response.data) {
+        const userData = {
+          fullName: response.data.fullName,
+          userName: response.data.userName,
+          email: response.data.email,
+          role: response.data.role,
+          profileImage: response.data.profileImage,
+        };
+        localStorage.setItem("profile", JSON.stringify(userData));
+      }
+    } catch (error) {
+      console.error("Error loading profile:", error);
+    }
+  };
+
   const loginMutation = useMutation(
     async (credentials) => {
       const response = await Api.post("/api/auth/login", credentials);
       return response.data;
     },
     {
-      onSuccess: (data) => {
+      onSuccess: async (data) => {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         
-        // هنا التعديل المهم: تخزين البروفايل بدلاً من false
-        localStorage.setItem("profile", JSON.stringify(data.user));
+        // Load profile data after successful login
+        await loadUserProfile();
         
         toast.success("تم تسجيل الدخول بنجاح!");
         setTimeout(() => {
