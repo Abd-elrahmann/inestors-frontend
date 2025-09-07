@@ -61,9 +61,10 @@ const TabPanel = (props) => {
 
 const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions }) => {
   const [tabValue, setTabValue] = useState(0);
+  // eslint-disable-next-line no-unused-vars
   const [loading, setLoading] = useState(false);
   const [updatingRollover, setUpdatingRollover] = useState(null);
-  const { formatAmount, convertAmount } = useCurrencyManager();
+  const { formatAmount } = useCurrencyManager();
   const queryClient = useQueryClient();
 
   if (!distributions || !financialYear) return null;
@@ -102,12 +103,8 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
     try {
       setUpdatingRollover(distribution.id);
       
-      // Update the rollover status using the correct endpoint
-      await Api.patch(`/api/financial-years/${financialYear.id}/distributions/${distribution.id}/rollover`, {
-        isRollover: !distribution.isRollover
-      });
+      await Api.patch(`/api/financial-years/rollover/${financialYear.id}/${distribution.investors.id}/toggle`);
       
-      // Refresh data after update
       queryClient.invalidateQueries(['distributions', financialYear.id]);
       toast.success('تم تحديث حالة التدوير بنجاح');
     } catch (error) {
@@ -158,7 +155,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
               📊 معلومات السنة المالية
             </Typography>
             <Typography variant="body2" component="div" sx={{mb: 2}}>
-              <strong >💰 إجمالي الربح:</strong> {formatAmount(convertAmount(financialYear.totalProfit, financialYear.currency, 'USD'), 'USD')}
+              <strong >💰 إجمالي الربح:</strong> {formatAmount(financialYear.totalProfit,'IQD')}
               <br />
               <strong>🧮 طريقة حساب الارباح للمستثمر:</strong> اجمالي الربح x نسبة المساهمة
               <br />
@@ -193,7 +190,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                         إجمالي الربح
                       </Typography>
                       <Typography variant="h5" component="div">
-                        {formatAmount(convertAmount(distributions.summary.totalDailyProfit, financialYear.currency, 'USD'), 'USD')}
+                        {formatAmount(distributions.summary.totalDailyProfit,'IQD')}
                       </Typography>
                     </Box>
                     <ProfitIcon color="success" sx={{ fontSize: 40 }} />
@@ -208,10 +205,10 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                   <Box display="flex" alignItems="center" justifyContent="space-between">
                     <Box>
                       <Typography color="textSecondary" gutterBottom>
-                        متوسط الربح
+                        معدل الربح اليومي
                       </Typography>
                       <Typography variant="h5" component="div">
-                        {formatAmount(convertAmount(distributions.summary.averageDailyProfit, financialYear.currency, 'USD'), 'USD')}
+                        {formatAmount(distributions.summary.averageDailyProfit,'IQD')}
                       </Typography>
                     </Box>
                     <AccountBalanceIcon color="info" sx={{ fontSize: 40 }} />
@@ -273,6 +270,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                     <StyledTableCell align="center">الربح</StyledTableCell>
                     <StyledTableCell align='center'>تاريخ المساهمة</StyledTableCell>
                     <StyledTableCell align='center'>تاريخ التوزيع</StyledTableCell>
+                    <StyledTableCell align='center'>حاله التدوير</StyledTableCell>
                     <StyledTableCell align='center'>تدوير الأرباح</StyledTableCell>
                   </StyledTableRow>
                 </TableHead>
@@ -280,28 +278,47 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                   {distributions.distributions.map((distribution) => (
                     <StyledTableRow key={distribution.id}>
                       <StyledTableCell align="center">{distribution.investors.fullName}</StyledTableCell>
-                      <StyledTableCell align="center">{formatAmount(convertAmount(distribution.amount, financialYear.currency, 'USD'), 'USD')}</StyledTableCell>
+                      <StyledTableCell align="center">{formatAmount(distribution.amount,'IQD')}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.percentage.toFixed(2)}%</StyledTableCell>
-                      <StyledTableCell align="center">{formatAmount(convertAmount(distribution.totalProfit, financialYear.currency, 'USD'), 'USD')}</StyledTableCell>
+                      <StyledTableCell align="center">{formatAmount(distribution.totalProfit,'IQD')}</StyledTableCell>
                       <StyledTableCell align="center">{dayjs(distribution.investors.createdAt).format('MMM DD, YYYY, hh:mm A')}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.distributedAt}</StyledTableCell>
                       <StyledTableCell align="center">
-                        <Tooltip title={distribution.isRollover ? 'تم التدوير' : 'غير متدور'}>
-                          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                              {updatingRollover === distribution.id ? (
-                              <CircularProgress size={24} color="success" />
-                            ) : (
-                              <IconButton
-                                onClick={() => handleRolloverToggle(distribution)}
-                                disabled={loading}
-                                color={distribution.isRollover ? "success" : "default"}
-                                size="small"
-                              >
-                                {distribution.isRollover ? <ClearIcon color="error" /> : <CheckIcon color="success" />}
-                              </IconButton>
-                            )}
-                          </Box>
-                        </Tooltip>
+                        <Chip
+                          label={distribution.isRollover ? "مفعل" : "غير مفعل"}
+                          color={distribution.isRollover ? "success" : "default"}
+                          size="small"
+                        />
+                      </StyledTableCell>
+                      <StyledTableCell align="center">
+                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                          {updatingRollover === distribution.id ? (
+                            <CircularProgress size={24} color="success" />
+                          ) : (
+                            <>
+                              <Tooltip title="تفعيل">
+                                <IconButton
+                                  onClick={() => !distribution.isRollover && handleRolloverToggle(distribution)}
+                                  disabled={loading || distribution.isRollover}
+                                  color="success"
+                                  size="small"
+                                >
+                                  <CheckIcon />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="إلغاء التفعيل">
+                                <IconButton
+                                  onClick={() => distribution.isRollover && handleRolloverToggle(distribution)}
+                                  disabled={loading || !distribution.isRollover}
+                                  color="error"
+                                  size="small"
+                                >
+                                  <ClearIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </>
+                          )}
+                        </Box>
                       </StyledTableCell>
                     </StyledTableRow>
                   ))}

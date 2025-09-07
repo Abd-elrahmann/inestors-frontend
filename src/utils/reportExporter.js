@@ -300,10 +300,9 @@ export const exportFinancialYearToPDF = async (data) => {
     const infoRows = [
       ['السنة', data.year],
       ['الفترة', data.periodName],
-      ['إجمالي الربح', formatCurrency(data.totalProfit, 'IQD')],
-      ['العملة', 'IQD'],
+      ['إجمالي الربح', formatCurrency(data.totalProfit || 0, 'IQD')],
       ['الحالة', statusMap[data.status] || data.status],
-      ['حالة التدوير', data.rolloverEnabled ? 'مفعل' : 'معطل'],
+      ['حالة التدوير', `${data.rolloverEnabled ? 'مفعل' : 'معطل'} ${data.rolloverPercentage ? `(${data.rolloverPercentage}%)` : ''}`],
       ['تاريخ البداية', data.startDate],
       ['تاريخ النهاية', data.endDate]
     ];
@@ -337,11 +336,12 @@ export const exportFinancialYearToPDF = async (data) => {
       doc.text('توزيعات الأرباح', 20, startY);
       startY += 10;
       
-      const distHeaders = ['المستثمر', 'المبلغ المستثمر', 'الربح', 'تاريخ الانضمام', 'تاريخ التوزيع'];
+      const distHeaders = ['المستثمر', 'المبلغ المستثمر', 'الربح', 'حالة التدوير', 'تاريخ الانضمام', 'تاريخ التوزيع'];
       const distRows = data.profitDistributions.map(distribution => [
         distribution.investors?.fullName || 'غير معروف',
         formatCurrency(distribution.investors?.amount || 0, 'IQD'),
         formatCurrency(distribution.investors?.profit || 0, 'IQD'),
+        distribution.isRollover ? 'مفعل' : 'معطل',
         distribution.investors?.createdAt || 'غير محدد',
         data.distributedAt || 'غير محدد'
       ]);
@@ -421,7 +421,9 @@ export const exportToExcel = (data, reportType) => {
         createStyledHeader(['معلومات المستثمر']),
         ['الاسم', data.fullName],
         ['البريد الإلكتروني', data.email],
-        ['المبلغ', formatCurrency(data.amount, 'IQD')],
+        ['مبلغ المساهمة', formatCurrency(data.amount, 'IQD')],
+        ['مبلغ الربح', formatCurrency(data.profit, 'IQD')],
+        ['نسبة المساهمة', data.profitDistributions?.[0]?.percentage?.toFixed(2) || 0],
         ['العملة', currentCurrency],
         ['تاريخ الإنشاء', data.createdAt],
         [],
@@ -435,7 +437,7 @@ export const exportToExcel = (data, reportType) => {
         ]),
         [],
         createStyledHeader(['توزيعات الأرباح']),
-        createStyledHeader(['السنة المالية', 'المبلغ المستثمر', 'العملة', 'نسبة المساهمة', 'إجمالي الربح', 'تاريخ التوزيع']),
+        createStyledHeader(['السنة المالية', 'مبلغ المساهمة', 'العملة', 'نسبة المساهمة', 'مبلغ الربح', 'تاريخ التوزيع']),
         ...(data.profitDistributions || []).map(distribution => [
           `${distribution.financialYear.year} - ${distribution.financialYear.periodName}`,
           formatCurrency(distribution.amount || 0, 'IQD'),
@@ -471,19 +473,20 @@ export const exportToExcel = (data, reportType) => {
         createStyledHeader(['معلومات السنة المالية']),
         ['السنة', data.year],
         ['الفترة', data.periodName],
-        ['إجمالي الربح', formatCurrency(data.totalProfit, 'IQD')],
-        ['العملة', 'IQD'],
+        ['إجمالي الربح', formatCurrency(data.totalProfit || 0, 'IQD')],
+        ['العملة', currentCurrency],
         ['الحالة', statusMap[data.status] || data.status],
-        ['حالة التدوير', data.rolloverEnabled ? 'مفعل' : 'معطل'],
+        ['حالة التدوير', data.rolloverEnabled ? 'مفعل' : 'معطل', data.rolloverPercentage ? `(${data.rolloverPercentage}%)` : ''],
         ['تاريخ البداية', data.startDate],
         ['تاريخ النهاية', data.endDate],
         [],
         createStyledHeader(['توزيعات الأرباح']),
-        createStyledHeader(['المستثمر', 'المبلغ المستثمر', 'الربح', 'تاريخ الانضمام', 'تاريخ التوزيع']),
+        createStyledHeader(['المستثمر', 'المبلغ المستثمر', 'الربح', 'حالة التدوير', 'تاريخ الانضمام', 'تاريخ التوزيع']),
         ...(data.profitDistributions || []).map(distribution => [
           distribution.investors?.fullName || 'غير معروف',
           formatCurrency(distribution.investors?.amount || 0, 'IQD'),
           formatCurrency(distribution.investors?.profit || 0, 'IQD'),
+          distribution.isRollover ? 'مفعل' : 'معطل',
           distribution.investors?.createdAt || 'غير محدد',
           data.distributedAt || 'غير محدد'
         ])

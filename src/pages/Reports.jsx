@@ -201,7 +201,13 @@ const Reports = () => {
                     البريد الإلكتروني
                   </StyledTableCell>
                   <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                  المبلغ (${currentCurrency})
+                  مبلغ المساهمة (${currentCurrency})
+                  </StyledTableCell>
+                  <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                    مبلغ الربح (${currentCurrency})
+                  </StyledTableCell>
+                  <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                    نسبة المساهمة
                   </StyledTableCell>
                   <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                     تاريخ الانضمام
@@ -214,6 +220,8 @@ const Reports = () => {
                     <StyledTableCell align="center">{row.fullName}</StyledTableCell>
                     <StyledTableCell align="center">{row.email}</StyledTableCell>
                     <StyledTableCell align="center">{formatAmount(row.amount || 0, 'IQD')}</StyledTableCell>
+                    <StyledTableCell align="center">{formatAmount(row.profit || 0, 'IQD')}</StyledTableCell>
+                    <StyledTableCell align="center">{row.profitDistributions?.[0]?.percentage?.toFixed(2) || 0}%</StyledTableCell>
                     <StyledTableCell align="center">{row.createdAt}</StyledTableCell>
                   </StyledTableRow>
                 ))}
@@ -255,9 +263,21 @@ const Reports = () => {
                   </StyledTableRow>
                   <StyledTableRow>
                     <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
-                      المبلغ (${currentCurrency})
+                      مبلغ المساهمة (${currentCurrency})
                     </StyledTableCell>
                     <StyledTableCell align="center">{formatAmount(reportData.amount || 0, 'IQD')}</StyledTableCell>
+                  </StyledTableRow>
+                  <StyledTableRow>
+                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
+                      مبلغ الربح (${currentCurrency})
+                    </StyledTableCell>
+                    <StyledTableCell align="center">{formatAmount(reportData.profit || 0, 'IQD')}</StyledTableCell>
+                  </StyledTableRow>
+                  <StyledTableRow>
+                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
+                      نسبة المساهمة
+                    </StyledTableCell>
+                    <StyledTableCell align="center">{reportData.profitDistributions?.[0]?.percentage?.toFixed(2) || 0}%</StyledTableCell>
                   </StyledTableRow>
                   <StyledTableRow>
                     <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
@@ -336,7 +356,7 @@ const Reports = () => {
                       <StyledTableCell align="center">{`${distribution.financialYear.year} - ${distribution.financialYear.periodName}`}</StyledTableCell>
                       <StyledTableCell align="center">{formatAmount(distribution.amount || 0, 'IQD')}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.currency || 'IQD'}</StyledTableCell>
-                      <StyledTableCell align="center">{distribution.percentage || 0}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.percentage.toFixed(2) || 0}%</StyledTableCell>
                       <StyledTableCell align="center">{formatAmount(distribution.financialYear.totalProfit || 0, 'IQD')}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.financialYear.distributedAt}</StyledTableCell>
                     </StyledTableRow>
@@ -444,7 +464,7 @@ const Reports = () => {
                     <StyledTableCell align="center">
                       {reportData.rolloverEnabled
                         ? 'مفعل'
-                        : 'معطل'}
+                        : 'معطل'} {reportData.rolloverPercentage ? `(${reportData.rolloverPercentage}%)` : ''}
                     </StyledTableCell>
                   </StyledTableRow>
                   <StyledTableRow>
@@ -480,6 +500,9 @@ const Reports = () => {
                       الربح (${currentCurrency})
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      حالة التدوير
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                       تاريخ الانضمام
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
@@ -496,6 +519,9 @@ const Reports = () => {
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         {formatAmount(distribution.investors?.profit || 0, 'IQD')}
+                      </StyledTableCell>
+                      <StyledTableCell align="center">
+                        {distribution.isRollover ? 'مفعل' : 'معطل'}
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         {distribution.investors?.createdAt ? distribution.investors.createdAt : 'غير محدد'}

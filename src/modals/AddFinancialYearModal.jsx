@@ -36,7 +36,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
     rolloverEnabled: false,
-    rolloverPercentage: 0
+    rolloverPercentage: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -234,7 +234,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
               }}
               value={formData.totalProfit}
               onChange={(e) => {
-                const value = Math.max(0, parseInt(e.target.value) || 0);
+                const value = Math.max(0, parseInt(e.target.value) || '');
                 handleInputChange('totalProfit', value);
               }}
               error={!!errors.totalProfit}
@@ -299,7 +299,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
                     onChange={(e) => {
                       handleInputChange('rolloverEnabled', e.target.checked);
                       if (!e.target.checked) {
-                        handleInputChange('rolloverPercentage', 0);
+                        handleInputChange('rolloverPercentage', '');
                       }
                     }}
                     disabled={loading}

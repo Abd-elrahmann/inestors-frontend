@@ -228,6 +228,7 @@ const Investors = () => {
                 <StyledTableCell align="center">
                   المبلغ المستثمر ({currentCurrency})
                 </StyledTableCell>
+                <StyledTableCell align="center"> مبلغ الربح ({currentCurrency})</StyledTableCell>
                 <StyledTableCell align="center">نسبة المستثمر</StyledTableCell>
                 <StyledTableCell align="center">تاريخ الانضمام</StyledTableCell>
                 <StyledTableCell align="center">عرض المعاملات</StyledTableCell>
@@ -238,13 +239,13 @@ const Investors = () => {
             <TableBody>
               {isLoading || isFetching ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={6} align="center">
+                  <StyledTableCell colSpan={7} align="center">
                     <Spin size="large" />
                   </StyledTableCell>
                 </StyledTableRow>
               ) : !investorsData?.investors?.length ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={10} align="center">
+                  <StyledTableCell colSpan={11} align="center">
                     لا يوجد مستثمرين
                   </StyledTableCell>
                 </StyledTableRow>
@@ -263,6 +264,9 @@ const Investors = () => {
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         {formatAmount(investor.amount, "IQD")}
+                      </StyledTableCell>
+                      <StyledTableCell align="center">
+                        {formatAmount(investor.profit, "IQD")}
                       </StyledTableCell>
                       <StyledTableCell align="center">{`${investor.sharePercentage.toFixed(
                         2
@@ -311,7 +315,10 @@ const Investors = () => {
                     <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
                       {formatAmount(investorsData?.totalAmount || 0, "IQD")}
                     </StyledTableCell>
-                    <StyledTableCell colSpan={5} />
+                    <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
+                      {formatAmount(investorsData?.totalProfit || 0, "IQD")}
+                    </StyledTableCell>
+                    <StyledTableCell colSpan={4} />
                   </StyledTableRow>
                 </>
               )}
