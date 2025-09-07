@@ -648,7 +648,7 @@ const Reports = () => {
                     <StyledTableRow key={index}>
                       <StyledTableCell align="center">{distribution.investors?.fullName || 'غير معروف'}</StyledTableCell>
                       <StyledTableCell align="center">
-                        {formatAmount(distribution.investors?.amount || 0, 'IQD')}
+                        {formatAmount(distribution.amount || 0, 'IQD')}
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         {formatAmount(distribution.investors?.profit || 0, 'IQD')}
