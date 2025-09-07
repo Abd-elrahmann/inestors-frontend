@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Row, 
   Col, 
@@ -9,7 +9,8 @@ import {
   Spin,
   Space,
   Segmented,
-  DatePicker
+  DatePicker,
+  Button
 } from 'antd';
 import { 
   UserOutlined, 
@@ -19,7 +20,8 @@ import {
   BarChartOutlined,
   LineChartOutlined,
   PieChartOutlined,
-  TrophyOutlined
+  TrophyOutlined,
+  DownloadOutlined
 } from '@ant-design/icons';
 import {
   Chart as ChartJS,
@@ -40,6 +42,8 @@ import { Helmet } from 'react-helmet-async';
 import { useMediaQuery } from '@mui/material';
 import Api from '../services/api';
 import dayjs from 'dayjs';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const { Title: AntTitle, Text } = Typography;
 const { Content } = Layout;
@@ -94,6 +98,67 @@ const Dashboard = () => {
   
   const isMobile = useMediaQuery('(max-width: 480px)');
   const { formatAmount, currentCurrency, convertAmount } = useCurrencyManager();
+  const contentRef = useRef(null);
+  const filterSectionRef = useRef(null);
+
+  const exportToPDF = async () => {
+    try {
+      if (!contentRef.current) return;
+
+      // Hide filters temporarily
+      if (filterSectionRef.current) {
+        filterSectionRef.current.style.display = 'none';
+      }
+
+      // Create PDF with A4 dimensions
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      // Capture dashboard content
+      const canvas = await html2canvas(contentRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        backgroundColor: '#f0f2f5'
+      });
+
+      // Calculate dimensions to fit A4 while maintaining aspect ratio
+      const imgWidth = pageWidth - 20;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      let heightLeft = imgHeight;
+      let position = 10;
+      
+      const imgData = canvas.toDataURL('image/png');
+
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Add new pages if content overflows
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      // Restore filters display
+      if (filterSectionRef.current) {
+        filterSectionRef.current.style.display = 'block';
+      }
+
+      pdf.save('dashboard_report.pdf');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      // Restore filters even if error occurs
+      if (filterSectionRef.current) {
+        filterSectionRef.current.style.display = 'block';
+      }
+    }
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -458,9 +523,17 @@ const Dashboard = () => {
         maxWidth: '1400px', 
         margin: '0 auto'
       }}>
-        <div style={{ marginBottom: '24px', textAlign: 'center' }}>
+        <div style={{ marginBottom: '24px', textAlign: 'center', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <AntTitle level={2}>لوحة التحكم</AntTitle>
           <Text type="secondary">تحليلات شاملة وإحصائيات مرئية لأداء النظام</Text>
+          <Button  
+            color='green'
+            icon={<DownloadOutlined />} 
+            onClick={exportToPDF}
+            style={{ marginTop: '16px', marginLeft: '16px' }}
+          >
+            تصدير كملف PDF
+          </Button>
         </div>
 
         {loading ? (
@@ -468,7 +541,7 @@ const Dashboard = () => {
             <Spin size="large" />
           </div>
         ) : (
-          <>
+          <div ref={contentRef}>
             {/* Statistics Row - جميع البوكسات بنفس الحجم */}
             <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               {stats.map((stat, index) => (
@@ -536,11 +609,13 @@ const Dashboard = () => {
                     </Space>
                   }
                   extra={
-                    <Segmented 
-                      options={['أسبوع', 'شهر', 'ربع سنة', 'سنة']} 
-                      defaultValue="أسبوع"
-                      size="small"
-                    />
+                    <div ref={filterSectionRef}>
+                      <Segmented 
+                        options={['أسبوع', 'شهر', 'ربع سنة', 'سنة']} 
+                        defaultValue="أسبوع"
+                        size="small"
+                      />
+                    </div>
                   }
                 >
                   <div style={{ height: '400px' }}>
@@ -578,14 +653,15 @@ const Dashboard = () => {
                       </Space>
                     }
                     extra={
-                      <RangePicker 
-                        size="small"
-                        value={[
-                          transactionsData.startDate ? dayjs(transactionsData.startDate) : null,
-                          transactionsData.endDate ? dayjs(transactionsData.endDate) : null
-
-                        ]}
-                      />
+                      <div ref={filterSectionRef}>
+                        <RangePicker 
+                          size="small"
+                          value={[
+                            transactionsData.startDate ? dayjs(transactionsData.startDate) : null,
+                            transactionsData.endDate ? dayjs(transactionsData.endDate) : null
+                          ]}
+                        />
+                      </div>
                     }
                   >
                     <div style={{ height: '400px' }}>
@@ -595,7 +671,7 @@ const Dashboard = () => {
                 </Col>
               )}
             </Row>
-          </>
+          </div>
         )}
       </Content>
     </>

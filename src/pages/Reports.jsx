@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Card,
   Row,
@@ -19,6 +19,7 @@ import {
   UsergroupAddOutlined,
   TransactionOutlined,
   CalendarOutlined,
+  PrinterOutlined,
 } from '@ant-design/icons';
 import { Table, TableBody, TableHead, TableRow, TableContainer, Paper } from '@mui/material';
 import {
@@ -31,6 +32,7 @@ import {
 import api from '../services/api';
 import { StyledTableRow, StyledTableCell } from '../styles/TableLayout';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
+
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -46,6 +48,7 @@ const Reports = () => {
   const [reportData, setReportData] = useState([]);
   const [_loading, _setLoading] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const printRef = useRef();
 
   useEffect(() => {
     fetchInvestors();
@@ -164,6 +167,136 @@ const Reports = () => {
       console.error('Error exporting report:', error);
       message.error('فشل في تصدير التقرير');
     }
+  };
+
+  // Print report function
+  const printReport = () => {
+    if (
+      !reportData ||
+      (Array.isArray(reportData) && reportData.length === 0) ||
+      (typeof reportData === 'object' && Object.keys(reportData).length === 0)
+    ) {
+      message.warning('لا توجد بيانات للطباعة');
+      return;
+    }
+
+    const printContent = printRef.current;
+    if (!printContent) {
+      message.error('فشل في تحضير المحتوى للطباعة');
+      return;
+    }
+
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      message.error('يرجى السماح بالنوافذ المنبثقة للطباعة');
+      return;
+    }
+
+    // Get report title based on type
+    let reportTitle = 'تقرير';
+    switch (reportType) {
+      case 'investors':
+        reportTitle = 'تقرير جميع المستثمرين';
+        break;
+      case 'individual':
+        reportTitle = `تقرير المستثمر - ${reportData.fullName || ''}`;
+        break;
+      case 'transactions':
+        reportTitle = 'تقرير المعاملات';
+        break;
+      case 'financial-year':
+        reportTitle = `تقرير السنة المالية - ${selectedFinancialYear?.periodName || ''}`;
+        break;
+      default:
+        break;
+    }
+
+    // Generate HTML content for printing
+    const printHTML = `
+      <!DOCTYPE html>
+      <html dir="rtl">
+      <head>
+        <meta charset="utf-8">
+        <title>${reportTitle}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            direction: rtl;
+          }
+          .print-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #28a745;
+            padding-bottom: 10px;
+          }
+          .print-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #28a745;
+          }
+          .print-date {
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: right;
+          }
+          th {
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+          }
+          tr:nth-child(even) {
+            background-color: #f2f2f2;
+          }
+          .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            color: #28a745;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 5px;
+          }
+          @media print {
+            body {
+              margin: 0;
+              padding: 15px;
+            }
+            .no-print {
+              display: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="print-header">
+          <div class="print-title">${reportTitle}</div>
+          <div class="print-date">تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG')}</div>
+        </div>
+        ${printContent.innerHTML}
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+    
+    // Wait for content to load before printing
+    printWindow.onload = function() {
+      printWindow.print();
+      // printWindow.close(); // Uncomment if you want to automatically close after printing
+    };
   };
 
   const renderReportPreview = () => {
@@ -749,6 +882,16 @@ const Reports = () => {
             <Row justify="end" style={{ marginBottom: 16 }}>
               <Space>
                 <Button
+                  icon={<PrinterOutlined />}
+                  onClick={printReport}
+                  style={{
+                    color: '#28a745',
+                    borderColor: '#28a745',
+                  }}
+                >
+                  طباعة
+                </Button>
+                <Button
                   icon={<DownloadOutlined />}
                   onClick={() => exportReport('excel')}
                   style={{
@@ -777,7 +920,10 @@ const Reports = () => {
                 boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
               }}
             >
-              {renderReportPreview()}
+              {/* Add ref for printing */}
+              <div ref={printRef}>
+                {renderReportPreview()}
+              </div>
             </Card>
           </>
         )}

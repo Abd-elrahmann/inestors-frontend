@@ -240,7 +240,7 @@ const Investors = () => {
               {isLoading || isFetching ? (
                 <StyledTableRow>
                   <StyledTableCell colSpan={7} align="center">
-                    <Spin size="large" />
+                    <Spin style={{marginRight:'230px'}} size="large" />
                   </StyledTableCell>
                 </StyledTableRow>
               ) : !investorsData?.investors?.length ? (
