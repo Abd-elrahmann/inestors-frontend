@@ -150,7 +150,10 @@ const Dashboard = () => {
         const convertedDays = data.days.map(day => ({
           ...day,
           averageDeposit: convertAmount(day.averageDeposit, 'IQD', currentCurrency),
-          averageWithdraw: convertAmount(day.averageWithdraw, 'IQD', currentCurrency)
+          averageWithdraw: convertAmount(day.averageWithdraw, 'IQD', currentCurrency),
+          averageProfit: convertAmount(day.averageProfit, 'IQD', currentCurrency),
+          averageRollover: convertAmount(day.averageRollover, 'IQD', currentCurrency),
+          averageWithdrawProfit: convertAmount(day.averageWithdrawProfit, 'IQD', currentCurrency)
         }));
         setTransactionsData({
           ...data,
@@ -291,15 +294,12 @@ const Dashboard = () => {
       });
     });
     
-    const depositData = sortedDays.map(day => day.averageDeposit);
-    const withdrawData = sortedDays.map(day => day.averageWithdraw);
-
     return {
       labels,
       datasets: [
         {
           label: 'متوسط الإيداعات',
-          data: depositData,
+          data: sortedDays.map(day => day.averageDeposit),
           borderColor: '#3B82F6',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
           borderWidth: 2,
@@ -310,9 +310,42 @@ const Dashboard = () => {
         },
         {
           label: 'متوسط السحوبات',
-          data: withdrawData,
+          data: sortedDays.map(day => day.averageWithdraw),
           borderColor: '#EF4444',
           backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+          pointHoverRadius: 6
+        },
+        {
+          label: 'متوسط الأرباح',
+          data: sortedDays.map(day => day.averageProfit),
+          borderColor: '#10B981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+          pointHoverRadius: 6
+        },
+        {
+          label: 'متوسط التدوير',
+          data: sortedDays.map(day => day.averageRollover),
+          borderColor: '#F59E0B',
+          backgroundColor: 'rgba(245, 158, 11, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+          pointHoverRadius: 6
+        },
+        {
+          label: 'متوسط سحب الأرباح',
+          data: sortedDays.map(day => day.averageWithdrawProfit),
+          borderColor: '#8B5CF6',
+          backgroundColor: 'rgba(139, 92, 246, 0.1)',
           borderWidth: 2,
           fill: true,
           tension: 0.3,
@@ -550,6 +583,7 @@ const Dashboard = () => {
                         value={[
                           transactionsData.startDate ? dayjs(transactionsData.startDate) : null,
                           transactionsData.endDate ? dayjs(transactionsData.endDate) : null
+
                         ]}
                       />
                     }

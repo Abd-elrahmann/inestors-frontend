@@ -31,13 +31,12 @@ import {
 import api from '../services/api';
 import { StyledTableRow, StyledTableCell } from '../styles/TableLayout';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
-
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
 const Reports = () => {
-  const { formatAmount } = useCurrencyManager();
+  const { formatAmount, currentCurrency } = useCurrencyManager();
   const [reportType, setReportType] = useState('');
   const [investors, setInvestors] = useState([]);
   const [financialYears, setFinancialYears] = useState([]);
@@ -52,6 +51,13 @@ const Reports = () => {
     fetchInvestors();
     fetchFinancialYears();
   }, []);
+
+  useEffect(() => {
+    setReportData([]);
+    setSelectedInvestor(null);
+    setSelectedFinancialYear(null);
+    setDateRange([]);
+  }, [reportType]);
 
   const fetchInvestors = async () => {
     try {
@@ -195,10 +201,10 @@ const Reports = () => {
                     البريد الإلكتروني
                   </StyledTableCell>
                   <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                    المبلغ
+                  المبلغ (${currentCurrency})
                   </StyledTableCell>
                   <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                    تاريخ الإنشاء
+                    تاريخ الانضمام
                   </StyledTableCell>
                 </TableRow>
               </TableHead>
@@ -207,7 +213,7 @@ const Reports = () => {
                   <StyledTableRow key={row.id}>
                     <StyledTableCell align="center">{row.fullName}</StyledTableCell>
                     <StyledTableCell align="center">{row.email}</StyledTableCell>
-                    <StyledTableCell align="center">{formatAmount(row.amount || 0, 'USD')}</StyledTableCell>
+                    <StyledTableCell align="center">{formatAmount(row.amount || 0, 'IQD')}</StyledTableCell>
                     <StyledTableCell align="center">{row.createdAt}</StyledTableCell>
                   </StyledTableRow>
                 ))}
@@ -249,13 +255,13 @@ const Reports = () => {
                   </StyledTableRow>
                   <StyledTableRow>
                     <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
-                      المبلغ
+                      المبلغ (${currentCurrency})
                     </StyledTableCell>
-                    <StyledTableCell align="center">{formatAmount(reportData.amount || 0, 'USD')}</StyledTableCell>
+                    <StyledTableCell align="center">{formatAmount(reportData.amount || 0, 'IQD')}</StyledTableCell>
                   </StyledTableRow>
                   <StyledTableRow>
                     <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
-                      تاريخ الإنشاء
+                      تاريخ الانضمام
                     </StyledTableCell>
                     <StyledTableCell align="center">{reportData.createdAt}</StyledTableCell>
                   </StyledTableRow>
@@ -266,7 +272,7 @@ const Reports = () => {
             <Divider orientation="left" dashed>
               المعاملات
             </Divider>
-            <TableContainer component={Paper} sx={{ marginTop: 2 }}>
+            <TableContainer component={Paper} sx={{ marginTop: 2, marginBottom: 4 }}>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -274,7 +280,7 @@ const Reports = () => {
                       النوع
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      المبلغ
+                      المبلغ (${currentCurrency})
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                       العملة
@@ -288,9 +294,51 @@ const Reports = () => {
                   {(reportData.transactions || []).map((transaction) => (
                     <StyledTableRow key={transaction.id}>
                       <StyledTableCell align="center">{transaction.type === 'deposit' ? 'إيداع' : 'سحب'}</StyledTableCell>
-                      <StyledTableCell align="center">{formatAmount(transaction.amount || 0, transaction.currency || 'USD')}</StyledTableCell>
-                      <StyledTableCell align="center">{transaction.currency || 'USD'}</StyledTableCell>
+                      <StyledTableCell align="center">{formatAmount(transaction.amount || 0, transaction.currency || 'IQD')}</StyledTableCell>
+                      <StyledTableCell align="center">{transaction.currency || 'IQD'}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.date}</StyledTableCell>
+                    </StyledTableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <Divider orientation="left" dashed>
+              توزيعات الأرباح
+            </Divider>
+            <TableContainer component={Paper} sx={{ marginTop: 2 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      السنة المالية
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      المبلغ (${currentCurrency})
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      العملة
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      نسبة المساهمة
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      إجمالي الربح
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      تاريخ التوزيع
+                    </StyledTableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(reportData.profitDistributions || []).map((distribution) => (
+                    <StyledTableRow key={distribution.financialYear.year}>
+                      <StyledTableCell align="center">{`${distribution.financialYear.year} - ${distribution.financialYear.periodName}`}</StyledTableCell>
+                      <StyledTableCell align="center">{formatAmount(distribution.amount || 0, 'IQD')}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.currency || 'IQD'}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.percentage || 0}</StyledTableCell>
+                      <StyledTableCell align="center">{formatAmount(distribution.financialYear.totalProfit || 0, 'IQD')}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.financialYear.distributedAt}</StyledTableCell>
                     </StyledTableRow>
                   ))}
                 </TableBody>
@@ -312,7 +360,7 @@ const Reports = () => {
                     النوع
                   </StyledTableCell>
                   <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                    المبلغ
+                    المبلغ (${currentCurrency})
                   </StyledTableCell>
                   <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                     العملة
@@ -328,8 +376,8 @@ const Reports = () => {
                     <StyledTableRow key={transaction.id}>
                       <StyledTableCell align="center">{transaction.investors?.fullName}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.type === 'deposit' ? 'إيداع' : 'سحب'}</StyledTableCell>
-                      <StyledTableCell align="center">{formatAmount(transaction.amount || 0, transaction.currency || 'USD')}</StyledTableCell>
-                      <StyledTableCell align="center">{transaction.currency || 'USD'}</StyledTableCell>
+                      <StyledTableCell align="center">{formatAmount(transaction.amount || 0, transaction.currency || 'IQD')}</StyledTableCell>
+                      <StyledTableCell align="center">{transaction.currency || 'IQD'}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.date}</StyledTableCell>
                     </StyledTableRow>
                   ))}
@@ -345,7 +393,7 @@ const Reports = () => {
               معلومات السنة المالية
             </Divider>
             <TableContainer component={Paper} sx={{ marginTop: 2, marginBottom: 4 }}>
-              <Table>
+              <Table stickyHeader>
                 <TableHead>
                   <TableRow>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
@@ -374,7 +422,7 @@ const Reports = () => {
                       إجمالي الربح
                     </StyledTableCell>
                     <StyledTableCell align="center">
-                      {formatAmount(reportData.totalProfit || 0, reportData.currency || 'IQD')}
+                      {formatAmount(reportData.totalProfit || 0, 'IQD')}
                     </StyledTableCell>
                   </StyledTableRow>
                   <StyledTableRow>
@@ -384,11 +432,19 @@ const Reports = () => {
                     <StyledTableCell align="center">
                       {reportData.status === 'calculated'
                         ? 'محسوب'
-                        : reportData.status === 'approved'
-                        ? 'معتمد'
                         : reportData.status === 'distributed'
                         ? 'موزع'
                         : reportData.status}
+                    </StyledTableCell>
+                  </StyledTableRow>
+                  <StyledTableRow>
+                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
+                      حالة التدوير
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {reportData.rolloverEnabled
+                        ? 'مفعل'
+                        : 'معطل'}
                     </StyledTableCell>
                   </StyledTableRow>
                   <StyledTableRow>
@@ -411,31 +467,43 @@ const Reports = () => {
               توزيعات الأرباح
             </Divider>
             <TableContainer component={Paper} sx={{ marginTop: 2 }}>
-              <Table>
+              <Table stickyHeader>
                 <TableHead>
                   <TableRow>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                       المستثمر
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      المبلغ
+                           المبلغ المستثمر (${currentCurrency})
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      التاريخ
+                      الربح (${currentCurrency})
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      تاريخ الانضمام
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      تاريخ التوزيع
                     </StyledTableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {(reportData.profitDistributions || []).map((distribution, index) => (
                     <StyledTableRow key={index}>
-                      <StyledTableCell align="center">{distribution.investorId || 'غير معروف'}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.investors?.fullName || 'غير معروف'}</StyledTableCell>
                       <StyledTableCell align="center">
-                        {formatAmount(distribution.amount || 0, reportData.currency || 'IQD')}
+                        {formatAmount(distribution.investors?.amount || 0, 'IQD')}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {distribution.distributionDate ? distribution.distributionDate : 'غير محدد'}
+                        {formatAmount(distribution.investors?.profit || 0, 'IQD')}
                       </StyledTableCell>
-                    </StyledTableRow>
+                      <StyledTableCell align="center">
+                        {distribution.investors?.createdAt ? distribution.investors.createdAt : 'غير محدد'}
+                      </StyledTableCell>
+                      <StyledTableCell align="center">
+                        {reportData.distributedAt ? reportData.distributedAt : 'غير محدد'}
+                      </StyledTableCell>
+                      </StyledTableRow>
                   ))}
                 </TableBody>
               </Table>
@@ -455,17 +523,17 @@ const Reports = () => {
       boxShadow: active ? '0 0 10px #28a745' : '0 2px 8px rgba(0,0,0,0.1)',
       border: active ? '2px solid #28a745' : '1px solid #f0f0f0',
       transition: 'all 0.3s ease',
-      padding: 24,
-      height: '100%',
+      padding: 4,
+      height: '80%',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
     });
 
-    const iconStyle = { fontSize: 40, color: '#28a745', marginBottom: 16 };
+    const iconStyle = { fontSize: 30, color: '#28a745', marginBottom: 16 };
 
     return (
-      <Row gutter={[24, 24]} justify="center" style={{ marginBottom: 32 }}>
+      <Row gutter={[24, 24]} justify="center" style={{ marginBottom: 20 }}>
         <Col xs={24} sm={12} md={6}>
           <Card
             hoverable
@@ -474,7 +542,7 @@ const Reports = () => {
             bordered={false}
           >
             <UsergroupAddOutlined style={iconStyle} />
-            <Title level={4}>جميع المستثمرين</Title>
+            <Title level={5}>جميع المستثمرين</Title>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
@@ -485,7 +553,7 @@ const Reports = () => {
             bordered={false}
           >
             <UserOutlined style={iconStyle} />
-            <Title level={4}>مستثمر فردي</Title>
+            <Title level={5}>مستثمر فردي</Title>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
@@ -496,7 +564,7 @@ const Reports = () => {
             bordered={false}
           >
             <TransactionOutlined style={iconStyle} />
-            <Title level={4}>تقرير المعاملات</Title>
+            <Title level={5}>تقرير المعاملات</Title>
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
@@ -507,7 +575,7 @@ const Reports = () => {
             bordered={false}
           >
             <CalendarOutlined style={iconStyle} />
-            <Title level={4}>سنة مالية</Title>
+            <Title level={5}>سنة مالية</Title>
           </Card>
         </Col>
       </Row>
@@ -520,16 +588,16 @@ const Reports = () => {
     return (
       <Card
         style={{
-          marginBottom: 32,
+          marginBottom: 20,
           borderRadius: 12,
           boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
         }}
-        bodyStyle={{ padding: 24 }}
+        bodyStyle={{ padding: 10 }}
       >
         <Row gutter={[24, 24]} align="middle" justify="center">
           {reportType === 'individual' && (
-            <Col xs={24} sm={12} md={8}>
-              <Text strong style={{ display: 'block', marginBottom: 8 }}>
+            <Col xs={24} sm={12} md={6} >
+              <Text strong style={{ display: 'flex', marginBottom: 8 }}>
                 اختر مستثمر
               </Text>
               <Select
@@ -544,7 +612,7 @@ const Reports = () => {
                 filterOption={(input, option) =>
                   option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                 }
-                style={{ width: '100%' }}
+                style={{ display: 'flex', justifyContent: 'center' }}
                 allowClear
               >
                 {investors.map((inv) => (
@@ -557,8 +625,8 @@ const Reports = () => {
           )}
 
           {reportType === 'financial-year' && (
-            <Col xs={24} sm={12} md={8}>
-              <Text strong style={{ display: 'block', marginBottom: 8 }}>
+            <Col xs={24} sm={12} md={6}>
+              <Text strong style={{ display: 'flex', marginBottom: 8 }}>
                 اختر سنة مالية
               </Text>
               <Select
@@ -573,7 +641,7 @@ const Reports = () => {
                 filterOption={(input, option) =>
                   option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                 }
-                style={{ width: '100%' }}
+                style={{ display: 'flex', justifyContent: 'center' }}
                 allowClear
               >
                 {financialYears.map((fy) => (
@@ -586,12 +654,12 @@ const Reports = () => {
           )}
 
           {(reportType === 'investors' || reportType === 'transactions') && (
-            <Col xs={24} sm={16} md={8}>
-              <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                اختر نطاق التاريخ
+            <Col xs={24} sm={16} md={8} style={{display: 'flex', justifyContent: 'center'}}>
+              <Text strong style={{ display: 'flex', marginBottom: 8 }}>
+                اختر نطاق التاريخ 
               </Text>
               <RangePicker
-                style={{ width: '100%' }}
+                style={{ display: 'flex', justifyContent: 'center' }}
                 value={dateRange}
                 onChange={(dates) => {
                   if (dates && dates.length === 2) {
@@ -607,7 +675,7 @@ const Reports = () => {
           )}
 
           <Col xs={24} sm={24} md={8}>
-            <Space style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}>
+            <Space style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
               <Button
                 type="primary"
                 icon={<EyeOutlined />}
@@ -629,7 +697,7 @@ const Reports = () => {
                   setSelectedFinancialYear(null);
                   setDateRange([]);
                 }}
-                style={{ width: 100 }}
+                style={{ width: 80 }}
               >
                 إلغاء
               </Button>

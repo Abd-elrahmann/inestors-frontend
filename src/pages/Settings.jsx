@@ -145,7 +145,21 @@ const Settings = () => {
               type="number"
               label="سعر صرف الدولار"
               value={settings.USDtoIQD}
-              onChange={(e) => handleChange('USDtoIQD', e.target.value)}
+              step={0.01}
+              min={0}
+              inputProps={{
+                min: 0,
+                step: 0.01,
+                onKeyPress: (e) => {
+                  if (e.key === '-' || e.key === '+') {
+                    e.preventDefault();
+                  }
+                }
+              }}
+              onChange={(e) => {
+                const value = Math.max(0, parseFloat(e.target.value) || 0);
+                handleChange('USDtoIQD', value);
+              }}
               sx={{ 
                 width: '300px',
                 mt: 2,

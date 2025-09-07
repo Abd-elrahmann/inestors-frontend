@@ -103,8 +103,8 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
       setUpdatingRollover(distribution.id);
       
       // Update the rollover status using the correct endpoint
-      await Api.patch(`/api/financial-years/${financialYear.id}/distribute`, {
-        isRollover: distribution.isRollover ? false : true // Toggle rollover status
+      await Api.patch(`/api/financial-years/${financialYear.id}/distributions/${distribution.id}/rollover`, {
+        isRollover: !distribution.isRollover
       });
       
       // Refresh data after update

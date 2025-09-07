@@ -150,8 +150,12 @@ const Transactions = () => {
         return "ايداع";
       case "withdrawal":
         return "سحب";
+      case "withdraw_profit":
+        return "سحب أرباح";
       case "profit":
         return "أرباح";
+      case "rollover":
+        return "تدوير";
       default:
         return "غير محدد";
     }
@@ -163,8 +167,12 @@ const Transactions = () => {
         return "success";
       case "withdrawal":
         return "error";
+      case "withdraw_profit":
+        return "warning";
       case "profit":
         return "info";
+      case "rollover":
+        return "secondary";
       default:
         return "default";
     }

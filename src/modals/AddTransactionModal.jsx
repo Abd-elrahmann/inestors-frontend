@@ -40,7 +40,9 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const transactionTypes = [
     { value: 'deposit', label: 'إيداع' },
     { value: 'withdrawal', label: 'سحب' },
-    { value: 'profit', label: 'أرباح' } 
+    { value: 'withdraw_profit', label: 'سحب أرباح' },
+    { value: 'profit', label: 'أرباح' },
+    { value: 'rollover', label: 'تدوير' },
   ];
 
   useEffect(() => {
@@ -117,7 +119,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       
       setFormData({
         userId: null,
-        type: 'deposit',
+        type: 'withdrawal',
         amount: ''
       });
       
@@ -138,7 +140,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
     if (!loading) {
       setFormData({
         id: null,
-        type: 'deposit',
+        type: 'withdrawal',
         amount: ''
       });
       setErrors({});
