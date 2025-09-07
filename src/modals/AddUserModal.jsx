@@ -121,7 +121,8 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
         const updateData = {
           fullName: formData.fullName.trim(),
           phone: formData.phone,
-          role: formData.role
+          role: formData.role,
+          email: formData.email.trim().toLowerCase() // Add email to update data
         };
         result = await Api.patch(`/api/users/${user.id}`, updateData);
         toast.success('تم تحديث المستخدم بنجاح');
