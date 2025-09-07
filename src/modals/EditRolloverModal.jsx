@@ -28,7 +28,8 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
   const [formData, setFormData] = useState({
     rolloverEnabled: false,
     rolloverPercentage: '',
-    totalProfit: ''
+    totalProfit: '',
+    periodName: ''
   });
 
   useEffect(() => {
@@ -36,7 +37,8 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
       setFormData({
         rolloverEnabled: financialYear.rolloverEnabled || false,
         rolloverPercentage: financialYear.rolloverPercentage || '',
-        totalProfit: financialYear.totalProfit || ''
+        totalProfit: financialYear.totalProfit || '',
+        periodName: financialYear.periodName || ''
       });
     }
   }, [financialYear, open]);
@@ -47,7 +49,9 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
     if (!formData.totalProfit || formData.totalProfit < 1) {
       newErrors.totalProfit = 'يجب أن يكون الربح أكبر من 0';
     }
-
+    if (!formData.periodName.trim()) {
+      newErrors.periodName = 'اسم الفترة مطلوب';
+    }
     if (formData.rolloverEnabled) {
       if (!formData.rolloverPercentage) {
         newErrors.rolloverPercentage = 'نسبة التدوير مطلوبة';
@@ -74,7 +78,8 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
       await Api.put(`/api/financial-years/${financialYear.id}`, {
         rolloverEnabled: formData.rolloverEnabled,
         rolloverPercentage: formData.rolloverPercentage,
-        totalProfit: formData.totalProfit
+        totalProfit: formData.totalProfit,
+        periodName: formData.periodName
       });
       toast.success('تم تحديث إعدادات التدوير بنجاح');
       onSuccess();
@@ -92,7 +97,8 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
       setFormData({
         rolloverEnabled: false,
         rolloverPercentage: '',
-        totalProfit: ''
+        totalProfit: '',
+        periodName: ''
       });
       setErrors({});
       onClose();
@@ -161,7 +167,15 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
 
             <TextField
               fullWidth
-              label="إجمالي الأرباح"
+              label="اسم الفترة"
+              value={formData.periodName}
+              onChange={(e) => setFormData(prev => ({ ...prev, periodName: e.target.value }))}
+              disabled={loading}
+            />
+
+            <TextField
+              fullWidth
+              label="إجمالي الربح"
               type="number"
               value={formData.totalProfit}
               onChange={(e) => {
