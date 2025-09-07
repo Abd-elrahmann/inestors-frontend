@@ -30,7 +30,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const { data: settings } = useSettings();
   const isMobile = useMediaQuery('(max-width: 480px)');
   const [formData, setFormData] = useState({
-    userId: null,
+    investorId: null,
     type: 'deposit',
     amount: ''
   });
@@ -69,11 +69,11 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.userId) {
+    if (!formData.investorId) {
       newErrors.userId = 'اختيار المساهم مطلوب';
     }
 
-    if (!formData.amount.trim()) {
+    if (!formData.amount.toString().trim()) {
       newErrors.amount = 'المبلغ مطلوب';
     } else if (isNaN(formData.amount) || parseFloat(formData.amount) <= 0) {
       newErrors.amount = 'المبلغ يجب أن يكون رقم أكبر من صفر';
@@ -108,18 +108,20 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
     
     try {
       const transactionData = {
-        userId: formData.userId,
+        investorId: formData.investorId,
         type: formData.type,
         amount: parseFloat(formData.amount)
       };
+
+      console.log('Sending transaction data:', transactionData);
 
       const result = await Api.post('/api/transactions', transactionData);
       
       toast.success('تم إضافة العملية المالية بنجاح');
       
       setFormData({
-        userId: null,
-        type: 'withdrawal',
+        investorId: null,
+        type: 'deposit',
         amount: ''
       });
       
@@ -139,8 +141,8 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const handleClose = () => {
     if (!loading) {
       setFormData({
-        id: null,
-        type: 'withdrawal',
+        investorId: null,
+        type: 'deposit',
         amount: ''
       });
       setErrors({});
@@ -204,9 +206,9 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
             <Autocomplete
               options={investors}
               getOptionLabel={(option) => option.id + ' - ' + option.fullName || ''}
-              value={investors.find(inv => inv.id === formData.id) || null}
+              value={investors.find(inv => inv.id === formData.investorId) || null}
               onChange={(event, newValue) => {
-                handleInputChange('id', newValue ? newValue.id : null);
+                handleInputChange('investorId', newValue ? newValue.id : null);
               }}
               loading={investorsLoading}
               disabled={loading || investorsLoading}
@@ -214,8 +216,8 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
                 <TextField
                   {...params}
                   label="اختر المساهم"
-                  error={!!errors.id}
-                  helperText={errors.id}
+                  error={!!errors.investorId}
+                  helperText={errors.investorId}
                   InputProps={{
                     ...params.InputProps,
                     startAdornment: (
