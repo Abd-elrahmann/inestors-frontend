@@ -92,11 +92,8 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
         endDate: new Date(formData.endDate).toISOString()
       };
       
-      // First create the financial year
-      const response = await Api.post('/api/financial-years', formattedValues);
-      
-      // Then calculate profits for the newly created year
-      await Api.patch(`/api/financial-years/${response.data.id}/distribute`);
+      await Api.post('/api/financial-years', formattedValues);
+
       
       toast.success('تم إضافة السنة المالية وحساب الأرباح بنجاح');
       
