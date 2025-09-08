@@ -31,16 +31,15 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const isMobile = useMediaQuery('(max-width: 480px)');
   const [formData, setFormData] = useState({
     investorId: null,
-    type: 'deposit',
+    type: 'DEPOSIT',
     amount: ''
   });
 
   const [errors, setErrors] = useState({});
 
   const transactionTypes = [
-    { value: 'deposit', label: 'إيداع' },
-    { value: 'withdrawal', label: 'سحب' },
-    { value: 'withdraw_profit', label: 'سحب أرباح' },
+    { value: 'DEPOSIT', label: 'إيداع' },
+    { value: 'WITHDRAWAL', label: 'سحب' },
   ];
 
   useEffect(() => {
@@ -119,7 +118,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       
       setFormData({
         investorId: null,
-        type: 'deposit',
+        type: 'DEPOSIT',
         amount: ''
       });
       
@@ -140,7 +139,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
     if (!loading) {
       setFormData({
         investorId: null,
-        type: 'deposit',
+        type: 'DEPOSIT',
         amount: ''
       });
       setErrors({});

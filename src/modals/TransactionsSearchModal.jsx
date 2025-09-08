@@ -63,10 +63,8 @@ const TransactionsSearchModal = ({ open, onClose, onSearch }) => {
 
   const transactionTypes = [
     { value: 'deposit', label: 'ايداع' },
-    { value: 'withdrawal', label: 'سحب من مبلغ المساهمة' },
-    { value: 'withdraw_profit', label: 'سحب أرباح' },
-    { value: 'rollover_profit', label: 'تدوير أرباح' },
-    { value: 'profit', label: 'أرباح' }
+    { value: 'withdrawal', label: 'سحب' },
+    { value: 'rollover', label: 'تدوير' }, 
   ];
 
   return (
@@ -74,7 +72,7 @@ const TransactionsSearchModal = ({ open, onClose, onSearch }) => {
       <Dialog 
         open={open} 
         onClose={onClose}
-        maxWidth="sm"
+        maxWidth="xs"
         fullWidth
       >
         <DialogTitle sx={{ 
@@ -100,7 +98,6 @@ const TransactionsSearchModal = ({ open, onClose, onSearch }) => {
                 label="نوع المعاملة"
                 onChange={(e) => handleFilterChange('type', e.target.value)}
               >
-                <MenuItem value="">الكل</MenuItem>
                 {transactionTypes.map((type) => (
                   <MenuItem key={type.value} value={type.value}>
                     {type.label}

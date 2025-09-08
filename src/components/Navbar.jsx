@@ -19,7 +19,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser, updateUserProfile } from "../utils/user";
-
+import Logo from "../assets/images/logo.webp";
 const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -154,7 +154,7 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
               </IconButton>
             )}
 
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap:1 }}>
               <Typography
                 variant="h6"
                 component="div"
@@ -162,10 +162,13 @@ const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
                   fontFamily: "Cairo",
                   fontWeight: 600,
                   color: "#28a745",
-                  display: { xs: "none", sm: "block" },
+                  display: { xs: "none", sm: "flex" },
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                نظام إدارة المساهمين
+                <img src={Logo} alt="Logo" style={{ width: "50px", height: "50px" }} />
+                <span>نظام إدارة المساهمين</span>
               </Typography>
             </Box>
           </Box>

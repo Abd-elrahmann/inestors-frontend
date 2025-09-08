@@ -64,7 +64,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
   // eslint-disable-next-line no-unused-vars
   const [loading, setLoading] = useState(false);
   const [updatingRollover, setUpdatingRollover] = useState(null);
-  const { formatAmount } = useCurrencyManager();
+  const { convertAmount, currentCurrency } = useCurrencyManager();
   const queryClient = useQueryClient();
 
   if (!distributions || !financialYear) return null;
@@ -155,7 +155,10 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
               📊 معلومات السنة المالية
             </Typography>
             <Typography variant="body2" component="div" sx={{mb: 2}}>
-              <strong >💰 إجمالي الربح:</strong> {formatAmount(financialYear.totalProfit,'IQD')}
+              <strong >💰 إجمالي الربح:</strong> {convertAmount(financialYear.totalProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
+                minimumFractionDigits:0,
+                maximumFractionDigits:0
+              })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
               <br />
               <strong>🧮 طريقة حساب الارباح للمستثمر:</strong> اجمالي الربح x نسبة المساهمة
               <br />
@@ -190,7 +193,10 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                         إجمالي الربح
                       </Typography>
                       <Typography variant="h5" component="div">
-                        {formatAmount(distributions.summary.totalDailyProfit,'IQD')}
+                        {convertAmount(distributions.summary.totalDailyProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
+                          minimumFractionDigits:0,
+                          maximumFractionDigits:0
+                        })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
                       </Typography>
                     </Box>
                     <ProfitIcon color="success" sx={{ fontSize: 40 }} />
@@ -208,7 +214,10 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                         معدل الربح اليومي
                       </Typography>
                       <Typography variant="h5" component="div">
-                        {formatAmount(distributions.summary.averageDailyProfit,'IQD')}
+                        {convertAmount(distributions.summary.averageDailyProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
+                          minimumFractionDigits:0,
+                          maximumFractionDigits:0
+                        })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
                       </Typography>
                     </Box>
                     <AccountBalanceIcon color="info" sx={{ fontSize: 40 }} />
@@ -278,9 +287,15 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                   {distributions.distributions.map((distribution) => (
                     <StyledTableRow key={distribution.id}>
                       <StyledTableCell align="center">{distribution.investors.fullName}</StyledTableCell>
-                      <StyledTableCell align="center">{formatAmount(distribution.amount,'IQD')}</StyledTableCell>
+                      <StyledTableCell align="center">{convertAmount(distribution.amount, 'IQD', currentCurrency).toLocaleString('en-US', {
+                        minimumFractionDigits:0,
+                        maximumFractionDigits:0
+                      })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.percentage.toFixed(2)}%</StyledTableCell>
-                      <StyledTableCell align="center">{formatAmount(distribution.totalProfit,'IQD')}</StyledTableCell>
+                      <StyledTableCell align="center">{convertAmount(distribution.totalProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
+                        minimumFractionDigits:0,
+                        maximumFractionDigits:0
+                      })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{dayjs(distribution.investors.createdAt).format('MMM DD, YYYY, hh:mm A')}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.distributedAt}</StyledTableCell>
                       <StyledTableCell align="center">

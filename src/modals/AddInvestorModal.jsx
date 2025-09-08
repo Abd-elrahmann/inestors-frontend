@@ -16,14 +16,15 @@ import PersonIcon from '@mui/icons-material/Person';
 import Api from '../services/api';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
 import { toast } from 'react-toastify';
-import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
 const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'normal', investorData = null }) => {
   const [loading, setLoading] = useState(false);
   const { currentCurrency, convertAmount } = useCurrencyManager();
   const [formData, setFormData] = useState({
     fullName: '',
-    email: '',
-    amount: ''
+    phone: '',
+    amount: '',
+    createdAt: ''
   });
 
   useEffect(() => {
@@ -31,25 +32,32 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
       setFormData({
         id: userData.id || '',
         fullName: userData.fullName || userData.userName || '',
-        email: userData.email || '',
-        amount: ''
+        phone: userData.phone || '',
+        amount: '',
+        createdAt: ''
       });
     } else if (mode === 'edit' && investorData) {
       const convertedAmount = convertAmount(investorData.amount, 'IQD', currentCurrency);
+      const formattedDate = investorData.createdAt
+      ? new Date(investorData.createdAt).toISOString().split('T')[0]
+      : '';
       setFormData({
         id: investorData.id || '',
         fullName: investorData.fullName || '',
-        email: investorData.email || '',
-        amount: currentCurrency === 'USD' ? convertedAmount?.toFixed(2) : convertedAmount?.toString() || ''
+        phone: investorData.phone || '',
+        amount: convertedAmount?.toString() || '',
+        createdAt: formattedDate || ''
       });
     } else {
       setFormData({
         id: '',
         fullName: '',
-        email: '',
-        amount: ''
+        phone: '',
+        amount: '',
+        createdAt: ''
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, userData, investorData, currentCurrency]);
 
   const [errors, setErrors] = useState({});
@@ -62,15 +70,18 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
     } else if (isNaN(formData.amount) || parseFloat(formData.amount) <= 0) {
       newErrors.amount = 'يجب أن يكون المبلغ رقماً موجباً';
     }
+    if (!formData.createdAt) {
+      newErrors.createdAt = 'تاريخ الانضمام مطلوب';
+    }
 
     if (mode !== 'fromUser' && mode !== 'edit') {
       if (!formData.fullName.trim()) {
         newErrors.fullName = 'اسم المستثمر مطلوب';
       }
-      if (!formData.email.trim()) {
-        newErrors.email = 'البريد الإلكتروني مطلوب';
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        newErrors.email = 'البريد الإلكتروني غير صحيح';
+      if (!formData.phone.trim()) {
+        newErrors.phone = 'الهاتف مطلوب';
+      } else if (!/^[0-9]+$/.test(formData.phone)) {
+        newErrors.phone = 'الهاتف غير صحيح';
       }
     } 
 
@@ -79,13 +90,6 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
   };
 
   const handleInputChange = (field, value) => {
-    if (field === 'amount' && currentCurrency === 'USD') {
-      const numValue = parseFloat(value);
-      if (!isNaN(numValue)) {
-        value = numValue.toFixed(2);
-      }
-    }
-
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -113,8 +117,9 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
       
       const payload = {
         fullName: formData.fullName,
-        email: formData.email,
-        amount: convertedAmount
+        phone: formData.phone,
+        amount: convertedAmount,
+        createdAt: new Date(formData.createdAt)
       };
 
       let result;
@@ -129,8 +134,9 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
       setFormData({
         id: '',
         fullName: '',
-        email: '',
-        amount: ''
+        phone: '',
+        amount: '',
+        createdAt: ''
       });
       
       onClose();
@@ -156,8 +162,9 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
       setFormData({
         id: '',
         fullName: '',
-        email: '',
-        amount: ''
+        phone: '',
+        amount: '',
+        createdAt: ''
       });
       setErrors({});
       onClose();
@@ -237,17 +244,17 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
             />
             <TextField
               sx={{width:'300px'}}
-              type="email"
-              label="البريد الإلكتروني"
-              value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              error={!!errors.email}
-              helperText={errors.email}
-              disabled={loading || mode === 'fromUser' || mode === 'edit'}
+              type="number"
+              label="الهاتف"
+              value={formData.phone}
+              onChange={(e) => handleInputChange('phone', e.target.value)}
+              error={!!errors.phone}
+              helperText={errors.phone}
+              disabled={loading || mode === 'fromUser'}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <EmailIcon sx={{ color: '#28a745' }} />
+                    <PhoneIcon sx={{ color: '#28a745' }} />
                   </InputAdornment>
                 ),
               }}
@@ -261,6 +268,10 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
               error={!!errors.amount}
               helperText={errors.amount}
               disabled={loading}
+              inputProps={{
+                step: "1",
+                min: "0"
+              }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -269,7 +280,16 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
                 ),
               }}
             />
-
+            <TextField
+              sx={{width:'300px'}}
+              type="date"
+              label="تاريخ الانضمام"
+              value={formData.createdAt}
+              onChange={(e) => handleInputChange('createdAt', e.target.value)}
+              error={!!errors.createdAt}
+              helperText={errors.createdAt}
+              disabled={loading}
+            />
           </Box>
         </DialogContent>
 

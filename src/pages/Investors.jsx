@@ -46,7 +46,7 @@ const Investors = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
-  const { formatAmount, currentCurrency } = useCurrencyManager();
+  const { currentCurrency, convertAmount } = useCurrencyManager();
   const isMobile = useMediaQuery('(max-width: 480px)');
   // Fetch investors query
   const {
@@ -224,11 +224,11 @@ const Investors = () => {
               <TableRow>
                 <StyledTableCell align="center"> مسلسل المستثمر</StyledTableCell>
                 <StyledTableCell align="center">اسم المستثمر</StyledTableCell>
-                <StyledTableCell align="center">البريد الإلكتروني</StyledTableCell>
+                <StyledTableCell align="center"> الهاتف</StyledTableCell>
                 <StyledTableCell align="center">
-                  المبلغ المستثمر ({currentCurrency})
+                   رأس المال ({currentCurrency})
                 </StyledTableCell>
-                <StyledTableCell align="center"> مبلغ الربح ({currentCurrency})</StyledTableCell>
+                <StyledTableCell align="center"> مبلغ التدوير ({currentCurrency})</StyledTableCell>
                 <StyledTableCell align="center">نسبة المستثمر</StyledTableCell>
                 <StyledTableCell align="center">تاريخ الانضمام</StyledTableCell>
                 <StyledTableCell align="center">عرض المعاملات</StyledTableCell>
@@ -260,13 +260,19 @@ const Investors = () => {
                         {investor.fullName}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {investor.email}
+                        {investor.phone}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {formatAmount(investor.amount, "IQD")}
+                        {convertAmount(investor.amount || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
+                          minimumFractionDigits:0,
+                          maximumFractionDigits:0
+                        })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {formatAmount(investor.profit, "IQD")}
+                        {convertAmount(investor.rollover || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
+                          minimumFractionDigits:0,
+                          maximumFractionDigits:0
+                        })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">{`${investor.sharePercentage.toFixed(
                         2
@@ -313,10 +319,16 @@ const Investors = () => {
                       الإجمالي
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
-                      {formatAmount(investorsData?.totalAmount || 0, "IQD")}
+                      {convertAmount(investorsData?.totalAmount || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
+                        minimumFractionDigits:0,
+                        maximumFractionDigits:0
+                      })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
-                      {formatAmount(investorsData?.totalProfit || 0, "IQD")}
+                      {convertAmount(investorsData?.totalRollover || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
+                        minimumFractionDigits:0,
+                        maximumFractionDigits:0
+                      })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
                     </StyledTableCell>
                     <StyledTableCell colSpan={4} />
                   </StyledTableRow>

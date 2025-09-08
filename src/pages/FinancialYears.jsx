@@ -61,7 +61,7 @@ const FinancialYear = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedYearForMenu, setSelectedYearForMenu] = useState(null);
   const [filters, setFilters] = useState({});
-  const { formatAmount, currentCurrency } = useCurrencyManager();
+  const { currentCurrency, convertAmount } = useCurrencyManager();
   // eslint-disable-next-line no-unused-vars
   const { data: settings } = useSettings();
   const isMobile = useMediaQuery('(max-width: 480px)');
@@ -249,7 +249,7 @@ const FinancialYear = () => {
               <TableRow>
                 <StyledTableCell align="center">المسلسل</StyledTableCell>
                 <StyledTableCell align="center">السنة</StyledTableCell>
-                <StyledTableCell align="center">الفترة</StyledTableCell>
+                <StyledTableCell align="center">اسم الفترة</StyledTableCell>
                 <StyledTableCell align="center">الفترة الزمنية</StyledTableCell>
                 <StyledTableCell align="center">إجمالي الأرباح ({currentCurrency === 'USD' ? '$' : 'د.ع'})</StyledTableCell>
                 <StyledTableCell align="center">الحالة</StyledTableCell>
@@ -275,7 +275,7 @@ const FinancialYear = () => {
                   <StyledTableRow key={year.id}>
                     <StyledTableCell align="center">{year.id}</StyledTableCell>
                     <StyledTableCell align="center">{year.year}</StyledTableCell>
-                    <StyledTableCell align="center">{year.periodName}</StyledTableCell>
+                    <StyledTableCell align="center">{year.periodName || 'غير محدد'}</StyledTableCell>
                     <StyledTableCell align="center">
                       <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
                         <span>{formatDate(year.startDate)}</span>
@@ -284,7 +284,10 @@ const FinancialYear = () => {
                       </Box>
                     </StyledTableCell>
                     <StyledTableCell align="center">
-                      {formatAmount(year.totalProfit, 'IQD')}
+                      {convertAmount(year.totalProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
+                        minimumFractionDigits:0,
+                        maximumFractionDigits:0
+                      })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
                     </StyledTableCell>
                     <StyledTableCell align="center">{getStatusChip(year.status)}</StyledTableCell>
                     <StyledTableCell align="center">
