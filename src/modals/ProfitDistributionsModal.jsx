@@ -80,11 +80,22 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
 
   const getStatusText = (status) => {
     const statusMap = {
-      'PENDING': 'في الانتظار',
+      'PENDING': 'قيد التوزيع',
       'DISTRIBUTED': 'موزع',
     };
     return statusMap[status] || status;
   };
+
+  const displayData = distributions.status === 'PENDING' ? {
+    ...distributions,
+    summary: {
+      ...distributions.summary,
+      totalInvestors: distributions.summary.totalInvestors,
+      totalProfit: distributions.summary.totalProfit,
+      dailyProfit: distributions.summary.dailyProfit
+    },
+    distributions: distributions.distributions
+  } : distributions;
 
   return (
     <Dialog 
@@ -127,7 +138,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
               📊 معلومات السنة المالية
             </Typography>
             <Typography variant="body2" component="div" sx={{mb: 2}}>
-              <strong>💰 إجمالي الربح:</strong> {convertAmount(distributions.summary.totalProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
+              <strong>💰  مبلغ التوزيع:</strong> {convertAmount(displayData.summary.totalProfit, displayData.summary.currency||'IQD', currentCurrency).toLocaleString('en-US', {
                 minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
                 maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
               })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
@@ -147,7 +158,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                         إجمالي المستثمرين
                       </Typography>
                       <Typography variant="h4" component="div">
-                        {distributions.summary.totalInvestors}
+                        {displayData.summary.totalInvestors}
                       </Typography>
                     </Box>
                     <PersonIcon color="primary" sx={{ fontSize: 40 }} />
@@ -162,10 +173,10 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                   <Box display="flex" alignItems="center" justifyContent="space-between">
                     <Box>
                       <Typography color="textSecondary" gutterBottom>
-                        إجمالي الربح
+                        إجمالي التوزيع
                       </Typography>
                       <Typography variant="h5" component="div">
-                        {convertAmount(distributions.summary.totalProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
+                        {convertAmount(displayData.summary.totalProfit,displayData.summary.currency||'IQD', currentCurrency).toLocaleString('en-US', {
                           minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
                           maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
                         })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
@@ -186,7 +197,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                         معدل الربح اليومي
                       </Typography>
                       <Typography variant="h5" component="div">
-                        {convertAmount(Math.round(distributions.summary.dailyProfit/distributions.summary.totalInvestors), 'IQD', currentCurrency).toLocaleString('en-US', {
+                        {convertAmount(displayData.summary.dailyProfit, displayData.summary.currency||'IQD', currentCurrency).toLocaleString('en-US', {
                           minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
                           maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
                         })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
@@ -219,9 +230,9 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                     الايام
                   </Typography>
                   <Typography variant="body1" sx={{ textAlign: 'center' }}>
-                    الايام حتى الان: {distributions.summary.daysSoFar || 0}
+                    الايام حتى الان: {displayData.summary.daysSoFar || 0}
                     <br/>
-                    اجمالي الايام: {distributions.summary.totalDays || 0}
+                    اجمالي الايام: {displayData.summary.totalDays || 0}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={4}>
@@ -229,8 +240,8 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                     حالة السنة المالية
                   </Typography>
                   <Chip 
-                    label={getStatusText(distributions.status)} 
-                    color={getStatusColor(distributions.status)}
+                    label={getStatusText(displayData.status)} 
+                    color={getStatusColor(displayData.status)}
                     size="small"
                   />
                 </Grid>
@@ -244,9 +255,11 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
               <CircularProgress />
             </Box>
-          ) : !distributions.distributions || distributions.distributions.length === 0 ? (
+          ) : !displayData.distributions || displayData.distributions.length === 0 ? (
             <Alert severity="info">
-              لا توجد توزيعات أرباح لهذه السنة المالية بعد.
+              <strong>لا توجد توزيعات أرباح لهذه السنة المالية بعد</strong>
+              <br />
+              برجاء الانتظار حتى يتم توزيع الأرباح.
             </Alert>
           ) : (
             <TableContainer component={Paper} sx={{ maxHeight: 650,width: '100%' }}>
@@ -263,24 +276,24 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                   </StyledTableRow>
                 </TableHead>
                 <TableBody>
-                  {distributions.distributions.map((distribution) => (
+                  {displayData.distributions.map((distribution) => (
                     <StyledTableRow key={distribution.id}>
                       <StyledTableCell align="center">{distribution.investor.fullName}</StyledTableCell>
-                      <StyledTableCell align="center">{convertAmount(distribution.amount, 'IQD', currentCurrency).toLocaleString('en-US', {
+                      <StyledTableCell align="center">{convertAmount(distribution.investor.amount, displayData.currency||'IQD', currentCurrency).toLocaleString('en-US', {
                         minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
                         maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
                       })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.percentage.toFixed(2)}%</StyledTableCell>
-                      <StyledTableCell align="center">{convertAmount(distribution.dailyProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
+                      <StyledTableCell align="center">{convertAmount(distribution.dailyProfit, displayData.currency||'IQD', currentCurrency).toLocaleString('en-US', {
                         minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
                         maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
                       })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
-                      <StyledTableCell align="center">{convertAmount(distribution.totalProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
+                      <StyledTableCell align="center">{convertAmount(distribution.totalProfit, displayData.currency||'IQD', currentCurrency).toLocaleString('en-US', {
                         minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
                         maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
                       })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.investor.createdAt}</StyledTableCell>
-                      <StyledTableCell align="center">{distributions.summary.distributedAt}</StyledTableCell>
+                      <StyledTableCell align="center">{displayData.summary.distributedAt}</StyledTableCell>
                     </StyledTableRow>
                   ))}
                 </TableBody>

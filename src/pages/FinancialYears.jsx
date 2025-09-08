@@ -145,28 +145,15 @@ const FinancialYear = () => {
     setEditRolloverModalOpen(true);
   };
 
-  const getRolloverChip = (rolloverEnabled, rolloverPercentage) => {
-    if (!rolloverEnabled) {
-      return <Chip label="غير مفعل" color="default" size="small" />;
-    }
-    return (
-      <Chip 
-        label={`مفعل (${rolloverPercentage}%)`}
-        color="success"
-        size="small"
-      />
-    );
-  };
-
   const getStatusChip = (status) => {
     const statusConfig = {
       PENDING: { 
-        label: 'في الانتظار', 
+        label: 'قيد التوزيع', 
         color: 'info',
         icon: <BarChartOutlined style={{marginRight: '5px'}} />
       },
       DISTRIBUTED: { 
-        label: 'موزعة', 
+        label: 'موزع', 
         color: 'warning',
         icon: <GiftOutlined style={{marginRight: '5px'}} />
       }
@@ -253,7 +240,6 @@ const FinancialYear = () => {
                 <StyledTableCell align="center">الفترة الزمنية</StyledTableCell>
                 <StyledTableCell align="center"> مبلغ التوزيع ({currentCurrency === 'USD' ? '$' : 'د.ع'})</StyledTableCell>
                 <StyledTableCell align="center">الحالة</StyledTableCell>
-                <StyledTableCell align="center">حالة التدوير</StyledTableCell>
                 <StyledTableCell align="center">الإجراءات</StyledTableCell>
               </TableRow>
             </TableHead>
@@ -284,15 +270,12 @@ const FinancialYear = () => {
                       </Box>
                     </StyledTableCell>
                     <StyledTableCell align="center">
-                      {convertAmount(year.totalProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
-                        maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
+                      {convertAmount(year.totalProfit, year.currency||'IQD', currentCurrency).toLocaleString('en-US', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
                       })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
                     </StyledTableCell>
                     <StyledTableCell align="center">{getStatusChip(year.status)}</StyledTableCell>
-                    <StyledTableCell align="center">
-                      {getRolloverChip(year.rolloverEnabled, year.rolloverPercentage)}
-                    </StyledTableCell>
                     <StyledTableCell align="center">
                       <IconButton
                         onClick={(event) => {

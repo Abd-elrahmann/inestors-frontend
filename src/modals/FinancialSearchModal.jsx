@@ -31,11 +31,8 @@ const FinancialSearchModal = ({ open, onClose, onApplyFilters, initialFilters = 
   });
 
   const statusOptions = [
-    { value: 'draft', label: 'مسودة' },
-    { value: 'calculated', label: 'محسوبة' },
-    { value: 'approved', label: 'معتمدة' },
-    { value: 'distributed', label: 'موزعة' },
-    { value: 'closed', label: 'مغلقة' }
+    { value: 'PENDING', label: 'في الانتظار' },
+    { value: 'DISTRIBUTED', label: 'موزعة' },
   ];
   const years = Array.from({length: 16}, (_, i) => 2025 + i);
 

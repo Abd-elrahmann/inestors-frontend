@@ -17,6 +17,7 @@ import Api from '../services/api';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
 import { toast } from 'react-toastify';
 import PhoneIcon from '@mui/icons-material/Phone';
+
 const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'normal', investorData = null }) => {
   const [loading, setLoading] = useState(false);
   const { currentCurrency, convertAmount } = useCurrencyManager();
@@ -58,7 +59,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, userData, investorData, currentCurrency]);
+  }, [mode, userData, investorData, currentCurrency, open]); // Added open dependency to reset form when modal opens
 
   const [errors, setErrors] = useState({});
 
@@ -70,10 +71,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
     } else if (isNaN(formData.amount) || parseFloat(formData.amount) <= 0) {
       newErrors.amount = 'يجب أن يكون المبلغ رقماً موجباً';
     }
-    if (!formData.createdAt) {
-      newErrors.createdAt = 'تاريخ الانضمام مطلوب';
-    }
-
+ 
     if (mode !== 'fromUser' && mode !== 'edit') {
       if (!formData.fullName.trim()) {
         newErrors.fullName = 'اسم المستثمر مطلوب';
@@ -131,6 +129,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
         toast.success('تم إضافة المستثمر بنجاح');
       }
       
+      // Reset form data after successful submission
       setFormData({
         id: '',
         fullName: '',

@@ -117,7 +117,7 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
             mx: 'auto'
           }}>
             <Alert severity="info" sx={{ mb: 2 }}>
-              يمكنك تعديل السنة المالية {financialYear?.year} في حاله انها محسوبة.
+              يمكنك تعديل السنة المالية {financialYear?.year} في حاله انها قيد التوزيع.
             </Alert>
 
             <TextField
