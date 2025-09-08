@@ -22,8 +22,7 @@ import {
   Chip,
   CircularProgress,
   Alert,
-  Tooltip,
-  Switch
+  Tooltip
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -32,16 +31,12 @@ import {
   Person as PersonIcon,
   TrendingUp as ProfitIcon,
   CalendarToday as CalendarIcon,
-  AccountBalance as AccountBalanceIcon,
-  Check as CheckIcon,
-  Clear as ClearIcon
+  AccountBalance as AccountBalanceIcon
 } from '@mui/icons-material';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
 import { StyledTableCell, StyledTableRow } from '../styles/TableLayout';
 import dayjs from 'dayjs';
 import Api from '../services/api';
-import { toast } from 'react-toastify';
-import { useQueryClient } from 'react-query';
 
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -63,9 +58,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
   const [tabValue, setTabValue] = useState(0);
   // eslint-disable-next-line no-unused-vars
   const [loading, setLoading] = useState(false);
-  const [updatingRollover, setUpdatingRollover] = useState(null);
   const { convertAmount, currentCurrency } = useCurrencyManager();
-  const queryClient = useQueryClient();
 
   if (!distributions || !financialYear) return null;
 
@@ -79,41 +72,20 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
 
   const getStatusColor = (status) => {
     const colors = {
-      'pending': 'warning',
-      'calculated': 'info',
-      'approved': 'success',
-      'distributed': 'info',
-      'cancelled': 'error'
+      'PENDING': 'warning',
+      'DISTRIBUTED': 'info',
     };
     return colors[status] || 'default';
   };
 
   const getStatusText = (status) => {
     const statusMap = {
-      'pending': 'في الانتظار',
-      'calculated': 'تم الحساب',
-      'approved': 'موافق عليه',
-      'distributed': 'موزع',
-      'cancelled': 'ملغي'
+      'PENDING': 'في الانتظار',
+      'DISTRIBUTED': 'موزع',
     };
     return statusMap[status] || status;
   };
 
-  const handleRolloverToggle = async (distribution) => {
-    try {
-      setUpdatingRollover(distribution.id);
-      
-      await Api.patch(`/api/financial-years/rollover/${financialYear.id}/${distribution.investors.id}/toggle`);
-      
-      queryClient.invalidateQueries(['distributions', financialYear.id]);
-      toast.success('تم تحديث حالة التدوير بنجاح');
-    } catch (error) {
-      console.error('Error updating rollover status:', error);
-      toast.error('فشل في تحديث حالة التدوير');
-    } finally {
-      setUpdatingRollover(null);
-    }
-  };
   return (
     <Dialog 
       open={open} 
@@ -155,9 +127,9 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
               📊 معلومات السنة المالية
             </Typography>
             <Typography variant="body2" component="div" sx={{mb: 2}}>
-              <strong >💰 إجمالي الربح:</strong> {convertAmount(financialYear.totalProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
-                minimumFractionDigits:0,
-                maximumFractionDigits:0
+              <strong>💰 إجمالي الربح:</strong> {convertAmount(distributions.summary.totalProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
+                minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
+                maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
               })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
               <br />
               <strong>🧮 طريقة حساب الارباح للمستثمر:</strong> اجمالي الربح x نسبة المساهمة
@@ -193,9 +165,9 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                         إجمالي الربح
                       </Typography>
                       <Typography variant="h5" component="div">
-                        {convertAmount(distributions.summary.totalDailyProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits:0,
-                          maximumFractionDigits:0
+                        {convertAmount(distributions.summary.totalProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
+                          minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
+                          maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
                         })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
                       </Typography>
                     </Box>
@@ -214,9 +186,9 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                         معدل الربح اليومي
                       </Typography>
                       <Typography variant="h5" component="div">
-                        {convertAmount(distributions.summary.averageDailyProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits:0,
-                          maximumFractionDigits:0
+                        {convertAmount(Math.round(distributions.summary.dailyProfit/distributions.summary.totalInvestors), 'IQD', currentCurrency).toLocaleString('en-US', {
+                          minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
+                          maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
                         })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
                       </Typography>
                     </Box>
@@ -234,17 +206,25 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
               </Typography>
               <Divider sx={{ mb: 2 }} />
               <Grid container spacing={2} sx={{justifyContent:'space-between', height:'50px'}}>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={4}>
                   <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center' }}>
                      الفترة الزمنية
                   </Typography>
                   <Typography variant="body1" sx={{ textAlign: 'center' }}>
                     {formatDate(financialYear.startDate)} - {formatDate(financialYear.endDate)}
-                    <br />
-                    {`(${distributions.summary.totalDays||0} يوم)`}
                   </Typography>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={4}>
+                  <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center' }}>
+                    الايام
+                  </Typography>
+                  <Typography variant="body1" sx={{ textAlign: 'center' }}>
+                    الايام حتى الان: {distributions.summary.daysSoFar || 0}
+                    <br/>
+                    اجمالي الايام: {distributions.summary.totalDays || 0}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={4}>
                   <Typography variant="body2" color="textSecondary" sx={{ textAlign: 'center' }}>
                     حالة السنة المالية
                   </Typography>
@@ -276,65 +256,31 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                     <StyledTableCell align="center">المستثمر</StyledTableCell>
                     <StyledTableCell align="center">رأس المال</StyledTableCell>
                     <StyledTableCell align="center">نسبة المساهمة</StyledTableCell>
-                    <StyledTableCell align="center">الربح</StyledTableCell>
+                    <StyledTableCell align="center"> الربح اليومي</StyledTableCell>
+                    <StyledTableCell align="center">اجمالي الربح</StyledTableCell>
                     <StyledTableCell align='center'>تاريخ المساهمة</StyledTableCell>
                     <StyledTableCell align='center'>تاريخ التوزيع</StyledTableCell>
-                    <StyledTableCell align='center'>حاله التدوير</StyledTableCell>
-                    <StyledTableCell align='center'>تدوير الأرباح</StyledTableCell>
                   </StyledTableRow>
                 </TableHead>
                 <TableBody>
                   {distributions.distributions.map((distribution) => (
                     <StyledTableRow key={distribution.id}>
-                      <StyledTableCell align="center">{distribution.investors.fullName}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.investor.fullName}</StyledTableCell>
                       <StyledTableCell align="center">{convertAmount(distribution.amount, 'IQD', currentCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits:0,
-                        maximumFractionDigits:0
+                        minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
+                        maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
                       })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.percentage.toFixed(2)}%</StyledTableCell>
-                      <StyledTableCell align="center">{convertAmount(distribution.totalProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits:0,
-                        maximumFractionDigits:0
+                      <StyledTableCell align="center">{convertAmount(distribution.dailyProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
+                        minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
+                        maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
                       })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
-                      <StyledTableCell align="center">{dayjs(distribution.investors.createdAt).format('MMM DD, YYYY, hh:mm A')}</StyledTableCell>
-                      <StyledTableCell align="center">{distribution.distributedAt}</StyledTableCell>
-                      <StyledTableCell align="center">
-                        <Chip
-                          label={distribution.isRollover ? "مفعل" : "غير مفعل"}
-                          color={distribution.isRollover ? "success" : "default"}
-                          size="small"
-                        />
-                      </StyledTableCell>
-                      <StyledTableCell align="center">
-                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-                          {updatingRollover === distribution.id ? (
-                            <CircularProgress size={24} color="success" />
-                          ) : (
-                            <>
-                              <Tooltip title="تفعيل">
-                                <IconButton
-                                  onClick={() => !distribution.isRollover && handleRolloverToggle(distribution)}
-                                  disabled={loading || distribution.isRollover}
-                                  color="success"
-                                  size="small"
-                                >
-                                  <CheckIcon />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="إلغاء التفعيل">
-                                <IconButton
-                                  onClick={() => distribution.isRollover && handleRolloverToggle(distribution)}
-                                  disabled={loading || !distribution.isRollover}
-                                  color="error"
-                                  size="small"
-                                >
-                                  <ClearIcon />
-                                </IconButton>
-                              </Tooltip>
-                            </>
-                          )}
-                        </Box>
-                      </StyledTableCell>
+                      <StyledTableCell align="center">{convertAmount(distribution.totalProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
+                        minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
+                        maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
+                      })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.investor.createdAt}</StyledTableCell>
+                      <StyledTableCell align="center">{distributions.summary.distributedAt}</StyledTableCell>
                     </StyledTableRow>
                   ))}
                 </TableBody>

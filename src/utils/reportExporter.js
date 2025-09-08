@@ -1,14 +1,13 @@
 import * as XLSX from 'xlsx';
 import { formatCurrency, globalCurrencyManager } from "./globalCurrencyManager";
-
-// تحويل اللون Hex إلى RGB
+import Logo from '../assets/images/logo.webp'
 const hexToRgb = (hex) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? [
     parseInt(result[1], 16),
     parseInt(result[2], 16),
     parseInt(result[3], 16)
-  ] : [40, 167, 69]; // Default to #28a745 if invalid
+  ] : [40, 167, 69];
 };
 
 const headerColor = hexToRgb('#28a745');
@@ -21,13 +20,11 @@ export const exportAllInvestorsToPDF = async (data) => {
     ]);
 
     const doc = new jsPDFModule.default();
-
-    // تحميل الخط العربي
+    doc.addImage(Logo, 'PNG', 10, 10, 50, 50);
     doc.addFont('/assets/fonts/Amiri-Regular.ttf', 'Amiri', 'normal');
     doc.addFont('/assets/fonts/Amiri-Bold.ttf', 'Amiri', 'bold');
     doc.setFont('Amiri');
 
-    // عنوان التقرير
     doc.setFontSize(18);
     doc.text('تقرير جميع المستثمرين', doc.internal.pageSize.width / 2, 20, {
       align: 'center'
@@ -61,7 +58,7 @@ export const exportAllInvestorsToPDF = async (data) => {
         font: 'Amiri'
       },
       didParseCell: (data) => {
-        data.cell.styles.halign = 'right'; // ضبط الاتجاه يمين
+        data.cell.styles.halign = 'right';
       }
     });
 
@@ -82,23 +79,20 @@ export const exportIndividualInvestorToPDF = async (data) => {
 
     const doc = new jsPDFModule.default();
 
-    // تحميل الخط العربي
+    doc.addImage(Logo, 'PNG', 10, 10, 50, 50);
     doc.addFont('/assets/fonts/Amiri-Regular.ttf', 'Amiri', 'normal');
     doc.addFont('/assets/fonts/Amiri-Bold.ttf', 'Amiri', 'bold');
     doc.setFont('Amiri');
 
-    // عنوان التقرير
     doc.setFontSize(18);
     doc.text('تقرير المستثمر الفردي', doc.internal.pageSize.width / 2, 20, { align: 'center' });
     doc.setFontSize(14);
     doc.text(`المستثمر: ${data.fullName}`, doc.internal.pageSize.width / 2, 30, { align: 'center' });
 
-    // بداية الجدول
     let startY = 40;
     
     const currentCurrency = globalCurrencyManager.getCurrentDisplayCurrency();
     
-    // Investor information table
     const infoHeaders = ['المعلومة', 'القيمة'];
     const infoRows = [
       ['الاسم', data.fullName],
@@ -128,7 +122,6 @@ export const exportIndividualInvestorToPDF = async (data) => {
       }
     });
     
-    // Transactions table
     if (data.transactions && data.transactions.length > 0) {
       startY = doc.lastAutoTable.finalY + 20;
       
@@ -166,7 +159,6 @@ export const exportIndividualInvestorToPDF = async (data) => {
       });
     }
 
-    // Profit distributions table
     if (data.profitDistributions && data.profitDistributions.length > 0) {
       startY = doc.lastAutoTable.finalY + 20;
       
@@ -222,12 +214,11 @@ export const exportTransactionsToPDF = async (data) => {
 
     const doc = new jsPDFModule.default();
 
-    // تحميل الخط العربي
+    doc.addImage(Logo, 'PNG', 10, 10, 50, 50);
     doc.addFont('/assets/fonts/Amiri-Regular.ttf', 'Amiri', 'normal');
     doc.addFont('/assets/fonts/Amiri-Bold.ttf', 'Amiri', 'bold');
     doc.setFont('Amiri');
 
-    // عنوان التقرير
     doc.setFontSize(18);
     doc.text('تقرير المعاملات', doc.internal.pageSize.width / 2, 20, { align: 'center' });
     
@@ -250,7 +241,7 @@ export const exportTransactionsToPDF = async (data) => {
         textColor: 255,
         font: 'Amiri',
         fontStyle: 'bold',
-        direction: 'rtl' // ضبط اتجاه النص لليمين
+          direction: 'rtl'
       },
       bodyStyles: {
         font: 'Amiri'
@@ -260,7 +251,7 @@ export const exportTransactionsToPDF = async (data) => {
         font: 'Amiri'
       },
       didParseCell: (data) => {
-        data.cell.styles.halign = 'right'; // ضبط الاتجاه يمين
+        data.cell.styles.halign = 'right';
         }
     });
     
@@ -280,17 +271,16 @@ export const exportFinancialYearToPDF = async (data) => {
 
     const doc = new jsPDFModule.default();
     
+    doc.addImage(Logo, 'PNG', 10, 10, 50, 50);
     doc.addFont('/assets/fonts/Amiri-Regular.ttf', 'Amiri', 'normal');
     doc.addFont('/assets/fonts/Amiri-Bold.ttf', 'Amiri', 'bold');
     doc.setFont('Amiri');
 
-    // عنوان التقرير
     doc.setFontSize(18);
     doc.text(`تقرير السنة المالية - ${data.periodName}`, doc.internal.pageSize.width / 2, 20, { align: 'center' });
     
     let startY = 30;
     
-    // Financial year information table
     const statusMap = {
       'calculated': 'محسوب',
       'distributed': 'موزع'
@@ -328,7 +318,6 @@ export const exportFinancialYearToPDF = async (data) => {
       }
     });
     
-    // Profit distributions table
     if (data.profitDistributions && data.profitDistributions.length > 0) {
       startY = doc.lastAutoTable.finalY + 20;
       
@@ -380,7 +369,6 @@ export const exportToExcel = (data, reportType) => {
   let filename = '';
   const currentCurrency = globalCurrencyManager.getCurrentDisplayCurrency();
 
-  // دالة لتنسيق رؤوس الجداول في Excel
   const createStyledHeader = (headers) => {
     return headers.map(header => ({
       v: header,
@@ -501,7 +489,6 @@ export const exportToExcel = (data, reportType) => {
   const workbook = XLSX.utils.book_new();
   const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
   
-  // تعيين اتجاه النص إلى RTL للخلايا
   if (!worksheet['!fullCells']) worksheet['!fullCells'] = [];
   for (const cell in worksheet) {
     if (cell[0] === '!') continue;

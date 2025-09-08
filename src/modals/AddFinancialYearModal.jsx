@@ -35,8 +35,6 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
     totalProfit: '',
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
-    rolloverEnabled: false,
-    rolloverPercentage: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -65,12 +63,6 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
     } else if (new Date(formData.endDate) <= new Date(formData.startDate)) {
       newErrors.endDate = 'يجب أن يكون تاريخ النهاية بعد تاريخ البداية';
     }
-
-    if (formData.rolloverEnabled) {
-      if (!formData.rolloverPercentage || formData.rolloverPercentage < 1 || formData.rolloverPercentage > 100) {
-        newErrors.rolloverPercentage = 'يجب أن تكون النسبة بين 1 و 100';
-      }
-    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -86,10 +78,13 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
     setLoading(true);
     
     try {
+      const endDate = new Date(formData.endDate);
+      endDate.setHours(23, 59, 59, 999);
+
       const formattedValues = {
         ...formData,
         startDate: new Date(formData.startDate).toISOString(),
-        endDate: new Date(formData.endDate).toISOString()
+        endDate: endDate.toISOString()
       };
       
       await Api.post('/api/financial-years', formattedValues);
@@ -116,8 +111,6 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
         totalProfit: '',
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0],
-        rolloverEnabled: false,
-        rolloverPercentage: 0
       });
       setErrors({});
       onClose();
@@ -130,17 +123,6 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
       [field]: value
     }));
   };
-
-  const calculateRolloverAmount = () => {
-    if (!formData.rolloverEnabled || !formData.totalProfit || !formData.rolloverPercentage) {
-      return { rolloverAmount: 0, distributionAmount: 0 };
-    }
-    const rolloverAmount = (formData.totalProfit * formData.rolloverPercentage) / 100;
-    const distributionAmount = formData.totalProfit - rolloverAmount;
-    return { rolloverAmount, distributionAmount };
-  };
-
-  const { rolloverAmount, distributionAmount } = calculateRolloverAmount();
 
   return (
     <Dialog 
@@ -280,64 +262,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
 
             <Divider sx={{ my: 2 }} />
 
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                إعدادات التدوير
-              </Typography>
-              
-              <Alert severity="info" sx={{ mb: 2 }}>
-                التدوير يتم في نهاية السنة المالية.
-              </Alert>
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.rolloverEnabled}
-                    onChange={(e) => {
-                      handleInputChange('rolloverEnabled', e.target.checked);
-                      if (!e.target.checked) {
-                        handleInputChange('rolloverPercentage', '');
-                      }
-                    }}
-                    disabled={loading}
-                  />
-                }
-                label="تفعيل التدوير"
-              />
-
-              {formData.rolloverEnabled && (
-                <TextField
-                  fullWidth
-                  label="نسبة التدوير"
-                  type="number"
-                  inputProps={{ 
-                    min: 0,
-                    step: 1,
-                    onKeyPress: (e) => {
-                      if (e.key === '-' || e.key === '+') {
-                        e.preventDefault();
-                      }
-                    }
-                  }}
-                  value={formData.rolloverPercentage}
-                  onChange={(e) => {
-                    const value = Math.max(0, parseInt(e.target.value) || '');
-                    handleInputChange('rolloverPercentage', value);
-                  }}
-                  error={!!errors.rolloverPercentage}
-                  helperText={
-                    errors.rolloverPercentage ||
-                    (formData.rolloverPercentage > 0 && 
-                      `سيتم توزيع ${distributionAmount} ${settings?.defaultCurrency} على المساهمين وتدوير ${rolloverAmount} ${settings?.defaultCurrency}`)
-                  }
-                  disabled={loading}
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                  }}
-                  sx={{ mt: 2 }}
-                />
-              )}
-            </Box>
+          
           </Box>
         </DialogContent>
         

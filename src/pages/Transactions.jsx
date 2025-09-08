@@ -197,8 +197,8 @@ const Transactions = () => {
               </Typography>
               <Typography variant="h6">
                 إجمالي المبالغ: {convertAmount(amount, currency, currentCurrency).toLocaleString('en-US', {
-                  minimumFractionDigits:0,
-                  maximumFractionDigits:0
+                  minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
+                  maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
                 })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
               </Typography>
               <Typography variant="h6">
@@ -340,23 +340,23 @@ const Transactions = () => {
                 transaction.currency || "IQD",
                 currentCurrency
               ).toLocaleString('en-US', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
+                minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
+                maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
               })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
             </StyledTableCell>
             <StyledTableCell align="center">
               {transaction.currency || "IQD"}
             </StyledTableCell>
             <StyledTableCell align="center">
-              {transaction.withdrawSource === "AMOUNT" ? "رأس المال" : transaction.withdrawSource === "ROLLOVER" ? "مبلغ التدوير" : "غير محدد"}
+              {transaction.withdrawSource === "AMOUNT" ? "رأس المال" : transaction.withdrawSource === "ROLLOVER" ? "مبلغ التدوير" : "-"}
             </StyledTableCell>
             <StyledTableCell align="center">
-              {transaction.financialYear?.year || "غير محدد"} {transaction.financialYear?.periodName ? `- ${transaction.financialYear.periodName}` : ''}
+              {transaction.financialYear?.year || "-"} {transaction.financialYear?.periodName ? `- ${transaction.financialYear.periodName}` : ''}
             </StyledTableCell>
             <StyledTableCell align="center">
               {dayjs(transaction.date).isValid() 
                 ? dayjs(transaction.date).format('MMM DD, YYYY, hh:mm A')
-                : "غير محدد"}
+                : "-"}
             </StyledTableCell>
             {isAdmin && (
               <StyledTableCell align="center">

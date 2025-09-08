@@ -97,7 +97,7 @@ const Dashboard = () => {
   const [topInvestorsData, setTopInvestorsData] = useState([]);
   
   const isMobile = useMediaQuery('(max-width: 480px)');
-  const { formatAmount, currentCurrency, convertAmount } = useCurrencyManager();
+  const { currentCurrency, convertAmount } = useCurrencyManager();
   const contentRef = useRef(null);
   const filterSectionRef = useRef(null);
 
@@ -432,7 +432,7 @@ const Dashboard = () => {
     },
     {
       title: `إجمالي رأس المال`,
-      value: formatAmount(overviewData.totalAmount, currentCurrency),
+      value: convertAmount(overviewData.totalAmount, 'IQD', currentCurrency),
       icon: <DollarOutlined style={{ color: '#007bff', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.amount || 0,
       color: '#007bff',
@@ -440,7 +440,7 @@ const Dashboard = () => {
     },
     {
       title: `الأرباح المحققة`,
-      value: formatAmount(overviewData.totalProfit, currentCurrency),
+      value: convertAmount(overviewData.totalProfit, 'IQD', currentCurrency),
       icon: <RiseOutlined style={{ color: '#ffc107', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.profit || 0,
       color: '#ffc107',
@@ -482,7 +482,7 @@ const Dashboard = () => {
           label: function(context) {
             const label = context.dataset.label || '';
             const value = context.raw || 0;
-            return `${label}: ${formatAmount(value, currentCurrency)}`;
+            return `${label}: ${convertAmount(value, 'IQD', currentCurrency)}`;
           }
         }
       }
@@ -502,7 +502,7 @@ const Dashboard = () => {
           font: { family: 'Cairo' },
           color: '#6c757d',
           callback: function(value) {
-            return formatAmount(value, currentCurrency);
+          return convertAmount(value, 'IQD', currentCurrency);
           }
         },
         grid: {

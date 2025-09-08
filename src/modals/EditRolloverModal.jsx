@@ -9,35 +9,22 @@ import {
   Box,
   IconButton,
   CircularProgress,
-  InputAdornment,
-  Switch,
-  FormControlLabel,
-  Alert,
-  Typography
+  Alert
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import Api from '../services/api';
 import { toast } from 'react-toastify';
-import { useSettings } from '../hooks/useSettings';
 
 const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
   const [loading, setLoading] = useState(false);
-  const { data: settings } = useSettings();
-  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
-    rolloverEnabled: false,
-    rolloverPercentage: '',
-    totalProfit: '',
     periodName: ''
   });
 
   useEffect(() => {
     if (financialYear && open) {
       setFormData({
-        rolloverEnabled: financialYear.rolloverEnabled || false,
-        rolloverPercentage: financialYear.rolloverPercentage || '',
-        totalProfit: financialYear.totalProfit || '',
         periodName: financialYear.periodName || ''
       });
     }
@@ -46,23 +33,9 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.totalProfit || formData.totalProfit < 1) {
-      newErrors.totalProfit = 'يجب أن يكون الربح أكبر من 0';
-    }
     if (!formData.periodName.trim()) {
       newErrors.periodName = 'اسم الفترة مطلوب';
     }
-    if (formData.rolloverEnabled) {
-      if (!formData.rolloverPercentage) {
-        newErrors.rolloverPercentage = 'نسبة التدوير مطلوبة';
-      } else if (formData.rolloverPercentage < 1) {
-        newErrors.rolloverPercentage = 'يجب أن تكون النسبة أكبر من 0';
-      } else if (formData.rolloverPercentage > 100) {
-        newErrors.rolloverPercentage = 'يجب أن تكون النسبة أقل من أو تساوي 100';
-      }
-    }
-
-    setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
@@ -76,9 +49,6 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
     setLoading(true);
     try {
       await Api.put(`/api/financial-years/${financialYear.id}`, {
-        rolloverEnabled: formData.rolloverEnabled,
-        rolloverPercentage: formData.rolloverPercentage,
-        totalProfit: formData.totalProfit,
         periodName: formData.periodName
       });
       toast.success('تم تحديث إعدادات التدوير بنجاح');
@@ -95,26 +65,11 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
   const handleClose = () => {
     if (!loading) {
       setFormData({
-        rolloverEnabled: false,
-        rolloverPercentage: '',
-        totalProfit: '',
         periodName: ''
       });
-      setErrors({});
       onClose();
     }
   };
-
-  const calculateRolloverAmount = () => {
-    if (!formData.rolloverEnabled || !formData.totalProfit || !formData.rolloverPercentage) {
-      return { rolloverAmount: 0, distributionAmount: 0 };
-    }
-    const rolloverAmount = (formData.totalProfit * formData.rolloverPercentage) / 100;
-    const distributionAmount = formData.totalProfit - rolloverAmount;
-    return { rolloverAmount, distributionAmount };
-  };
-
-  const { rolloverAmount, distributionAmount } = calculateRolloverAmount();
 
   return (
     <Dialog 
@@ -141,7 +96,7 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AccountBalanceIcon />
-          <span>تعديل إعدادات التدوير</span>
+          <span>تعديل السنة المالية</span>
         </Box>
         <IconButton 
           onClick={handleClose}
@@ -162,7 +117,7 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
             mx: 'auto'
           }}>
             <Alert severity="info" sx={{ mb: 2 }}>
-              يمكنك تعديل إعدادات التدوير للسنة المالية {financialYear?.year} في حاله انها محسوبة.
+              يمكنك تعديل السنة المالية {financialYear?.year} في حاله انها محسوبة.
             </Alert>
 
             <TextField
@@ -172,87 +127,6 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
               onChange={(e) => setFormData(prev => ({ ...prev, periodName: e.target.value }))}
               disabled={loading}
             />
-
-            <TextField
-              fullWidth
-              label="إجمالي الربح"
-              type="number"
-              value={formData.totalProfit}
-              onChange={(e) => {
-                const value = Math.max(0, parseFloat(e.target.value) || '');
-                setFormData(prev => ({
-                  ...prev,
-                  totalProfit: value
-                }));
-              }}
-              error={!!errors.totalProfit}
-              helperText={errors.totalProfit}
-              disabled={loading}
-              InputProps={{
-                endAdornment: <InputAdornment position="end">{settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</InputAdornment>,
-              }}
-            />
-
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.rolloverEnabled}
-                  onChange={(e) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      rolloverEnabled: e.target.checked,
-                      rolloverPercentage: e.target.checked ? prev.rolloverPercentage : ''
-                    }));
-                  }}
-                  disabled={loading}
-                />
-              }
-              label="تفعيل التدوير"
-            />
-
-            {formData.rolloverEnabled && (
-              <TextField
-                fullWidth
-                label="نسبة التدوير"
-                type="number"
-                inputProps={{ 
-                  min: 0,
-                  max: 100,
-                  step: 1,
-                  onKeyPress: (e) => {
-                    if (e.key === '-' || e.key === '+') {
-                      e.preventDefault();
-                    }
-                  }
-                }}
-                value={formData.rolloverPercentage}
-                onChange={(e) => {
-                  const value = Math.max(0, Math.min(100, parseInt(e.target.value) || ''));
-                  setFormData(prev => ({
-                    ...prev,
-                    rolloverPercentage: value
-                  }));
-                }}
-                error={!!errors.rolloverPercentage}
-                helperText={
-                  errors.rolloverPercentage ||
-                  (formData.rolloverPercentage > 0 && formData.totalProfit && 
-                    `سيتم توزيع ${distributionAmount.toLocaleString()} ${settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'} على المساهمين وتدوير ${rolloverAmount.toLocaleString()} ${settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}`)
-                }
-                disabled={loading}
-                InputProps={{
-                  endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                }}
-              />
-            )}
-            
-            {financialYear && (
-              <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-                <Typography variant="body2">
-                  الحالة الحالية: {financialYear.rolloverEnabled ? `مفعل (${financialYear.rolloverPercentage}%)` : 'غير مفعل'}
-                </Typography>
-              </Box>
-            )}
           </Box>
         </DialogContent>
         

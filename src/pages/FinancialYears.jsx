@@ -160,14 +160,14 @@ const FinancialYear = () => {
 
   const getStatusChip = (status) => {
     const statusConfig = {
-      calculated: { 
-        label: 'محسوبة', 
+      PENDING: { 
+        label: 'في الانتظار', 
         color: 'info',
         icon: <BarChartOutlined style={{marginRight: '5px'}} />
       },
-      distributed: { 
+      DISTRIBUTED: { 
         label: 'موزعة', 
-        color: 'success',
+        color: 'warning',
         icon: <GiftOutlined style={{marginRight: '5px'}} />
       }
     };
@@ -285,8 +285,8 @@ const FinancialYear = () => {
                     </StyledTableCell>
                     <StyledTableCell align="center">
                       {convertAmount(year.totalProfit, 'IQD', currentCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits:0,
-                        maximumFractionDigits:0
+                        minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
+                        maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
                       })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
                     </StyledTableCell>
                     <StyledTableCell align="center">{getStatusChip(year.status)}</StyledTableCell>
@@ -326,7 +326,7 @@ const FinancialYear = () => {
           open={Boolean(anchorEl)}
           onClose={() => setAnchorEl(null)}
         >
-          {selectedYearForMenu?.status === 'calculated' && (
+          {selectedYearForMenu?.status === 'PENDING' && (
             <MenuItem onClick={() => {
               handleEditRollover(selectedYearForMenu);
               setAnchorEl(null);
@@ -336,7 +336,7 @@ const FinancialYear = () => {
             </MenuItem>
           )}
 
-          {['calculated', 'distributed'].includes(selectedYearForMenu?.status) && (
+          {['PENDING', 'DISTRIBUTED'].includes(selectedYearForMenu?.status) && (
             <MenuItem onClick={() => {
               handleViewDistributions(selectedYearForMenu);
               setAnchorEl(null);
@@ -346,7 +346,7 @@ const FinancialYear = () => {
             </MenuItem>
           )}
 
-          {selectedYearForMenu?.status === 'calculated' && (
+          {selectedYearForMenu?.status === 'PENDING' && (
             <MenuItem onClick={() => {
               handleApprove(selectedYearForMenu.id);
               setAnchorEl(null);
@@ -356,7 +356,7 @@ const FinancialYear = () => {
             </MenuItem>
           )}
 
-          {['calculated', 'distributed'].includes(selectedYearForMenu?.status) && (
+          {['PENDING', 'DISTRIBUTED'].includes(selectedYearForMenu?.status) && (
             <MenuItem onClick={() => {
               handleDelete(selectedYearForMenu.id);
               setAnchorEl(null);

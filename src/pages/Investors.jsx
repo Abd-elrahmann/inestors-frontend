@@ -330,7 +330,7 @@ const Investors = () => {
                         maximumFractionDigits:0
                       })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
                     </StyledTableCell>
-                    <StyledTableCell colSpan={4} />
+                    <StyledTableCell colSpan={5} />
                   </StyledTableRow>
                 </>
               )}
