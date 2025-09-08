@@ -251,7 +251,7 @@ const FinancialYear = () => {
                 <StyledTableCell align="center">السنة</StyledTableCell>
                 <StyledTableCell align="center">اسم الفترة</StyledTableCell>
                 <StyledTableCell align="center">الفترة الزمنية</StyledTableCell>
-                <StyledTableCell align="center">إجمالي الأرباح ({currentCurrency === 'USD' ? '$' : 'د.ع'})</StyledTableCell>
+                <StyledTableCell align="center"> مبلغ التوزيع ({currentCurrency === 'USD' ? '$' : 'د.ع'})</StyledTableCell>
                 <StyledTableCell align="center">الحالة</StyledTableCell>
                 <StyledTableCell align="center">حالة التدوير</StyledTableCell>
                 <StyledTableCell align="center">الإجراءات</StyledTableCell>

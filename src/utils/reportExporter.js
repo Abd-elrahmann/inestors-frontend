@@ -1,13 +1,12 @@
 import * as XLSX from 'xlsx';
 import { formatCurrency, globalCurrencyManager } from "./globalCurrencyManager";
-import Logo from '../assets/images/logo.webp'
 const hexToRgb = (hex) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? [
     parseInt(result[1], 16),
     parseInt(result[2], 16),
     parseInt(result[3], 16)
-  ] : [40, 167, 69];
+  ] : [40, 167, 69]; // Default to #28a745 if invalid
 };
 
 const headerColor = hexToRgb('#28a745');
@@ -20,7 +19,7 @@ export const exportAllInvestorsToPDF = async (data) => {
     ]);
 
     const doc = new jsPDFModule.default();
-    doc.addImage(Logo, 'PNG', 10, 10, 50, 50);
+
     doc.addFont('/assets/fonts/Amiri-Regular.ttf', 'Amiri', 'normal');
     doc.addFont('/assets/fonts/Amiri-Bold.ttf', 'Amiri', 'bold');
     doc.setFont('Amiri');
@@ -79,7 +78,6 @@ export const exportIndividualInvestorToPDF = async (data) => {
 
     const doc = new jsPDFModule.default();
 
-    doc.addImage(Logo, 'PNG', 10, 10, 50, 50);
     doc.addFont('/assets/fonts/Amiri-Regular.ttf', 'Amiri', 'normal');
     doc.addFont('/assets/fonts/Amiri-Bold.ttf', 'Amiri', 'bold');
     doc.setFont('Amiri');
@@ -214,7 +212,6 @@ export const exportTransactionsToPDF = async (data) => {
 
     const doc = new jsPDFModule.default();
 
-    doc.addImage(Logo, 'PNG', 10, 10, 50, 50);
     doc.addFont('/assets/fonts/Amiri-Regular.ttf', 'Amiri', 'normal');
     doc.addFont('/assets/fonts/Amiri-Bold.ttf', 'Amiri', 'bold');
     doc.setFont('Amiri');
@@ -271,16 +268,17 @@ export const exportFinancialYearToPDF = async (data) => {
 
     const doc = new jsPDFModule.default();
     
-    doc.addImage(Logo, 'PNG', 10, 10, 50, 50);
     doc.addFont('/assets/fonts/Amiri-Regular.ttf', 'Amiri', 'normal');
     doc.addFont('/assets/fonts/Amiri-Bold.ttf', 'Amiri', 'bold');
     doc.setFont('Amiri');
 
+    // عنوان التقرير
     doc.setFontSize(18);
     doc.text(`تقرير السنة المالية - ${data.periodName}`, doc.internal.pageSize.width / 2, 20, { align: 'center' });
     
     let startY = 30;
     
+    // Financial year information table
     const statusMap = {
       'calculated': 'محسوب',
       'distributed': 'موزع'
@@ -318,6 +316,7 @@ export const exportFinancialYearToPDF = async (data) => {
       }
     });
     
+    // Profit distributions table
     if (data.profitDistributions && data.profitDistributions.length > 0) {
       startY = doc.lastAutoTable.finalY + 20;
       
@@ -369,6 +368,7 @@ export const exportToExcel = (data, reportType) => {
   let filename = '';
   const currentCurrency = globalCurrencyManager.getCurrentDisplayCurrency();
 
+  // دالة لتنسيق رؤوس الجداول في Excel
   const createStyledHeader = (headers) => {
     return headers.map(header => ({
       v: header,
@@ -489,6 +489,7 @@ export const exportToExcel = (data, reportType) => {
   const workbook = XLSX.utils.book_new();
   const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
   
+  // تعيين اتجاه النص إلى RTL للخلايا
   if (!worksheet['!fullCells']) worksheet['!fullCells'] = [];
   for (const cell in worksheet) {
     if (cell[0] === '!') continue;

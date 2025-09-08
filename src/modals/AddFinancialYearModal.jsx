@@ -51,7 +51,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
     }
 
     if (!formData.totalProfit || formData.totalProfit < 1) {
-      newErrors.totalProfit = 'يجب أن يكون الربح أكبر من 0';
+      newErrors.totalProfit = 'يجب أن يكون مبلغ التوزيع أكبر من 0';
     }
 
     if (!formData.startDate) {
@@ -200,7 +200,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
             
             <TextField
               fullWidth
-              label="إجمالي الربح"
+              label="مبلغ التوزيع"
               type="number"
               inputProps={{ 
                 min: 0,
@@ -256,7 +256,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
               fullWidth
               label="الفترة"
               value={formData.endDate && formData.startDate ? 
-                `${Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24))} يوم` : ''}
+                `${Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)) + 1} يوم` : ''}
               disabled={true}
             />
 
