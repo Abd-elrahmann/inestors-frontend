@@ -12,7 +12,8 @@ import {
   Stack,
   InputBase,
   Fab,
-  useMediaQuery
+  useMediaQuery,
+  Tooltip
 } from "@mui/material";
 import {
   EditOutlined,
@@ -22,6 +23,7 @@ import {
   FilterOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
+import { QuestionMark } from "@mui/icons-material";
 import { Spin } from "antd";
 import AddInvestorModal from "../modals/AddInvestorModal";
 import { RestartAltOutlined } from "@mui/icons-material";
@@ -35,6 +37,7 @@ import DeleteModal from "../modals/DeleteModal";
 import InvestorSearchModal from "../modals/InvestorSearchModal";
 import { Link } from "react-router-dom";
 import { debounce } from 'lodash';
+import * as XLSX from 'xlsx';
 
 const Investors = () => {
   const queryClient = useQueryClient();
@@ -139,6 +142,24 @@ const Investors = () => {
     queryClient.invalidateQueries("investors");
   };
 
+  const handleDownloadTemplate = () => {
+    const template = [
+      ['الاسم الكامل', 'رقم الهاتف', 'المبلغ', 'تاريخ الانضمام'],
+      ['محمد احمد', '07700000000', '1000000', '2023-01-01']
+    ];
+    
+    // const csvContent = template.map(row => row.join(',')).join('\n');
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet(template);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'التقرير');
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'investors_template.xlsx';
+    link.click();
+  };
+
   const filteredInvestors = investorsData?.investors || [];
 
   return (
@@ -155,22 +176,30 @@ const Investors = () => {
         mt={5}
         spacing={2}
       >
-        <Fab
-          color="primary"
-          variant="extended"
-          onClick={handleAddInvestor}
-          sx={{
-            width: isMobile ? '100%' : '150px',
-            borderRadius: '8px',
-            fontWeight: 'bold',
-            textTransform: 'none',
-            height: '40px',
-            order: isMobile ? 1 : 0
-          }}
-        >
-          <PlusOutlined style={{ marginLeft: 8 }} />
-          إضافة مستثمر
-        </Fab>
+        <Stack direction="row" spacing={1}>
+          <Fab
+            color="primary"
+            variant="extended"
+            onClick={handleAddInvestor}
+            sx={{
+              width: isMobile ? '100%' : '150px',
+              borderRadius: '8px',
+              fontWeight: 'bold',
+              textTransform: 'none',
+              height: '40px',
+              order: isMobile ? 1 : 0
+            }}
+          >
+            <PlusOutlined style={{ marginLeft: 8 }} />
+            إضافة مستثمر
+          </Fab>
+
+          <Tooltip title="تحميل نموذج المستثمرين">
+            <IconButton onClick={handleDownloadTemplate}>
+              <QuestionMark style={{marginRight: '10px'}} />
+            </IconButton>
+          </Tooltip>
+        </Stack>
 
         <Stack 
           direction={isMobile ? 'column' : 'row'} 
