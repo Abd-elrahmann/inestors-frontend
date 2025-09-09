@@ -43,13 +43,13 @@ const Investors = () => {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedInvestor, setSelectedInvestor] = useState(null);
-  const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
   const [importLoading, setImportLoading] = useState(false);
+  const [page, setPage] = useState(1);
   const { data: settings } = useSettings();
   const isMobile = useMediaQuery('(max-width: 480px)');
 
@@ -63,6 +63,7 @@ const Investors = () => {
     async () => {
       const params = {
         limit: rowsPerPage,
+        page: page,
         search: searchQuery,
         ...advancedFilters,
       };
@@ -76,7 +77,7 @@ const Investors = () => {
       gcTime: 1000 * 60 * 5,
     }
   );
-
+  const totalPages = investorsData?.totalPages || 0;
   // Delete investor mutation
   const deleteInvestorMutation = useMutation(
     (investorId) => Api.delete(`/api/investors/${investorId}`),
@@ -406,14 +407,14 @@ const Investors = () => {
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         {convertCurrency(investor.amount, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
-                          maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         {convertCurrency(investor.rollover || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
-                          maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">{`${investor.sharePercentage.toFixed(
@@ -480,13 +481,18 @@ const Investors = () => {
           </Table>
           <TablePagination
             component="div"
-            count={investorsData?.totalInvestors || 0}
+            count={totalPages * rowsPerPage}
             page={page - 1}
-            onPageChange={(e, newPage) => setPage(newPage + 1)}
+            onPageChange={(e, newPage) => {
+              setPage(newPage + 1);
+            }}
             rowsPerPage={rowsPerPage}
-            rowsPerPageOptions={[5, 10, 20]}
+            rowsPerPageOptions={[5, 10, 20, 50, 100]}
             onRowsPerPageChange={handleChangeRowsPerPage}
             labelRowsPerPage="عدد الصفوف في الصفحة"
+            labelDisplayedRows={({ from, to, count }) => 
+              `${from}–${to} من ${count !== -1 ? count : `أكثر من ${to}`}`
+            }
           />
         </TableContainer>
 

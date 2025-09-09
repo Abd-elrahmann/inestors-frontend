@@ -52,7 +52,7 @@ const routes = [
     protected: true,
   },
   {
-    path: '/transactions/:userId',
+    path: '/transactions/:investorId',
     element: Transactions,
     protected: true,
   },

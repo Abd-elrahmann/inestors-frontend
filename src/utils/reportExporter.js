@@ -40,7 +40,7 @@ export const exportAllInvestorsToPDF = async (data, settings) => {
       align: 'center'
     });
 
-    const currentCurrency = settings?.defaultCurrency || 'IQD';
+    const currentCurrency = settings?.defaultCurrency || 'USD';
     
     const headers = [
       'الاسم', 
@@ -54,8 +54,8 @@ export const exportAllInvestorsToPDF = async (data, settings) => {
     const rows = data.map(investor => [
       investor.fullName,
       investor.phone,
-      formatCurrency(investor.amount || 0, 'IQD', currentCurrency),
-      formatCurrency(investor.rollover_amount || 0, 'IQD', currentCurrency),
+      formatCurrency(investor.amount || 0, 'USD', currentCurrency),
+      formatCurrency(investor.rollover_amount || 0, 'USD', currentCurrency),
       `${(investor.sharePercentage || 0).toFixed(2)}%`,
       investor.createdAt
     ]);
@@ -110,17 +110,17 @@ export const exportIndividualInvestorToPDF = async (data, settings) => {
 
     let startY = 40;
     
-    const currentCurrency = settings?.defaultCurrency || 'IQD';
+    const currentCurrency = settings?.defaultCurrency || 'USD';
     
-    const infoHeaders = ['المعلومة', 'القيمة'];
-    const infoRows = [
-      ['الاسم', data.fullName],
-      ['الهاتف', data.phone],
-      [`مبلغ المساهمة`, formatCurrency(data.amount || 0, 'IQD', currentCurrency)],
-      [`مبلغ التدوير`, formatCurrency(data.rollover_amount || 0, 'IQD', currentCurrency)],
-      ['نسبة المساهمة (%)', (data.sharePercentage || 0).toFixed(2)],
-      ['تاريخ الانضمام', data.createdAt]
-    ];
+    const infoHeaders = ['الاسم', 'الهاتف', 'مبلغ المساهمة', 'مبلغ التدوير', 'نسبة المساهمة (%)', 'تاريخ الانضمام'];
+    const infoRows = [[
+      data.fullName,
+      data.phone,
+      formatCurrency(data.amount || 0, 'USD', currentCurrency),
+      formatCurrency(data.rollover_amount || 0, 'USD', currentCurrency),
+      (data.sharePercentage || 0).toFixed(2),
+      data.createdAt
+    ]];
     
     autoTableModule.default(doc, {
       head: [infoHeaders],
@@ -153,8 +153,8 @@ export const exportIndividualInvestorToPDF = async (data, settings) => {
       const transHeaders = ['النوع', `المبلغ`, 'العملة', 'مصدر العملية', 'السنة المالية', 'التاريخ'];
       const transRows = data.transactions.map(transaction => [
         formatTransactionType(transaction.type),
-        formatCurrency(transaction.amount || 0, transaction.currency || 'IQD', currentCurrency),
-        transaction.currency || 'IQD',
+        formatCurrency(transaction.amount || 0, transaction.currency || 'USD', currentCurrency),
+        transaction.currency || 'USD',
         transaction.withdrawSource || 'غير محدد',
         transaction.financialYear ? `${transaction.financialYear.year || 'غير محدد'} ${transaction.financialYear.periodName ? `- ${transaction.financialYear.periodName}` : ''}` : 'غير محدد',
         transaction.date
@@ -201,11 +201,11 @@ export const exportIndividualInvestorToPDF = async (data, settings) => {
       
       const distRows = data.profitDistributions.map(distribution => [
         `${distribution.financialYear.year} - ${distribution.financialYear.periodName}`,
-        formatCurrency(distribution.amount || 0, 'IQD', currentCurrency),
-        distribution.currency || 'IQD',
+        formatCurrency(distribution.amount || 0, 'USD', currentCurrency),
+        distribution.currency || 'USD',
         (distribution.percentage || 0).toFixed(2),
-        formatCurrency(distribution.dailyProfit || 0, 'IQD', currentCurrency),
-        formatCurrency(distribution.financialYear.totalRollover || 0, 'IQD', currentCurrency),
+        formatCurrency(distribution.dailyProfit || 0, 'USD', currentCurrency),
+        formatCurrency(distribution.financialYear.totalRollover || 0, 'USD', currentCurrency),
         distribution.financialYear.distributedAt
       ]);
 
@@ -254,7 +254,7 @@ export const exportTransactionsToPDF = async (data, settings) => {
     doc.setFontSize(18);
     doc.text('تقرير المعاملات', doc.internal.pageSize.width / 2, 20, { align: 'center' });
     
-    const currentCurrency = settings?.defaultCurrency || 'IQD';
+    const currentCurrency = settings?.defaultCurrency || 'USD';
     
     const headers = [
       'المستثمر', 
@@ -269,8 +269,8 @@ export const exportTransactionsToPDF = async (data, settings) => {
     const rows = data.map(transaction => [
       transaction.investors?.fullName || 'غير معروف',
       formatTransactionType(transaction.type),
-      formatCurrency(transaction.amount || 0, transaction.currency || 'IQD', currentCurrency),
-      transaction.currency || 'IQD',
+      formatCurrency(transaction.amount || 0, transaction.currency || 'USD', currentCurrency),
+      transaction.currency || 'USD',
       transaction.withdrawSource || 'غير محدد',
       transaction.financialYear ? `${transaction.financialYear.year || 'غير محدد'} ${transaction.financialYear.periodName ? `- ${transaction.financialYear.periodName}` : ''}` : 'غير محدد',
       transaction.date
@@ -326,7 +326,7 @@ export const exportFinancialYearToPDF = async (data, settings) => {
     
     let startY = 30;
     
-    const currentCurrency = settings?.defaultCurrency || 'IQD';
+    const currentCurrency = settings?.defaultCurrency || 'USD';
     
     // Financial year information table
     const statusMap = {
@@ -334,15 +334,15 @@ export const exportFinancialYearToPDF = async (data, settings) => {
       'DISTRIBUTED': 'موزع'
     };
     
-    const infoHeaders = ['المعلومة', 'القيمة'];
-    const infoRows = [
-      ['السنة', data.year],
-      ['الفترة', data.periodName],
-      [`مبلغ التوزيع`, formatCurrency(data.totalProfit || 0, 'IQD', currentCurrency)],
-      ['الحالة', statusMap[data.status] || data.status],
-      ['تاريخ البداية', data.startDate],
-      ['تاريخ النهاية', data.endDate]
-    ];
+    const infoHeaders = ['السنة', 'الفترة', 'مبلغ التوزيع', 'الحالة', 'تاريخ البداية', 'تاريخ النهاية'];
+    const infoRows = [[
+      data.year,
+      data.periodName,
+      formatCurrency(data.totalProfit || 0, 'USD', currentCurrency),
+      statusMap[data.status] || data.status,
+      data.startDate,
+      data.endDate
+    ]];
     
     autoTableModule.default(doc, {
       head: [infoHeaders],
@@ -383,8 +383,8 @@ export const exportFinancialYearToPDF = async (data, settings) => {
       
       const distRows = data.profitDistributions.map(distribution => [
         distribution.investors?.fullName || 'غير معروف',
-        formatCurrency(distribution.amount || 0, 'IQD', currentCurrency),
-        formatCurrency(distribution.financialYear?.totalProfit || 0, 'IQD', currentCurrency),
+        formatCurrency(distribution.amount || 0, 'USD', currentCurrency),
+        formatCurrency(distribution.financialYear?.totalProfit || 0, 'USD', currentCurrency),
         distribution.investors?.createdAt || 'غير محدد',
         data.distributedAt || 'غير محدد'
       ]);
@@ -421,7 +421,7 @@ export const exportFinancialYearToPDF = async (data, settings) => {
 export const exportToExcel = (data, reportType, settings) => {
   let worksheetData = [];
   let filename = '';
-  const currentCurrency = settings?.defaultCurrency || 'IQD';
+  const currentCurrency = settings?.defaultCurrency || 'USD';
 
   // دالة لتنسيق رؤوس الجداول في Excel
   const createStyledHeader = (headers) => {
@@ -452,8 +452,8 @@ export const exportToExcel = (data, reportType, settings) => {
         ...data.map(investor => [
           investor.fullName,
           investor.phone,
-          formatCurrency(investor.amount || 0, 'IQD', currentCurrency),
-          formatCurrency(investor.rollover_amount || 0, 'IQD', currentCurrency),
+          formatCurrency(investor.amount || 0, 'USD', currentCurrency),
+          formatCurrency(investor.rollover_amount || 0, 'USD', currentCurrency),
           `${(investor.sharePercentage || 0).toFixed(2)}%`,
           investor.createdAt
         ])
@@ -463,20 +463,22 @@ export const exportToExcel = (data, reportType, settings) => {
     case 'individual':
       filename = `تقرير-المستثمر-${data.fullName.replace(/\s+/g, '-')}.xlsx`;
       worksheetData = [
-        createStyledHeader(['معلومات المستثمر']),
-        ['الاسم', data.fullName],
-        ['الهاتف', data.phone],
-        ['مبلغ المساهمة', formatCurrency(data.amount || 0, 'IQD', currentCurrency)],
-        ['مبلغ التدوير', formatCurrency(data.rollover_amount || 0, 'IQD', currentCurrency)],
-        ['نسبة المساهمة', `${(data.sharePercentage || 0).toFixed(2)}%`],
-        ['تاريخ الإنشاء', data.createdAt],
+        createStyledHeader(['الاسم', 'الهاتف', 'مبلغ المساهمة', 'مبلغ التدوير', 'نسبة المساهمة', 'تاريخ الإنشاء']),
+        [
+          data.fullName,
+          data.phone,
+          formatCurrency(data.amount || 0, 'USD', currentCurrency),
+          formatCurrency(data.rollover_amount || 0, 'USD', currentCurrency),
+          `${(data.sharePercentage || 0).toFixed(2)}%`,
+          data.createdAt
+        ],
         [],
         createStyledHeader(['المعاملات']),
         createStyledHeader(['النوع', 'المبلغ', 'العملة', 'مصدر العملية', 'السنة المالية', 'التاريخ']),
         ...(data.transactions || []).map(transaction => [
           formatTransactionType(transaction.type),
-          formatCurrency(transaction.amount || 0, transaction.currency || 'IQD', currentCurrency),
-          transaction.currency || 'IQD',
+          formatCurrency(transaction.amount || 0, transaction.currency || 'USD', currentCurrency),
+          transaction.currency || 'USD',
           transaction.withdrawSource || 'غير محدد',
           transaction.financialYear ? `${transaction.financialYear.year || 'غير محدد'} ${transaction.financialYear.periodName ? `- ${transaction.financialYear.periodName}` : ''}` : 'غير محدد',
           transaction.date
@@ -486,11 +488,11 @@ export const exportToExcel = (data, reportType, settings) => {
         createStyledHeader(['السنة المالية', 'رأس المال', 'العملة', 'نسبة المساهمة', 'الربح اليومي', 'إجمالي الربح', 'تاريخ التوزيع']),
         ...(data.profitDistributions || []).map(distribution => [
           `${distribution.financialYear.year} - ${distribution.financialYear.periodName}`,
-          formatCurrency(distribution.amount || 0, 'IQD', currentCurrency),
-          distribution.currency || 'IQD',
+          formatCurrency(distribution.amount || 0, 'USD', currentCurrency),
+          distribution.currency || 'USD',
           `${(distribution.percentage || 0).toFixed(2)}%`,
-          formatCurrency(distribution.dailyProfit || 0, 'IQD', currentCurrency),
-          formatCurrency(distribution.financialYear.totalRollover || 0, 'IQD', currentCurrency),
+          formatCurrency(distribution.dailyProfit || 0, 'USD', currentCurrency),
+          formatCurrency(distribution.financialYear.totalRollover || 0, 'USD', currentCurrency),
           distribution.financialYear.distributedAt
         ])
       ];
@@ -503,8 +505,8 @@ export const exportToExcel = (data, reportType, settings) => {
         ...data.map(transaction => [
           transaction.investors?.fullName || 'غير معروف',
           formatTransactionType(transaction.type),
-          formatCurrency(transaction.amount || 0, transaction.currency || 'IQD', currentCurrency),
-          transaction.currency || 'IQD',
+          formatCurrency(transaction.amount || 0, transaction.currency || 'USD', currentCurrency),
+          transaction.currency || 'USD',
           transaction.withdrawSource || 'غير محدد',
           transaction.financialYear ? `${transaction.financialYear.year || 'غير محدد'} ${transaction.financialYear.periodName ? `- ${transaction.financialYear.periodName}` : ''}` : 'غير محدد',
           transaction.date
@@ -520,20 +522,22 @@ export const exportToExcel = (data, reportType, settings) => {
       };
         
       worksheetData = [
-        createStyledHeader(['معلومات السنة المالية']),
-        ['السنة', data.year],
-        ['الفترة', data.periodName],
-        ['مبلغ التوزيع', formatCurrency(data.totalProfit || 0, 'IQD', currentCurrency)],
-        ['الحالة', statusMap[data.status] || data.status],
-        ['تاريخ البداية', data.startDate],
-        ['تاريخ النهاية', data.endDate],
+        createStyledHeader(['السنة', 'الفترة', 'مبلغ التوزيع', 'الحالة', 'تاريخ البداية', 'تاريخ النهاية']),
+        [
+          data.year,
+          data.periodName,
+          formatCurrency(data.totalProfit || 0, 'USD', currentCurrency),
+          statusMap[data.status] || data.status,
+          data.startDate,
+          data.endDate
+        ],
         [],
         createStyledHeader(['توزيعات الأرباح']),
         createStyledHeader(['المستثمر', 'رأس المال', 'الربح', 'تاريخ الانضمام', 'تاريخ التوزيع']),
         ...(data.profitDistributions || []).map(distribution => [
           distribution.investors?.fullName || 'غير معروف',
-          formatCurrency(distribution.amount || 0, 'IQD', currentCurrency),
-          formatCurrency(distribution.financialYear?.totalProfit || 0, 'IQD', currentCurrency),
+          formatCurrency(distribution.amount || 0, 'USD', currentCurrency),
+          formatCurrency(distribution.financialYear?.totalProfit || 0, 'USD', currentCurrency),
           distribution.investors?.createdAt || 'غير محدد',
           data.distributedAt || 'غير محدد'
         ])

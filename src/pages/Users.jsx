@@ -136,14 +136,14 @@ const Users = () => {
   const fetchUsersQuery = () => {
     queryClient.invalidateQueries("users");
   };
-
+  const totalPages = usersData?.totalPages || 0;
   const filteredUsers = usersData?.users || [];
 
   return (
     <>
       <Helmet>
-        <title>المستخدمين</title>
-        <meta name="description" content="المستخدمين في نظام إدارة المساهمين" />
+        <title>المديرين</title>
+        <meta name="description" content="المديرين في نظام إدارة المساهمين" />
       </Helmet>
       <Box className="content-area">
         <Stack direction={isMobile ? 'column' : 'row'} justifyContent="space-between" alignItems="center" mb={1} mr={1} mt={5} spacing={2}>
@@ -258,7 +258,7 @@ const Users = () => {
           </Table>
           <TablePagination
             component="div"
-            count={usersData?.totalUsers || 0}
+            count={totalPages*rowsPerPage} 
             page={page - 1}
             onPageChange={(e, newPage) => setPage(newPage + 1)}
             rowsPerPage={rowsPerPage}

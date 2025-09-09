@@ -47,7 +47,7 @@ import { useSettings } from '../hooks/useSettings';
 import dayjs from 'dayjs';
 import { useQuery, useQueryClient } from 'react-query';
 import debounce from 'lodash/debounce';
-
+import DeleteModal from '../modals/DeleteModal';
 const FinancialYear = () => {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -56,6 +56,7 @@ const FinancialYear = () => {
   const [distributionModalOpen, setDistributionModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [editRolloverModalOpen, setEditRolloverModalOpen] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedYear, setSelectedYear] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedYearForMenu, setSelectedYearForMenu] = useState(null);
@@ -96,6 +97,8 @@ const FinancialYear = () => {
       staleTime: 30000
     }
   );
+
+  const totalPages = yearsData?.totalPages || 0;
 
   const { data: distributionsData } = useQuery(
     ['distributions', selectedYear?.id],
@@ -300,7 +303,7 @@ const FinancialYear = () => {
           </Table>
           <TablePagination
             component="div"
-            count={yearsData?.totalPages || 0}
+            count={totalPages*rowsPerPage} 
             page={page - 1}
             onPageChange={(e, newPage) => setPage(newPage + 1)}
             rowsPerPage={rowsPerPage}
@@ -348,7 +351,8 @@ const FinancialYear = () => {
 
           {['PENDING', 'DISTRIBUTED'].includes(selectedYearForMenu?.status) && (
             <MenuItem onClick={() => {
-              handleDelete(selectedYearForMenu.id);
+              setShowDeleteModal(true);
+              setSelectedYear(selectedYearForMenu); 
               setAnchorEl(null);
             }}>
               <DeleteOutlined style={{marginLeft: 8,color:'red'}} />
@@ -394,6 +398,16 @@ const FinancialYear = () => {
           onSuccess={() => {
             queryClient.invalidateQueries('financialYears');
           }}
+        />
+
+        <DeleteModal
+          open={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={() => handleDelete(selectedYear.id)}
+          title="حذف السنة المالية"
+          message={`هل أنت متأكد من حذف السنة المالية؟`}
+          isLoading={isLoading}
+          ButtonText="حذف"
         />
       </Box>
     </>

@@ -42,7 +42,7 @@ import { debounce } from 'lodash';
 import { useSettings } from "../hooks/useSettings";
 
 const Transactions = () => {
-  const { userId } = useParams();
+  const { investorId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useUser();
@@ -77,11 +77,11 @@ const Transactions = () => {
     isLoading,
     isFetching,
   } = useQuery(
-    ["transactions", page, rowsPerPage, searchQuery, advancedFilters, userId],
+    ["transactions", page, rowsPerPage, searchQuery, advancedFilters, investorId],
     async () => {
       const params = {
         limit: rowsPerPage,
-        ...(userId ? { userId } : isNaN(searchQuery) ? { search: searchQuery } : { userId: searchQuery }),
+        ...(investorId ? { investorId } : isNaN(searchQuery) ? { search: searchQuery } : { investorId: searchQuery }),
         ...advancedFilters,
       };
 
@@ -182,8 +182,8 @@ const Transactions = () => {
   };
 
   const transactions = transactionsData?.transactions || [];
-  const totalTransactions = transactionsData?.totalTransactions || 0;
-  const investorDetails = transactions[0]?.user;
+  const totalPages = transactionsData?.totalPages || 0;
+  const investorDetails = transactions[0]?.investors;
   const amount = transactions.reduce((total, transaction) => {
     return total + transaction.amount;
   }, 0);
@@ -198,7 +198,7 @@ const Transactions = () => {
         <meta name="description" content="المعاملات في نظام إدارة المساهمين" />
       </Helmet>
       <Box className="content-area">
-        {userId && (
+        {investorId && (
           <Card sx={{ p: 2, mb: 3, mt: 2 }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="h6">
@@ -349,8 +349,8 @@ const Transactions = () => {
                 transaction.currency || "USD",
                 settings?.defaultCurrency
               ).toLocaleString('en-US', {
-                minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
-                maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
               })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
             </StyledTableCell>
             <StyledTableCell align="center">
@@ -386,7 +386,7 @@ const Transactions = () => {
   {isAdmin && (
     <TablePagination
       component="div"
-      count={totalTransactions}
+      count={totalPages*rowsPerPage} 
       page={page - 1}
       onPageChange={(e, newPage) => setPage(newPage + 1)}
       rowsPerPage={rowsPerPage}

@@ -31,8 +31,8 @@ const FinancialSearchModal = ({ open, onClose, onApplyFilters, initialFilters = 
   });
 
   const statusOptions = [
-    { value: 'PENDING', label: 'في الانتظار' },
-    { value: 'DISTRIBUTED', label: 'موزعة' },
+    { value: 'PENDING', label: 'قيد التوزيع' },
+    { value: 'DISTRIBUTED', label: 'موزع' },
   ];
   const years = Array.from({length: 16}, (_, i) => 2025 + i);
 
