@@ -84,7 +84,7 @@ const FinancialYear = () => {
     isFetching 
   } = useQuery(
     ['financialYears', page, rowsPerPage, searchTerm, filters, settings?.USDtoIQD],
-    () => Api.get(`/api/financial-years/${page}`, {
+    () => Api.get(`/api/financial-years/all/${page}`, {
       params: {
         limit: rowsPerPage,
         search: searchTerm.trim(),
