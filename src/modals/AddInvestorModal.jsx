@@ -18,7 +18,7 @@ import { useCurrencyManager } from '../utils/globalCurrencyManager';
 import { toast } from 'react-toastify';
 import PhoneIcon from '@mui/icons-material/Phone';
 
-const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'normal', investorData = null }) => {
+const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorData = null }) => {
   const [loading, setLoading] = useState(false);
   const { currentCurrency, convertAmount } = useCurrencyManager();
   const [formData, setFormData] = useState({
@@ -29,11 +29,11 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
   });
 
   useEffect(() => {
-    if (mode === 'fromUser' && userData) {
+    if (mode === 'fromUser') {
       setFormData({
-        id: userData.id || '',
-        fullName: userData.fullName || userData.userName || '',
-        phone: userData.phone || '',
+        id: '',
+        fullName: '',
+        phone: '',
         amount: '',
         createdAt: ''
       });
@@ -59,7 +59,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, userData, investorData, currentCurrency, open]); // Added open dependency to reset form when modal opens
+  }, [mode, investorData, currentCurrency, open]); // Added open dependency to reset form when modal opens
 
   const [errors, setErrors] = useState({});
 
@@ -213,7 +213,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, userData = null, mode = 'n
               label="المستثمر المرتبط"
               value={formData.id}
               onChange={(e) => handleInputChange('id', e.target.value)}
-              error={!!errors.userId} 
+              error={!!errors.id} 
               helperText={errors.id}
               disabled={mode === 'edit'}
               InputProps={{

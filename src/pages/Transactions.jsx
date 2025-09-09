@@ -31,7 +31,6 @@ import {
 import AddTransactionModal from "../modals/AddTransactionModal";
 import { StyledTableCell, StyledTableRow } from "../styles/TableLayout";
 import Api from "../services/api";
-import { useCurrencyManager } from "../utils/globalCurrencyManager";
 import { Helmet } from "react-helmet-async";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import DeleteModal from "../modals/DeleteModal";
@@ -59,8 +58,18 @@ const Transactions = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
-  const { data: settingsData = {} } = useSettings();
-  const { currentCurrency, convertAmount } = useCurrencyManager();
+  const { data: settings } = useSettings();
+  const convertCurrency = (amount, fromCurrency, toCurrency) => {
+    if (fromCurrency === toCurrency) return amount;
+    if (!settings?.USDtoIQD) return amount;
+    
+    if (fromCurrency === 'IQD' && toCurrency === 'USD') {
+      return amount / settings.USDtoIQD;
+    } else if (fromCurrency === 'USD' && toCurrency === 'IQD') {
+      return amount * settings.USDtoIQD;
+    }
+    return amount;
+  };
   const isMobile = useMediaQuery('(max-width: 480px)');
   // Fetch transactions query
   const {
@@ -178,7 +187,7 @@ const Transactions = () => {
   const amount = transactions.reduce((total, transaction) => {
     return total + transaction.amount;
   }, 0);
-  const currency = settingsData?.defaultCurrency || 'IQD';
+  const currency = settings?.defaultCurrency || 'IQD';
 
   const isAdmin = profile?.role === 'ADMIN';  
 
@@ -196,10 +205,10 @@ const Transactions = () => {
                 المساهم: {investorDetails?.fullName}
               </Typography>
               <Typography variant="h6">
-                إجمالي المبالغ: {convertAmount(amount, currency, currentCurrency).toLocaleString('en-US', {
-                  minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
-                  maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
-                })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
+                إجمالي المبالغ: {convertCurrency(amount, currency, settings?.defaultCurrency).toLocaleString('en-US', {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0
+                })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
               </Typography>
               <Typography variant="h6">
                 العملة: {currency}
@@ -292,7 +301,7 @@ const Transactions = () => {
         <StyledTableCell align="center">اسم المساهم</StyledTableCell>
         <StyledTableCell align="center">نوع المعاملة</StyledTableCell>
         <StyledTableCell align="center">
-          المبلغ ({currentCurrency})
+          المبلغ ({settings?.defaultCurrency})
         </StyledTableCell>
         <StyledTableCell align="center">العملة</StyledTableCell>
         <StyledTableCell align="center">مصدر العملية</StyledTableCell>
@@ -335,14 +344,14 @@ const Transactions = () => {
               />
             </StyledTableCell>
             <StyledTableCell align="center">
-              {convertAmount(
+              {convertCurrency(
                 transaction.amount,
                 transaction.currency || "IQD",
-                currentCurrency
+                settings?.defaultCurrency
               ).toLocaleString('en-US', {
-                minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
-                maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
-              })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+              })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
             </StyledTableCell>
             <StyledTableCell align="center">
               {transaction.currency || "IQD"}

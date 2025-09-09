@@ -42,7 +42,6 @@ import ProfitDistributionsModal from '../modals/ProfitDistributionsModal';
 import FinancialSearchModal from '../modals/FinancialSearchModal';
 import EditRolloverModal from '../modals/EditRolloverModal';
 import { StyledTableCell, StyledTableRow } from '../styles/TableLayout';
-import { useCurrencyManager } from '../utils/globalCurrencyManager';
 import { Helmet } from 'react-helmet-async';
 import { useSettings } from '../hooks/useSettings';
 import dayjs from 'dayjs';
@@ -61,12 +60,20 @@ const FinancialYear = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedYearForMenu, setSelectedYearForMenu] = useState(null);
   const [filters, setFilters] = useState({});
-  const { currentCurrency, convertAmount } = useCurrencyManager();
-  // eslint-disable-next-line no-unused-vars
   const { data: settings } = useSettings();
   const isMobile = useMediaQuery('(max-width: 480px)');
   const queryClient = useQueryClient();
-
+  const convertCurrency = (amount, fromCurrency, toCurrency) => {
+    if (fromCurrency === toCurrency) return amount;
+    if (!settings?.USDtoIQD) return amount;
+    
+    if (fromCurrency === 'IQD' && toCurrency === 'USD') {
+      return amount / settings.USDtoIQD;
+    } else if (fromCurrency === 'USD' && toCurrency === 'IQD') {
+      return amount * settings.USDtoIQD;
+    }
+    return amount;
+  };
   const debouncedSearch = debounce((value) => {
     setSearchTerm(value);
   }, 500);
@@ -76,7 +83,7 @@ const FinancialYear = () => {
     isLoading,
     isFetching 
   } = useQuery(
-    ['financialYears', page, rowsPerPage, searchTerm, filters, currentCurrency],
+    ['financialYears', page, rowsPerPage, searchTerm, filters, settings?.USDtoIQD],
     () => Api.get(`/api/financial-years/${page}`, {
       params: {
         limit: rowsPerPage,
@@ -101,7 +108,7 @@ const FinancialYear = () => {
 
   useEffect(() => {
     queryClient.invalidateQueries('financialYears');
-  }, [currentCurrency, queryClient]);
+  }, [settings?.USDtoIQD, queryClient]);
 
   const handleApplyFilters = (newFilters) => {
     setFilters(newFilters);
@@ -238,7 +245,7 @@ const FinancialYear = () => {
                 <StyledTableCell align="center">السنة</StyledTableCell>
                 <StyledTableCell align="center">اسم الفترة</StyledTableCell>
                 <StyledTableCell align="center">الفترة الزمنية</StyledTableCell>
-                <StyledTableCell align="center"> مبلغ التوزيع ({currentCurrency === 'USD' ? '$' : 'د.ع'})</StyledTableCell>
+                <StyledTableCell align="center"> مبلغ التوزيع ({settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'})</StyledTableCell>
                 <StyledTableCell align="center">الحالة</StyledTableCell>
                 <StyledTableCell align="center">الإجراءات</StyledTableCell>
               </TableRow>
@@ -270,10 +277,10 @@ const FinancialYear = () => {
                       </Box>
                     </StyledTableCell>
                     <StyledTableCell align="center">
-                      {convertAmount(year.totalProfit, year.currency||'IQD', currentCurrency).toLocaleString('en-US', {
+                      {convertCurrency(year.totalProfit, year.currency||'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 0
-                      })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
+                      })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                     </StyledTableCell>
                     <StyledTableCell align="center">{getStatusChip(year.status)}</StyledTableCell>
                     <StyledTableCell align="center">

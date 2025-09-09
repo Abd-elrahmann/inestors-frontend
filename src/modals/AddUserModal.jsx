@@ -122,7 +122,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
           fullName: formData.fullName.trim(),
           phone: formData.phone,
           role: formData.role,
-          email: formData.email.trim().toLowerCase() // Add email to update data
+          email: formData.email.trim().toLowerCase()
         };
         result = await Api.patch(`/api/users/${user.id}`, updateData);
         toast.success('تم تحديث المستخدم بنجاح');
@@ -172,7 +172,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
     }));
   };
 
-  // Use the same color for both modes
+    
   const primaryColor = '#28a745';
 
   return (
@@ -214,7 +214,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
       </DialogTitle>
 
       <form onSubmit={handleSubmit}>
-        <DialogContent sx={{ mt: 1, px: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+        <DialogContent sx={{ mt: -2, px: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
           <Typography variant="h6" sx={{ 
             fontFamily: 'Cairo', 
             fontWeight: 600, 

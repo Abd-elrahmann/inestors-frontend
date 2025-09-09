@@ -30,7 +30,6 @@ import { RestartAltOutlined } from "@mui/icons-material";
 import { StyledTableCell, StyledTableRow } from "../styles/TableLayout";
 import Api from "../services/api";
 import { toast } from "react-toastify";
-import { useCurrencyManager } from "../utils/globalCurrencyManager";
 import { Helmet } from "react-helmet-async";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import DeleteModal from "../modals/DeleteModal";
@@ -38,6 +37,7 @@ import InvestorSearchModal from "../modals/InvestorSearchModal";
 import { Link } from "react-router-dom";
 import { debounce } from 'lodash';
 import * as XLSX from 'xlsx';
+import { useSettings } from "../hooks/useSettings";
 
 const Investors = () => {
   const queryClient = useQueryClient();
@@ -49,15 +49,16 @@ const Investors = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
-  const { currentCurrency, convertAmount } = useCurrencyManager();
+  const { data: settings } = useSettings();
   const isMobile = useMediaQuery('(max-width: 480px)');
+
   // Fetch investors query
   const {
     data: investorsData,
     isLoading,
     isFetching,
   } = useQuery(
-    ["investors", page, rowsPerPage, searchQuery, advancedFilters],
+    ["investors", page, rowsPerPage, searchQuery, advancedFilters, settings?.USDtoIQD],
     async () => {
       const params = {
         limit: rowsPerPage,
@@ -124,10 +125,12 @@ const Investors = () => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(1);
   };
+
   const debouncedSearch = useMemo(() => debounce((val) => {
     setSearchQuery(val);
     setPage(1);
   }, 300), []);
+
   const handleSearch = (event) => {
     debouncedSearch(event.target.value);
     setPage(1);
@@ -148,7 +151,6 @@ const Investors = () => {
       ['محمد احمد', '07700000000', '1000000', '2023-01-01']
     ];
     
-    // const csvContent = template.map(row => row.join(',')).join('\n');
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.aoa_to_sheet(template);
     XLSX.utils.book_append_sheet(workbook, worksheet, 'التقرير');
@@ -161,6 +163,18 @@ const Investors = () => {
   };
 
   const filteredInvestors = investorsData?.investors || [];
+
+  const convertCurrency = (amount, fromCurrency, toCurrency) => {
+    if (fromCurrency === toCurrency) return amount;
+    if (!settings?.USDtoIQD) return amount;
+    
+    if (fromCurrency === 'IQD' && toCurrency === 'USD') {
+      return amount / settings.USDtoIQD;
+    } else if (fromCurrency === 'USD' && toCurrency === 'IQD') {
+      return amount * settings.USDtoIQD;
+    }
+    return amount;
+  };
 
   return (
     <>
@@ -255,9 +269,9 @@ const Investors = () => {
                 <StyledTableCell align="center">اسم المستثمر</StyledTableCell>
                 <StyledTableCell align="center"> الهاتف</StyledTableCell>
                 <StyledTableCell align="center">
-                   رأس المال ({currentCurrency})
+                   رأس المال ({settings?.defaultCurrency})
                 </StyledTableCell>
-                <StyledTableCell align="center"> مبلغ التدوير ({currentCurrency})</StyledTableCell>
+                <StyledTableCell align="center"> مبلغ التدوير ({settings?.defaultCurrency})</StyledTableCell>
                 <StyledTableCell align="center">نسبة المستثمر</StyledTableCell>
                 <StyledTableCell align="center">تاريخ الانضمام</StyledTableCell>
                 <StyledTableCell align="center">عرض المعاملات</StyledTableCell>
@@ -292,16 +306,16 @@ const Investors = () => {
                         {investor.phone}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {convertAmount(investor.amount || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits:0,
-                          maximumFractionDigits:0
-                        })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
+                        {convertCurrency(investor.amount || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {convertAmount(investor.rollover || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits:0,
-                          maximumFractionDigits:0
-                        })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
+                        {convertCurrency(investor.rollover || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0  
+                        })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">{`${investor.sharePercentage.toFixed(
                         2
@@ -348,16 +362,16 @@ const Investors = () => {
                       الإجمالي
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
-                      {convertAmount(investorsData?.totalAmount || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits:0,
-                        maximumFractionDigits:0
-                      })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
+                      {convertCurrency(investorsData?.totalAmount || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                      })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
-                      {convertAmount(investorsData?.totalRollover || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits:0,
-                        maximumFractionDigits:0
-                      })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
+                      {convertCurrency(investorsData?.totalRollover || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                      })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                     </StyledTableCell>
                     <StyledTableCell colSpan={5} />
                   </StyledTableRow>

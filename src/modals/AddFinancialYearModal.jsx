@@ -11,12 +11,6 @@ import {
   CircularProgress,
   InputAdornment,
   Autocomplete,
-  Switch,
-  FormControlLabel,
-  FormHelperText,
-  Divider,
-  Typography,
-  Alert
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
@@ -90,7 +84,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
       await Api.post('/api/financial-years', formattedValues);
 
       
-      toast.success('تم إضافة السنة المالية وحساب الأرباح بنجاح');
+      toast.success('تم إضافة السنة المالية بنجاح');
       
       onSuccess();
       handleClose();
@@ -133,7 +127,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
       PaperProps={{
         sx: {
           borderRadius: 3,
-          minHeight: '50vh',
+          minHeight: '40vh',
           width: '50%',
           scrollbarWidth: 'none',
         }
@@ -163,7 +157,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
       </DialogTitle>
       
       <form onSubmit={handleSubmit}>
-        <DialogContent sx={{ mt: 2, px: 3 }}>
+        <DialogContent sx={{ mt: -2, px: 3 }}>
           <Box sx={{ 
             display: 'flex', 
             flexDirection: 'column', 
@@ -259,10 +253,6 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
                 `${Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)) + 1} يوم` : ''}
               disabled={true}
             />
-
-            <Divider sx={{ my: 2 }} />
-
-          
           </Box>
         </DialogContent>
         

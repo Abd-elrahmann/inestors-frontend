@@ -22,8 +22,10 @@ import Api from '../services/api';
 import { Link } from 'react-router-dom';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useSettings } from '../hooks/useSettings';
+import { useQueryClient } from 'react-query';
 
 const AddTransactionModal = ({ open, onClose, onSuccess }) => {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [investorsLoading, setInvestorsLoading] = useState(false);
   const [investors, setInvestors] = useState([]);
@@ -99,10 +101,10 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
     
     if (!validateForm()) {
       return;
-    }
+    } 
 
     setLoading(true);
-    
+
     try {
       const transactionData = {
         investorId: formData.investorId,
@@ -115,6 +117,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       const result = await Api.post('/api/transactions', transactionData);
       
       toast.success('تم إضافة العملية المالية بنجاح');
+      queryClient.invalidateQueries('investors');   
       
       setFormData({
         investorId: null,

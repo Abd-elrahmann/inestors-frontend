@@ -31,14 +31,24 @@ import {
 } from '../utils/reportExporter';
 import api from '../services/api';
 import { StyledTableRow, StyledTableCell } from '../styles/TableLayout';
-import { useCurrencyManager } from '../utils/globalCurrencyManager';
-
+import { useSettings } from '../hooks/useSettings'; 
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
 const Reports = () => {
-  const { currentCurrency, convertAmount } = useCurrencyManager();
+  const { data: settings } = useSettings();
+  const convertCurrency = (amount, fromCurrency, toCurrency) => {
+    if (fromCurrency === toCurrency) return amount;
+    if (!settings?.USDtoIQD) return amount;
+    
+    if (fromCurrency === 'IQD' && toCurrency === 'USD') {
+      return amount / settings.USDtoIQD;
+    } else if (fromCurrency === 'USD' && toCurrency === 'IQD') {
+      return amount * settings.USDtoIQD;
+    }
+    return amount;
+  };
   const [reportType, setReportType] = useState('');
   const [investors, setInvestors] = useState([]);
   const [financialYears, setFinancialYears] = useState([]);
@@ -360,14 +370,14 @@ const Reports = () => {
                   <StyledTableRow key={row.id}>
                     <StyledTableCell align="center">{row.fullName}</StyledTableCell>
                     <StyledTableCell align="center">{row.phone}</StyledTableCell>
-                    <StyledTableCell align="center">{convertAmount(row.amount || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
+                    <StyledTableCell align="center">{convertCurrency(row.amount || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
                       minimumFractionDigits:0,
                       maximumFractionDigits:0
-                    })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
-                    <StyledTableCell align="center">{convertAmount(row.rollover_amount || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
+                    })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
+                    <StyledTableCell align="center">{convertCurrency(row.rollover_amount || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
                       minimumFractionDigits:0,
                       maximumFractionDigits:0
-                    })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
+                    })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                     <StyledTableCell align="center">{row.sharePercentage.toFixed(2) || 0}%</StyledTableCell>
                     <StyledTableCell align="center">{row.createdAt}</StyledTableCell>
                   </StyledTableRow>
@@ -412,19 +422,19 @@ const Reports = () => {
                     <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
                       مبلغ المساهمة
                     </StyledTableCell>
-                    <StyledTableCell align="center">{convertAmount(reportData.amount || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
+                    <StyledTableCell align="center">{convertCurrency(reportData.amount || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
                       minimumFractionDigits:0,
                       maximumFractionDigits:0
-                    })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
+                    })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                   </StyledTableRow>
                   <StyledTableRow>
                     <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
                       مبلغ التدوير
                     </StyledTableCell>
-                    <StyledTableCell align="center">{convertAmount(reportData.rollover_amount || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
+                    <StyledTableCell align="center">{convertCurrency(reportData.rollover_amount || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
                       minimumFractionDigits:0,
                       maximumFractionDigits:0
-                    })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
+                    })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                   </StyledTableRow>
                   <StyledTableRow>
                     <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
@@ -473,10 +483,10 @@ const Reports = () => {
                   {(reportData.transactions || []).map((transaction) => (
                     <StyledTableRow key={transaction.id}>
                       <StyledTableCell align="center">{transaction.type === 'DEPOSIT' ? 'إيداع' : transaction.type === 'WITHDRAWAL' ? 'سحب' : transaction.type === 'ROLLOVER' ? 'تدوير' : 'غير محدد'}</StyledTableCell>
-                      <StyledTableCell align="center">{convertAmount(transaction.amount || 0, transaction.currency || 'IQD', currentCurrency).toLocaleString('en-US', {
+                      <StyledTableCell align="center">{convertCurrency(transaction.amount || 0, transaction.currency || 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits:0,
                         maximumFractionDigits:0
-                      })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
+                      })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.currency || 'IQD'}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.withdrawSource || 'غير محدد'}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.financialYear?.year || 'غير محدد'} {transaction.financialYear?.periodName ? `- ${transaction.financialYear.periodName}` : ''}</StyledTableCell>
@@ -521,20 +531,20 @@ const Reports = () => {
                   {(reportData.profitDistributions || []).map((distribution) => (
                     <StyledTableRow key={distribution.financialYear.year}>
                       <StyledTableCell align="center">{`${distribution.financialYear.year} - ${distribution.financialYear.periodName}`}</StyledTableCell>
-                      <StyledTableCell align="center">{convertAmount(distribution.amount || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
+                      <StyledTableCell align="center">{convertCurrency(distribution.amount || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits:0,
                         maximumFractionDigits:0
-                      })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
+                      })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.currency || 'IQD'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.percentage.toFixed(2) || 0}%</StyledTableCell>
-                      <StyledTableCell align="center">{convertAmount(distribution.dailyProfit || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
+                        <StyledTableCell align="center">{convertCurrency(distribution.dailyProfit || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits:0,
                         maximumFractionDigits:0
-                      })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
-                      <StyledTableCell align="center">{convertAmount(distribution.financialYear.totalRollover || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
+                      })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
+                      <StyledTableCell align="center">{convertCurrency(distribution.financialYear.totalRollover || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits:0,
                         maximumFractionDigits:0
-                      })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
+                      })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.financialYear.distributedAt}</StyledTableCell>
                     </StyledTableRow>
                   ))}
@@ -579,10 +589,10 @@ const Reports = () => {
                     <StyledTableRow key={transaction.id}>
                       <StyledTableCell align="center">{transaction.investors?.fullName}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.type === 'DEPOSIT' ? 'إيداع' : 'سحب'}</StyledTableCell>
-                      <StyledTableCell align="center">{convertAmount(transaction.amount || 0, transaction.currency || 'IQD', currentCurrency).toLocaleString('en-US', {
+                      <StyledTableCell align="center">{convertCurrency(transaction.amount || 0, transaction.currency || 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits:0,
                         maximumFractionDigits:0
-                      })} {currentCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
+                      })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.currency || 'IQD'}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.withdrawSource || 'غير محدد'}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.financialYear?.year || 'غير محدد'} {transaction.financialYear?.periodName ? `- ${transaction.financialYear.periodName}` : ''}</StyledTableCell>
@@ -627,13 +637,13 @@ const Reports = () => {
                   </StyledTableRow>
                   <StyledTableRow>
                     <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
-                      إجمالي التدوير
+                       مبلغ التوزيع
                     </StyledTableCell>
                     <StyledTableCell align="center">
-                      {convertAmount(reportData.totalProfit || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
+                      {convertCurrency(reportData.totalProfit || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits:0,
                         maximumFractionDigits:0
-                      })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
+                      })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                     </StyledTableCell>
                   </StyledTableRow>
                   <StyledTableRow>
@@ -641,21 +651,11 @@ const Reports = () => {
                       الحالة
                     </StyledTableCell>
                     <StyledTableCell align="center">
-                      {reportData.status === 'calculated'
-                        ? 'محسوب'
-                        : reportData.status === 'distributed'
+                      {reportData.status === 'PENDING'
+                        ? 'قيد التوزيع'
+                        : reportData.status === 'DISTRIBUTED'
                         ? 'موزع'
                         : reportData.status}
-                    </StyledTableCell>
-                  </StyledTableRow>
-                  <StyledTableRow>
-                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
-                      حالة التدوير
-                    </StyledTableCell>
-                    <StyledTableCell align="center">
-                      {reportData.rolloverEnabled
-                        ? 'مفعل'
-                        : 'معطل'} {reportData.rolloverPercentage ? `(${reportData.rolloverPercentage}%)` : ''}
                     </StyledTableCell>
                   </StyledTableRow>
                   <StyledTableRow>
@@ -691,9 +691,6 @@ const Reports = () => {
                       الربح
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      حالة التدوير
-                    </StyledTableCell>
-                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                       تاريخ الانضمام
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
@@ -706,19 +703,16 @@ const Reports = () => {
                     <StyledTableRow key={index}>
                       <StyledTableCell align="center">{distribution.investors?.fullName || 'غير معروف'}</StyledTableCell>
                       <StyledTableCell align="center">
-                        {convertAmount(distribution.amount || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
+                        {convertCurrency(distribution.amount || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
                           minimumFractionDigits:0,
                           maximumFractionDigits:0
-                        })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
+                        })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {convertAmount(distribution.investors?.amount || 0, 'IQD', currentCurrency).toLocaleString('en-US', {
+                        {convertCurrency(distribution.investors?.amount || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
                           minimumFractionDigits:0,
                           maximumFractionDigits:0
-                        })} {currentCurrency === 'USD' ? '$' : 'د.ع'}
-                      </StyledTableCell>
-                      <StyledTableCell align="center">
-                        {distribution.isRollover ? 'مفعل' : 'معطل'}
+                        })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         {distribution.investors?.createdAt ? distribution.investors.createdAt : 'غير محدد'}
