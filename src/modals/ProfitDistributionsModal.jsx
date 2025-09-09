@@ -149,7 +149,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
               📊 معلومات السنة المالية
             </Typography>
             <Typography variant="body2" component="div" sx={{mb: 2}}>
-              <strong>💰  مبلغ التوزيع:</strong> {convertCurrency(displayData.summary.totalProfit, displayData.summary.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
+              <strong>💰  مبلغ التوزيع:</strong> {convertCurrency(displayData.summary.totalDistributed, displayData.summary.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
               })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}

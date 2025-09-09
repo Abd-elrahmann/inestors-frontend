@@ -73,7 +73,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
     
     try {
       const endDate = new Date(formData.endDate);
-      endDate.setHours(23, 59, 59, 999);
+      endDate.setHours(20, 59, 59, 999);
 
       const formattedValues = {
         ...formData,
