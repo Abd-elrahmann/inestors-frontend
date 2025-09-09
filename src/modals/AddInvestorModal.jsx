@@ -38,7 +38,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
         createdAt: ''
       });
     } else if (mode === 'edit' && investorData) {
-      const convertedAmount = convertAmount(investorData.amount, 'IQD', currentCurrency);
+      const convertedAmount = convertAmount(investorData.amount, 'USD', currentCurrency);
       const formattedDate = investorData.createdAt
       ? new Date(investorData.createdAt).toISOString().split('T')[0]
       : '';
@@ -111,7 +111,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
     setLoading(true);
     
     try {
-      const convertedAmount = convertAmount(parseFloat(formData.amount), currentCurrency, 'IQD');
+      const convertedAmount = convertAmount(parseFloat(formData.amount), currentCurrency, 'USD');
       
       const payload = {
         fullName: formData.fullName,

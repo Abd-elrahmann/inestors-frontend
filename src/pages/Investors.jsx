@@ -405,13 +405,13 @@ const Investors = () => {
                         {investor.phone||'-'}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {convertCurrency(investor.amount, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                        {convertCurrency(investor.amount, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                           minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
                           maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {convertCurrency(investor.rollover || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                        {convertCurrency(investor.rollover || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                           minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
                           maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
@@ -461,13 +461,13 @@ const Investors = () => {
                       الإجمالي
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
-                      {convertCurrency(investorsData?.totalAmount || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                      {convertCurrency(investorsData?.totalAmount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
-                      {convertCurrency(investorsData?.totalRollover || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                      {convertCurrency(investorsData?.totalRollover || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}

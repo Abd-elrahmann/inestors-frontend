@@ -187,7 +187,7 @@ const Transactions = () => {
   const amount = transactions.reduce((total, transaction) => {
     return total + transaction.amount;
   }, 0);
-  const currency = settings?.defaultCurrency || 'IQD';
+  const currency = settings?.defaultCurrency || 'USD';
 
   const isAdmin = profile?.role === 'ADMIN';  
 
@@ -346,15 +346,15 @@ const Transactions = () => {
             <StyledTableCell align="center">
               {convertCurrency(
                 transaction.amount,
-                transaction.currency || "IQD",
+                transaction.currency || "USD",
                 settings?.defaultCurrency
               ).toLocaleString('en-US', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
+                minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
+                maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
               })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
             </StyledTableCell>
             <StyledTableCell align="center">
-              {transaction.currency || "IQD"}
+              {transaction.currency || "USD"}
             </StyledTableCell>
             <StyledTableCell align="center">
               {transaction.withdrawSource === "AMOUNT" ? "رأس المال" : transaction.withdrawSource === "ROLLOVER" ? "مبلغ التدوير" : "-"}
