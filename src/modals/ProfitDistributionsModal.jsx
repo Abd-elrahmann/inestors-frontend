@@ -149,7 +149,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
               📊 معلومات السنة المالية
             </Typography>
             <Typography variant="body2" component="div" sx={{mb: 2}}>
-              <strong>💰  مبلغ التوزيع:</strong> {convertCurrency(displayData.summary.totalProfit, displayData.summary.currency||'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+              <strong>💰  مبلغ التوزيع:</strong> {convertCurrency(displayData.summary.totalProfit, displayData.summary.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
               })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
@@ -187,7 +187,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                         إجمالي التوزيع
                       </Typography>
                       <Typography variant="h5" component="div">
-                        {convertCurrency(displayData.summary.totalProfit,displayData.summary.currency||'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                        {convertCurrency(displayData.summary.totalProfit,displayData.summary.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
@@ -208,7 +208,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                         معدل الربح اليومي
                       </Typography>
                       <Typography variant="h5" component="div">
-                        {convertCurrency(displayData.summary.dailyProfit, displayData.summary.currency||'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                        {convertCurrency(displayData.summary.dailyProfit, displayData.summary.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
@@ -288,16 +288,16 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                   {displayData.distributions.map((distribution) => (
                     <StyledTableRow key={distribution.id}>
                       <StyledTableCell align="center">{distribution.investor.fullName}</StyledTableCell>
-                      <StyledTableCell align="center">{convertCurrency(distribution.investor.amount, displayData.currency||'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                      <StyledTableCell align="center">{convertCurrency(distribution.investor.amount, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.percentage.toFixed(2)}%</StyledTableCell>
-                      <StyledTableCell align="center">{convertCurrency(distribution.dailyProfit, displayData.currency||'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                      <StyledTableCell align="center">{convertCurrency(distribution.dailyProfit, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
-                      <StyledTableCell align="center">{convertCurrency(distribution.totalProfit, displayData.currency||'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                      <StyledTableCell align="center">{convertCurrency(distribution.totalProfit, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>

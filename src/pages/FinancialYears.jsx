@@ -277,7 +277,7 @@ const FinancialYear = () => {
                       </Box>
                     </StyledTableCell>
                     <StyledTableCell align="center">
-                      {convertCurrency(year.totalProfit, year.currency||'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                      {convertCurrency(year.totalProfit, year.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
