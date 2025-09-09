@@ -12,30 +12,45 @@ import {
   CircularProgress,
   Autocomplete,
   MenuItem,
-  useMediaQuery
+  useMediaQuery,
+  FormControl,
+  FormControlLabel,
+  RadioGroup,
+  Radio
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import PersonIcon from '@mui/icons-material/Person';
 import { toast } from 'react-toastify';
 import Api from '../services/api';
-import { Link } from 'react-router-dom';
-import { ArrowLeftOutlined } from '@ant-design/icons';
-import { useSettings } from '../hooks/useSettings';
 import { useQueryClient } from 'react-query';
-
+import { Alert } from '@mui/material';
+import { useSettings } from '../hooks/useSettings';
 const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [investorsLoading, setInvestorsLoading] = useState(false);
   const [investors, setInvestors] = useState([]);
-  const { data: settings } = useSettings();
   const isMobile = useMediaQuery('(max-width: 480px)');
+  const { data: settings } = useSettings();
   const [formData, setFormData] = useState({
     investorId: null,
     type: 'DEPOSIT',
+    currency: 'IQD',
     amount: ''
   });
+
+  const convertCurrency = (amount, fromCurrency, toCurrency) => {
+    if (fromCurrency === toCurrency) return amount;
+    if (!settings?.USDtoIQD) return amount;
+    
+    if (fromCurrency === 'IQD' && toCurrency === 'USD') {
+      return amount / settings.USDtoIQD;
+    } else if (fromCurrency === 'USD' && toCurrency === 'IQD') {
+      return amount * settings.USDtoIQD;
+    }
+    return amount;
+  };
 
   const [errors, setErrors] = useState({});
 
@@ -78,6 +93,10 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       newErrors.amount = 'المبلغ يجب أن يكون رقم أكبر من صفر';
     }
 
+    if (!formData.currency) {
+      newErrors.currency = 'اختيار العملة مطلوب';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -109,7 +128,8 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       const transactionData = {
         investorId: formData.investorId,
         type: formData.type,
-        amount: parseFloat(formData.amount)
+        amount: parseFloat(formData.amount),
+        currency: formData.currency
       };
 
       console.log('Sending transaction data:', transactionData);
@@ -122,6 +142,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       setFormData({
         investorId: null,
         type: 'DEPOSIT',
+        currency: 'IQD',
         amount: ''
       });
       
@@ -143,6 +164,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       setFormData({
         investorId: null,
         type: 'DEPOSIT',
+        currency: 'IQD',
         amount: ''
       });
       setErrors({});
@@ -192,17 +214,9 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
             display: 'flex', 
             flexDirection: 'column', 
             gap: 3,
-            width: '80%',
+            width: '70%',
             mx: 'auto'
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, justifyContent: 'center',flexDirection: isMobile ? 'column' : 'row' }}>
-              <span>هل تحتاج الي تغيير العملة؟</span>
-              <Link to="/settings" target='_blank' style={{textDecoration: 'none', color: 'green'}}>
-                الاعدادات
-                <ArrowLeftOutlined style={{ marginRight: "10px" }} />
-              </Link>
-            </Box>
-
             <Autocomplete
               options={investors}
               getOptionLabel={(option) => option.id + ' - ' + option.fullName || ''}
@@ -235,6 +249,26 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
                 />
               )}
             />
+                <FormControl component="fieldset" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%'}}>
+              <RadioGroup
+                row
+                value={formData.currency}
+                onChange={(e) => handleInputChange('currency', e.target.value)}
+              >
+                <FormControlLabel 
+                  value="IQD" 
+                  control={<Radio />} 
+                  label="دينار عراقي" 
+                  disabled={loading}
+                />
+                <FormControlLabel 
+                  value="USD" 
+                  control={<Radio />} 
+                  label="دولار أمريكي"
+                  disabled={loading}
+                />
+              </RadioGroup>
+            </FormControl>
 
             <TextField
               fullWidth
@@ -248,13 +282,18 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
+                    {formData.currency === 'IQD' ? 'د.ع' : '$' }
                   </InputAdornment>
                 ),
               }}
             />
+            {formData.currency === 'IQD' && formData.amount > 0 && (
+              <Alert severity="info">
+                {formData.amount && ` سوف يتم استلام ${convertCurrency(formData.amount, 'IQD', 'USD').toFixed(2)}$`}
+              </Alert>
+            )}
 
-            <TextField
+         <TextField
               select
               fullWidth
               label="نوع العملية"
@@ -271,7 +310,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
           </Box>
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, gap: 3, justifyContent: 'center',flexDirection: isMobile ? 'column' : 'row' }}>
+        <DialogActions sx={{ p: 3, gap: 3, justifyContent: 'center',flexDirection: isMobile ? 'column' : 'row-reverse' }}>
           <Button
             onClick={handleClose}
             disabled={loading}

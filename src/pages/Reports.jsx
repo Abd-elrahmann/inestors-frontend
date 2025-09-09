@@ -640,7 +640,7 @@ const Reports = () => {
                        مبلغ التوزيع
                     </StyledTableCell>
                     <StyledTableCell align="center">
-                      {convertCurrency(reportData.totalProfit || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                      {convertCurrency(reportData.totalProfit || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits:0,
                         maximumFractionDigits:0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}

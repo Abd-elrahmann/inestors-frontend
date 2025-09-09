@@ -94,6 +94,7 @@ const Investors = () => {
   const handleAddSuccess = () => {
     queryClient.invalidateQueries("investors");
     setShowAddModal(false);
+    setSelectedInvestor(null); 
   };
 
   const handleCloseModal = () => {
@@ -108,6 +109,7 @@ const Investors = () => {
   };
 
   const handleAddInvestor = () => {
+    setSelectedInvestor(null); 
     setShowAddModal(true);
   };
 
@@ -119,6 +121,7 @@ const Investors = () => {
   const handleDeleteInvestor = async (investor) => {
     deleteInvestorMutation.mutate(investor.id);
     setShowDeleteModal(false);
+    setSelectedInvestor(null); 
   };
 
   const handleChangeRowsPerPage = (event) => {
@@ -153,6 +156,28 @@ const Investors = () => {
     
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.aoa_to_sheet(template);
+
+    // Set column formats
+    const range = XLSX.utils.decode_range(worksheet['!ref']);
+    const phoneCol = 1; // Column B (0-based)
+    const dateCol = 3; // Column D (0-based)
+
+    // Format phone numbers as text
+    for(let R = range.s.r + 1; R <= range.e.r; ++R) {
+      const phoneCell = XLSX.utils.encode_cell({r: R, c: phoneCol});
+      if(!worksheet[phoneCell]) continue;
+      worksheet[phoneCell].t = 's'; // Set type to string/text
+      worksheet[phoneCell].z = '@'; // Format as text
+    }
+
+    // Format dates
+    for(let R = range.s.r + 1; R <= range.e.r; ++R) {
+      const dateCell = XLSX.utils.encode_cell({r: R, c: dateCol});
+      if(!worksheet[dateCell]) continue;
+      worksheet[dateCell].t = 'd'; // Set type to date
+      worksheet[dateCell].z = 'yyyy-mm-dd'; // Format as date
+    }
+
     XLSX.utils.book_append_sheet(workbook, worksheet, 'التقرير');
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -306,15 +331,15 @@ const Investors = () => {
                         {investor.phone}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {convertCurrency(investor.amount || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0
+                        {convertCurrency(investor.amount, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
+                          minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
+                          maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         {convertCurrency(investor.rollover || 0, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0  
+                          minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
+                          maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">{`${investor.sharePercentage.toFixed(

@@ -241,8 +241,6 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                     الايام
                   </Typography>
                   <Typography variant="body1" sx={{ textAlign: 'center' }}>
-                    الايام حتى الان: {displayData.summary.daysSoFar || 0}
-                    <br/>
                     اجمالي الايام: {displayData.summary.totalDays || 0}
                   </Typography>
                 </Grid>

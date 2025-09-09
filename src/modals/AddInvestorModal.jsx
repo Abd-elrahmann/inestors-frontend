@@ -68,7 +68,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
 
     if (!formData.amount) {
       newErrors.amount = 'المبلغ مطلوب';
-    } else if (isNaN(formData.amount) || parseFloat(formData.amount) <= 0) {
+    } else if (isNaN(formData.amount) || parseFloat(formData.amount) < 0) {
       newErrors.amount = 'يجب أن يكون المبلغ رقماً موجباً';
     }
  
