@@ -83,13 +83,13 @@ const Dashboard = () => {
     endDate: '',
     totalAmount: 0,
     totalProfit: 0,
-    currency: 'IQD'
+    currency: 'USD'
   });
   
   const [transactionsData, setTransactionsData] = useState({
     startDate: '',
     endDate: '',
-    currency: 'IQD',
+    currency: 'USD',
     days: []
   });
   
@@ -190,8 +190,8 @@ const Dashboard = () => {
         const data = overviewResponse.value.data;
         setOverviewData({
           ...data,
-          totalAmount: convertAmount(data.totalAmount, 'IQD', currentCurrency),
-          totalProfit: convertAmount(data.totalProfit, 'IQD', currentCurrency)
+          totalAmount: convertAmount(data.totalAmount, 'USD', currentCurrency),
+          totalProfit: convertAmount(data.totalProfit, 'USD', currentCurrency)
         });
       } else {
         console.error('Error fetching overview:', overviewResponse.reason);
@@ -202,8 +202,8 @@ const Dashboard = () => {
         const data = aggregatesResponse.value.data;
         setAggregatesData({
           ...data,
-          totalAmount: convertAmount(data.totalAmount, 'IQD', currentCurrency),
-          totalProfit: convertAmount(data.totalProfit, 'IQD', currentCurrency)
+          totalAmount: convertAmount(data.totalAmount, 'USD', currentCurrency),
+          totalProfit: convertAmount(data.totalProfit, 'USD', currentCurrency)
         });
       } else {
         console.error('Error fetching aggregates:', aggregatesResponse.reason);
@@ -214,11 +214,11 @@ const Dashboard = () => {
         const data = transactionsResponse.value.data;
         const convertedDays = data.days.map(day => ({
           ...day,
-          averageDeposit: convertAmount(day.averageDeposit, 'IQD', currentCurrency),
-          averageWithdraw: convertAmount(day.averageWithdraw, 'IQD', currentCurrency),
-          averageProfit: convertAmount(day.averageProfit, 'IQD', currentCurrency),
-          averageRollover: convertAmount(day.averageRollover, 'IQD', currentCurrency),
-          averageWithdrawProfit: convertAmount(day.averageWithdrawProfit, 'IQD', currentCurrency)
+          averageDeposit: convertAmount(day.averageDeposit, 'USD', currentCurrency),
+          averageWithdraw: convertAmount(day.averageWithdraw, 'USD', currentCurrency),
+          averageProfit: convertAmount(day.averageProfit, 'USD', currentCurrency),
+          averageRollover: convertAmount(day.averageRollover, 'USD', currentCurrency),
+          averageWithdrawProfit: convertAmount(day.averageWithdrawProfit, 'USD', currentCurrency)
         }));
         setTransactionsData({
           ...data,
@@ -248,7 +248,7 @@ const Dashboard = () => {
         const data = topInvestorsResponse.value.data.topInvestors;
         const convertedInvestors = data.map(investor => ({
           ...investor,
-          amount: convertAmount(investor.amount, 'IQD', currentCurrency)
+          amount: convertAmount(investor.amount, 'USD', currentCurrency)
         }));
         setTopInvestorsData(convertedInvestors);
       } else {
@@ -432,7 +432,7 @@ const Dashboard = () => {
     },
     {
       title: `إجمالي رأس المال`,
-      value: convertAmount(overviewData.totalAmount, 'IQD', currentCurrency),
+      value: convertAmount(overviewData.totalAmount, 'USD', currentCurrency),
       icon: <DollarOutlined style={{ color: '#007bff', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.amount || 0,
       color: '#007bff',
@@ -440,7 +440,7 @@ const Dashboard = () => {
     },
     {
       title: `الأرباح المحققة`,
-      value: convertAmount(overviewData.totalProfit, 'IQD', currentCurrency),
+      value: convertAmount(overviewData.totalProfit, 'USD', currentCurrency),
       icon: <RiseOutlined style={{ color: '#ffc107', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.profit || 0,
       color: '#ffc107',
@@ -482,7 +482,7 @@ const Dashboard = () => {
           label: function(context) {
             const label = context.dataset.label || '';
             const value = context.raw || 0;
-            return `${label}: ${convertAmount(value, 'IQD', currentCurrency)}`;
+            return `${label}: ${convertAmount(value, 'USD', currentCurrency)}`;
           }
         }
       }
@@ -502,7 +502,7 @@ const Dashboard = () => {
           font: { family: 'Cairo' },
           color: '#6c757d',
           callback: function(value) {
-          return convertAmount(value, 'IQD', currentCurrency);
+          return convertAmount(value, 'USD', currentCurrency);
           }
         },
         grid: {
