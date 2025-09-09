@@ -180,12 +180,11 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
       open={open} 
       onClose={handleClose}
       maxWidth={isMobile ? 'md' : 'xs'}
-      fullWidth
       PaperProps={{
         sx: {
           borderRadius: 3,
           minHeight: mode === 'add' ? '30vh' : '40vh',
-          width: isMobile ? '90%' : '50%',
+          width: isMobile ? '90%' : '40%',
           scrollbarWidth: 'none',
         }
       }}
@@ -231,7 +230,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
             <Grid item xs={12} md={12}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
                 <TextField
-                  sx={{width:'300px'}}
+                  sx={{width:'250px'}}
                   label="الاسم الكامل"
                   value={formData.fullName}
                   onChange={(e) => handleInputChange('fullName', e.target.value)}
@@ -250,7 +249,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
             
 
                 <TextField
-                  sx={{width:'300px'}}
+                  sx={{width:'250px'}}
                   label="الهاتف"
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
@@ -266,7 +265,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
                   }}
                 />
                 <TextField
-                  sx={{width:'300px'}}
+                  sx={{width:'250px'}}
                   type="email"
                   label="البريد الإلكتروني"
                   value={formData.email}
@@ -283,7 +282,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
                   }}
                 />
                 <TextField
-                  sx={{width:'300px'}}
+                  sx={{width:'250px'}}
                   label="الدور"
                   placeholder="الدور"
                   value={formData.role}
@@ -324,7 +323,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
               <Grid container spacing={6} sx={{ mb: 4, justifyContent: 'center', alignItems: 'center',flexDirection: isMobile ? 'column' : 'row' }}>
                 <Grid item xs={12} md={12} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                   <TextField
-                    sx={{width:'300px'}}
+                    sx={{width:'250px'}}
                     label="كلمة المرور"
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
@@ -357,7 +356,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
 
                 <Grid item xs={12} md={12} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center',flexDirection: isMobile ? 'column' : 'row' }}>
                   <TextField
-                    sx={{width:'300px'}}
+                    sx={{width:'250px'}}
                     label="تأكيد كلمة المرور"
                     type={showConfirmPassword ? "text" : "password"}
                     value={formData.confirmPassword}
@@ -395,7 +394,7 @@ const AddUserModal = ({ open, onClose, onSuccess, user, mode = 'add' }) => {
         <DialogActions sx={{ 
           p: 3, 
           gap: 3,
-          justifyContent: 'space-between',
+          justifyContent: 'center',
           display: 'flex',
           alignItems: 'center',
           direction:'ltr',

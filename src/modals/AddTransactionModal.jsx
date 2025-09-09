@@ -40,6 +40,11 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
     amount: ''
   });
 
+  const formatNumber = (num) => {
+    if (!num) return '';
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+
   const convertCurrency = (amount, fromCurrency, toCurrency) => {
     if (fromCurrency === toCurrency) return amount;
     if (!settings?.USDtoIQD) return amount;
@@ -89,7 +94,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
 
     if (!formData.amount.toString().trim()) {
       newErrors.amount = 'المبلغ مطلوب';
-    } else if (isNaN(formData.amount) || parseFloat(formData.amount) <= 0) {
+    } else if (isNaN(formData.amount.replace(/,/g, '')) || parseFloat(formData.amount.replace(/,/g, '')) < 0) {
       newErrors.amount = 'المبلغ يجب أن يكون رقم أكبر من صفر';
     }
 
@@ -102,6 +107,15 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   };
 
   const handleInputChange = (field, value) => {
+    if (field === 'amount') {
+      // Remove any existing commas first
+      const rawValue = value.replace(/,/g, '');
+      // Only format if it's a valid number
+      if (!isNaN(rawValue)) {
+        value = formatNumber(rawValue);
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -128,7 +142,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       const transactionData = {
         investorId: formData.investorId,
         type: formData.type,
-        amount: parseFloat(formData.amount),
+        amount: parseFloat(formData.amount.replace(/,/g, '')),
         currency: formData.currency
       };
 
@@ -177,12 +191,11 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       open={open} 
       onClose={handleClose}
       maxWidth={isMobile ? 'md' : 'xs'}
-      fullWidth
       PaperProps={{
         sx: {
           borderRadius: 3,
           minHeight: '50vh',
-          width: isMobile ? '90%' : '50%',
+          width: isMobile ? '90%' : '40%',
         }
       }}
     >
@@ -249,11 +262,14 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
                 />
               )}
             />
-                <FormControl component="fieldset" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%'}}>
+                <FormControl component="fieldset" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', marginLeft: '80px'}}>
               <RadioGroup
                 row
                 value={formData.currency}
-                onChange={(e) => handleInputChange('currency', e.target.value)}
+                onChange={(e) => {
+                  handleInputChange('currency', e.target.value);
+                  handleInputChange('amount', '');
+                }}
               >
                 <FormControlLabel 
                   value="IQD" 
@@ -272,7 +288,6 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
 
             <TextField
               fullWidth
-              type="number"
               label="المبلغ"
               value={formData.amount}
               onChange={(e) => handleInputChange('amount', e.target.value)}
@@ -287,9 +302,9 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
                 ),
               }}
             />
-            {formData.currency === 'IQD' && formData.amount > 0 && (
+            {formData.currency === 'IQD' && parseFloat(formData.amount.replace(/,/g, '')) > 0 && (
               <Alert severity="info">
-                {formData.amount && ` سوف يتم استلام ${convertCurrency(formData.amount, 'IQD', 'USD').toFixed(2)}$`}
+                {formData.amount && ` سوف يتم استلام ${formatNumber(convertCurrency(parseFloat(formData.amount.replace(/,/g, '')), 'IQD', 'USD').toFixed(2))}$`}
               </Alert>
             )}
 

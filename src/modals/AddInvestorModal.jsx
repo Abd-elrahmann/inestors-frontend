@@ -9,7 +9,12 @@ import {
   Box,
   IconButton,
   InputAdornment,
-  CircularProgress
+  CircularProgress,
+  FormControl,
+  FormControlLabel,
+  RadioGroup,
+  Radio,
+  Alert
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
@@ -17,16 +22,36 @@ import Api from '../services/api';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
 import { toast } from 'react-toastify';
 import PhoneIcon from '@mui/icons-material/Phone';
+import { useSettings } from '../hooks/useSettings';
 
 const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorData = null }) => {
   const [loading, setLoading] = useState(false);
   const { currentCurrency, convertAmount } = useCurrencyManager();
+  const { data: settings } = useSettings();
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
     amount: '',
-    createdAt: ''
+    createdAt: '',
+    currency: 'USD'
   });
+
+  const formatNumber = (num) => {
+    if (!num) return '';
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+
+  const convertCurrency = (amount, fromCurrency, toCurrency) => {
+    if (fromCurrency === toCurrency) return amount;
+    if (!settings?.USDtoIQD) return amount;
+    
+    if (fromCurrency === 'IQD' && toCurrency === 'USD') {
+      return amount / settings.USDtoIQD;
+    } else if (fromCurrency === 'USD' && toCurrency === 'IQD') {
+      return amount * settings.USDtoIQD;
+    }
+    return amount;
+  };
 
   useEffect(() => {
     if (mode === 'fromUser') {
@@ -35,7 +60,8 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
         fullName: '',
         phone: '',
         amount: '',
-        createdAt: ''
+        createdAt: '',
+        currency: 'USD'
       });
     } else if (mode === 'edit' && investorData) {
       const convertedAmount = convertAmount(investorData.amount, 'USD', currentCurrency);
@@ -47,7 +73,8 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
         fullName: investorData.fullName || '',
         phone: investorData.phone || '',
         amount: convertedAmount?.toString() || '',
-        createdAt: formattedDate || ''
+        createdAt: formattedDate || '',
+        currency: 'USD'
       });
     } else {
       setFormData({
@@ -55,11 +82,12 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
         fullName: '',
         phone: '',
         amount: '',
-        createdAt: ''
+        createdAt: '',
+        currency: 'USD'
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, investorData, currentCurrency, open]); // Added open dependency to reset form when modal opens
+  }, [mode, investorData, currentCurrency, open]);
 
   const [errors, setErrors] = useState({});
 
@@ -68,7 +96,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
 
     if (!formData.amount) {
       newErrors.amount = 'المبلغ مطلوب';
-    } else if (isNaN(formData.amount) || parseFloat(formData.amount) < 0) {
+    } else if (isNaN(formData.amount.replace(/,/g, '')) || parseFloat(formData.amount.replace(/,/g, '')) < 0) {
       newErrors.amount = 'يجب أن يكون المبلغ رقماً موجباً';
     }
  
@@ -88,6 +116,15 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
   };
 
   const handleInputChange = (field, value) => {
+    if (field === 'amount') {
+      // Remove any existing commas first
+      const rawValue = value.replace(/,/g, '');
+      // Only format if it's a valid number
+      if (!isNaN(rawValue)) {
+        value = formatNumber(rawValue);
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -111,7 +148,10 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
     setLoading(true);
     
     try {
-      const convertedAmount = convertAmount(parseFloat(formData.amount), currentCurrency, 'USD');
+      const rawAmount = formData.amount.replace(/,/g, '');
+      const convertedAmount = formData.currency === 'IQD' ? 
+        convertCurrency(parseFloat(rawAmount), 'IQD', 'USD') :
+        parseFloat(rawAmount);
       
       const payload = {
         fullName: formData.fullName,
@@ -129,13 +169,13 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
         toast.success('تم إضافة المستثمر بنجاح');
       }
       
-      // Reset form data after successful submission
       setFormData({
         id: '',
         fullName: '',
         phone: '',
         amount: '',
-        createdAt: ''
+        createdAt: '',
+        currency: 'USD'
       });
       
       onClose();
@@ -163,7 +203,8 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
         fullName: '',
         phone: '',
         amount: '',
-        createdAt: ''
+        createdAt: '',
+        currency: 'USD'
       });
       setErrors({});
       onClose();
@@ -175,12 +216,11 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
       open={open} 
       onClose={handleClose}
       maxWidth="xs"
-      fullWidth
       PaperProps={{
         sx: {
           borderRadius: 3,
           minHeight: '40vh',
-          width: '50%',
+          width: '40%',
           scrollbarWidth: 'none',
         }
       }}
@@ -205,11 +245,11 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
       </DialogTitle>
 
       <form onSubmit={handleSubmit}>
-        <DialogContent sx={{ mt: 1, px: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+        <DialogContent sx={{ mt: -1, px: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
             {mode === 'edit' && (
             <TextField
-              sx={{width:'300px'}}
+              sx={{width:'250px'}}
               label="المستثمر المرتبط"
               value={formData.id}
               onChange={(e) => handleInputChange('id', e.target.value)}
@@ -226,7 +266,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
             />
             )}
             <TextField
-              sx={{width:'300px'}}
+              sx={{width:'250px'}}
               label="اسم المستثمر"
               value={formData.fullName}
               onChange={(e) => handleInputChange('fullName', e.target.value)}
@@ -242,7 +282,7 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
               }}
             />
             <TextField
-              sx={{width:'300px'}}
+              sx={{width:'250px'}}
               type="number"
               label="الهاتف"
               value={formData.phone}
@@ -258,10 +298,34 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
                 ),
               }}
             />
+
+            <FormControl component="fieldset" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', marginLeft: '40px'}}>
+              <RadioGroup
+                row
+                value={formData.currency}
+                onChange={(e) => {
+                  handleInputChange('currency', e.target.value);
+                  handleInputChange('amount', '');
+                }}
+              >
+                <FormControlLabel 
+                  value="IQD" 
+                  control={<Radio />} 
+                  label="دينار عراقي" 
+                  disabled={loading}
+                />
+                   <FormControlLabel 
+                  value="USD" 
+                  control={<Radio />} 
+                  label="دولار أمريكي"
+                  disabled={loading}
+                />
+              </RadioGroup>
+            </FormControl>
+
             <TextField
-              sx={{width:'300px'}}
-              type="number"
-              label={`المبلغ (${currentCurrency})`}
+              sx={{width:'250px'}}
+              label={`المبلغ (${formData.currency})`}
               value={formData.amount}
               onChange={(e) => handleInputChange('amount', e.target.value)}
               error={!!errors.amount}
@@ -274,13 +338,20 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    {currentCurrency === 'USD' ? '$' : 'د.ع'}
+                    {formData.currency === 'USD' ? '$' : 'د.ع'}
                   </InputAdornment>
                 ),
               }}
             />
+
+            {formData.currency === 'IQD' && parseFloat(formData.amount.replace(/,/g, '')) > 0 && (
+              <Alert severity="info">
+                {formData.amount && ` سوف يتم استلام ${formatNumber(convertCurrency(parseFloat(formData.amount.replace(/,/g, '')), 'IQD', 'USD').toFixed(2))}$`}
+              </Alert>
+            )}
+
             <TextField
-              sx={{width:'300px'}}
+              sx={{width:'250px'}}
               type="date"
               label="تاريخ الانضمام"
               value={formData.createdAt}

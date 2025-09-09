@@ -32,19 +32,23 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const formatNumber = (num) => {
+    if (!num) return '';
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
 
   const validateForm = () => {
     const newErrors = {};
 
     if (!formData.year) {
       newErrors.year = 'السنة مطلوبة';
-    }
+    } 
 
     if (!formData.periodName.trim()) {
       newErrors.periodName = 'اسم الفترة مطلوب';
     }
 
-    if (!formData.totalProfit || formData.totalProfit < 1) {
+    if (!formData.totalProfit || formData.totalProfit.replace(/,/g, '') < 1) {
       newErrors.totalProfit = 'يجب أن يكون مبلغ التوزيع أكبر من 0';
     }
 
@@ -109,13 +113,19 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
       setErrors({});
       onClose();
     }
-  };
+  };  
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    if (field === 'totalProfit') {
+      const rawValue = value.replace(/,/g, '');
+      if (!isNaN(rawValue)) {
+        value = formatNumber(rawValue);
+      }
+    }
+      setFormData(prev => ({
       ...prev,
       [field]: value
-    }));
+    }));  
   };
 
   return (
@@ -123,12 +133,11 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
       open={open} 
       onClose={handleClose}
       maxWidth="xs"
-      fullWidth
       PaperProps={{
         sx: {
           borderRadius: 3,
           minHeight: '40vh',
-          width: '50%',
+          width: '40%',
           scrollbarWidth: 'none',
         }
       }}
@@ -195,21 +204,8 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
             <TextField
               fullWidth
               label="مبلغ التوزيع"
-              type="number"
-              inputProps={{ 
-                min: 0,
-                step: 1,
-                onKeyPress: (e) => {
-                  if (e.key === '-' || e.key === '+') {
-                    e.preventDefault();
-                  }
-                }
-              }}
               value={formData.totalProfit}
-              onChange={(e) => {
-                const value = Math.max(0, parseInt(e.target.value) || '');
-                handleInputChange('totalProfit', value);
-              }}
+              onChange={(e) => handleInputChange('totalProfit', e.target.value)}
               error={!!errors.totalProfit}
               helperText={errors.totalProfit}
               disabled={loading}
@@ -256,7 +252,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
           </Box>
         </DialogContent>
         
-        <DialogActions sx={{ p: 3, gap: 3, justifyContent: 'space-between',flexDirection:'row-reverse' }}>
+        <DialogActions sx={{ p: 3, gap: 3, justifyContent: 'center',display: 'flex',alignItems: 'center',direction:'ltr' }}>
           <Button
             onClick={handleClose}
             disabled={loading}

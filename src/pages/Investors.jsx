@@ -224,7 +224,7 @@ const Investors = () => {
       setImportLoading(false);
       event.target.value = '';
     }
-  };
+  };  
 
   const filteredInvestors = investorsData?.investors || [];
 

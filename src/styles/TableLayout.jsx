@@ -12,12 +12,13 @@ export const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
     backgroundColor: theme.palette.primary.main,
     color: theme.palette.common.white,
-    padding: "5px"
+    padding: "5px",
+    fontSize: 15
   },
   [`&.${tableCellClasses.body}`]: {
-    fontSize: 14,
+    fontSize: 14.80,
     padding: "5px",
-
+    
   },
 }));
 

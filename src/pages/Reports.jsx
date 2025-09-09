@@ -369,7 +369,7 @@ const Reports = () => {
                 {Array.isArray(reportData) && reportData.map((row) => (
                   <StyledTableRow key={row.id}>
                     <StyledTableCell align="center">{row.fullName}</StyledTableCell>
-                    <StyledTableCell align="center">{row.phone}</StyledTableCell>
+                    <StyledTableCell align="center">{row.phone||'-'}</StyledTableCell>
                     <StyledTableCell align="center">{convertCurrency(row.amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                       minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
                       maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
@@ -398,54 +398,38 @@ const Reports = () => {
                 <TableHead>
                   <TableRow>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      المعلومة
+                      الاسم
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      القيمة
+                      الهاتف
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      مبلغ المساهمة
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      مبلغ التدوير
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      نسبة المساهمة
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      تاريخ الانضمام
                     </StyledTableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   <StyledTableRow>
-                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
-                      الاسم
-                    </StyledTableCell>
                     <StyledTableCell align="center">{reportData.fullName}</StyledTableCell>
-                  </StyledTableRow>
-                  <StyledTableRow>
-                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
-                      الهاتف
-                    </StyledTableCell>
-                    <StyledTableCell align="center">{reportData.phone}</StyledTableCell>
-                  </StyledTableRow>
-                  <StyledTableRow>
-                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
-                      مبلغ المساهمة
-                    </StyledTableCell>
+                    <StyledTableCell align="center">{reportData.phone||'-'}</StyledTableCell>
                     <StyledTableCell align="center">{convertCurrency(reportData.amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                       minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
                       maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
                     })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
-                  </StyledTableRow>
-                  <StyledTableRow>
-                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
-                      مبلغ التدوير
-                    </StyledTableCell>
                     <StyledTableCell align="center">{convertCurrency(reportData.rollover_amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                       minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
                       maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
                     })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
-                  </StyledTableRow>
-                  <StyledTableRow>
-                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
-                      نسبة المساهمة
-                    </StyledTableCell>
                     <StyledTableCell align="center">{reportData.sharePercentage?.toFixed(2) || 0}%</StyledTableCell>
-                  </StyledTableRow>
-                  <StyledTableRow>
-                    <StyledTableCell align="center" sx={{ fontWeight: 'bold' }}>
-                      تاريخ الانضمام
-                    </StyledTableCell>
                     <StyledTableCell align="center">{reportData.createdAt}</StyledTableCell>
                   </StyledTableRow>
                 </TableBody>

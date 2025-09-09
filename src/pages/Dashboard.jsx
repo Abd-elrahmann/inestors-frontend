@@ -37,7 +37,7 @@ import {
   Filler
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
-import { useCurrencyManager } from '../utils/globalCurrencyManager';
+import { useCurrencyManager, formatCurrency } from '../utils/globalCurrencyManager';
 import { Helmet } from 'react-helmet-async';
 import { useMediaQuery } from '@mui/material';
 import Api from '../services/api';
@@ -181,8 +181,8 @@ const Dashboard = () => {
         const data = overviewResponse.value.data;
         setOverviewData({
           ...data,
-          totalAmount: convertAmount(data.totalAmount, 'USD', currentCurrency),
-          totalProfit: convertAmount(data.totalProfit, 'USD', currentCurrency)
+          totalAmount: convertAmount(data.totalAmount || 0, 'USD', currentCurrency),
+          totalProfit: convertAmount(data.totalProfit || 0, 'USD', currentCurrency)
         });
       } else {
         console.error('Error fetching overview:', overviewResponse.reason);
@@ -192,8 +192,8 @@ const Dashboard = () => {
         const data = aggregatesResponse.value.data;
         setAggregatesData({
           ...data,
-          totalAmount: convertAmount(data.totalAmount, 'USD', currentCurrency),
-          totalProfit: convertAmount(data.totalProfit, 'USD', currentCurrency)
+          totalAmount: convertAmount(data.totalAmount || 0, 'USD', currentCurrency),
+          totalProfit: convertAmount(data.totalProfit || 0, 'USD', currentCurrency)
         });
       } else {
         console.error('Error fetching aggregates:', aggregatesResponse.reason);
@@ -201,14 +201,14 @@ const Dashboard = () => {
 
       if (transactionsResponse.status === 'fulfilled') {
         const data = transactionsResponse.value.data;
-        const convertedDays = data.days.map(day => ({
+        const convertedDays = data.days?.map(day => ({
           ...day,
-          averageDeposit: convertAmount(day.averageDeposit, 'USD', currentCurrency),
-          averageWithdraw: convertAmount(day.averageWithdraw, 'USD', currentCurrency),
-          averageProfit: convertAmount(day.averageProfit, 'USD', currentCurrency),
-          averageRollover: convertAmount(day.averageRollover, 'USD', currentCurrency),
-          averageWithdrawProfit: convertAmount(day.averageWithdrawProfit, 'IQD', currentCurrency)
-        }));
+          averageDeposit: convertAmount(day.averageDeposit || 0, 'USD', currentCurrency),
+          averageWithdraw: convertAmount(day.averageWithdraw || 0, 'USD', currentCurrency),
+          averageProfit: convertAmount(day.averageProfit || 0, 'USD', currentCurrency),
+          averageRollover: convertAmount(day.averageRollover || 0, 'USD', currentCurrency),
+          averageWithdrawProfit: convertAmount(day.averageWithdrawProfit || 0, 'IQD', currentCurrency)
+        })) || [];
         setTransactionsData({
           ...data,
           days: convertedDays
@@ -219,24 +219,24 @@ const Dashboard = () => {
 
       if (financialYearsResponse.status === 'fulfilled') {
         const data = financialYearsResponse.value.data;
-        const convertedData = data.map(year => ({
+        const convertedData = data?.map(year => ({
           ...year,
-          financialYears: year.financialYears.map(fy => ({
+          financialYears: year.financialYears?.map(fy => ({
             ...fy,
-            totalProfit: convertAmount(fy.totalProfit, 'USD', currentCurrency)
-          }))
-        }));
+            totalProfit: convertAmount(fy.totalProfit || 0, 'USD', currentCurrency)
+          })) || []
+        })) || [];
         setFinancialYearsData(convertedData);
       } else {
         console.error('Error fetching financial years:', financialYearsResponse.reason);
       }
 
       if (topInvestorsResponse.status === 'fulfilled') {
-        const data = topInvestorsResponse.value.data.topInvestors;
-        const convertedInvestors = data.map(investor => ({
+        const data = topInvestorsResponse.value.data?.topInvestors;
+        const convertedInvestors = data?.map(investor => ({
           ...investor,
-          amount: convertAmount(investor.amount, 'USD', currentCurrency)
-        }));
+          amount: convertAmount(investor.amount || 0, 'USD', currentCurrency)
+        })) || [];
         setTopInvestorsData(convertedInvestors);
       } else {
         console.error('Error fetching top investors:', topInvestorsResponse.reason);
@@ -250,24 +250,27 @@ const Dashboard = () => {
   };
 
   const prepareFinancialsChartData = () => {
+    const totalAmount = aggregatesData.totalAmount || 0;
+    const totalProfit = aggregatesData.totalProfit || 0;
+    
     return {
       labels: [aggregatesData.period || 'الفترة الحالية'],
       datasets: [
         {
           label: `إجمالي رأس المال (${currentCurrency})`,
-          data: [aggregatesData.totalAmount],
+          data: [totalAmount],
           backgroundColor: '#3B82F6',
-          borderColor: '#3B82F6',
+          borderColor: '#3B82F6', 
           borderWidth: 1,
-          borderRadius: 4,
+          borderRadius: 4
         },
         {
           label: `إجمالي الأرباح (${currentCurrency})`,
-          data: [aggregatesData.totalProfit],
+          data: [totalProfit],
           backgroundColor: '#F59E0B',
           borderColor: '#F59E0B',
           borderWidth: 1,
-          borderRadius: 4,
+          borderRadius: 4
         }
       ]
     };
@@ -283,7 +286,7 @@ const Dashboard = () => {
 
     const financialYears = financialYearsData[0].financialYears;
     const labels = financialYears.map(fy => fy.name);
-    const data = financialYears.map(fy => fy.totalProfit);
+    const data = financialYears.map(fy => fy.totalProfit || 0);
 
     return {
       labels,
@@ -294,7 +297,7 @@ const Dashboard = () => {
           backgroundColor: '#10B981',
           borderColor: '#10B981',
           borderWidth: 1,
-          borderRadius: 4,
+          borderRadius: 4
         }
       ]
     };
@@ -313,11 +316,11 @@ const Dashboard = () => {
       datasets: [
         {
           label: `المبلغ (${currentCurrency})`,
-          data: topInvestorsData.map(investor => investor.amount),
+          data: topInvestorsData.map(investor => investor.amount || 0),
           backgroundColor: '#6366F1',
           borderColor: '#6366F1',
           borderWidth: 1,
-          borderRadius: 4,
+          borderRadius: 4
         }
       ]
     };
@@ -349,7 +352,7 @@ const Dashboard = () => {
       datasets: [
         {
           label: 'متوسط الإيداعات',
-          data: sortedDays.map(day => day.averageDeposit),
+          data: sortedDays.map(day => day.averageDeposit || 0),
           borderColor: '#3B82F6',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
           borderWidth: 2,
@@ -360,7 +363,7 @@ const Dashboard = () => {
         },
         {
           label: 'متوسط السحوبات',
-          data: sortedDays.map(day => day.averageWithdraw),
+          data: sortedDays.map(day => day.averageWithdraw || 0),
           borderColor: '#EF4444',
           backgroundColor: 'rgba(239, 68, 68, 0.1)',
           borderWidth: 2,
@@ -371,7 +374,7 @@ const Dashboard = () => {
         },
         {
           label: 'متوسط الأرباح',
-          data: sortedDays.map(day => day.averageProfit),
+          data: sortedDays.map(day => day.averageProfit || 0),
           borderColor: '#10B981',
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
           borderWidth: 2,
@@ -382,7 +385,7 @@ const Dashboard = () => {
         },
         {
           label: 'متوسط التدوير',
-          data: sortedDays.map(day => day.averageRollover),
+          data: sortedDays.map(day => day.averageRollover || 0),
           borderColor: '#F59E0B',
           backgroundColor: 'rgba(245, 158, 11, 0.1)',
           borderWidth: 2,
@@ -393,7 +396,7 @@ const Dashboard = () => {
         },
         {
           label: 'متوسط سحب الأرباح',
-          data: sortedDays.map(day => day.averageWithdrawProfit),
+          data: sortedDays.map(day => day.averageWithdrawProfit || 0),
           borderColor: '#8B5CF6',
           backgroundColor: 'rgba(139, 92, 246, 0.1)',
           borderWidth: 2,
@@ -467,7 +470,7 @@ const Dashboard = () => {
           label: function(context) {
             const label = context.dataset.label || '';
             const value = context.raw || 0;
-            return `${label}: ${convertAmount(value, 'USD', currentCurrency)}`;
+            return `${label}: ${formatCurrency(value, 'USD')}`;
           }
         }
       }
@@ -487,7 +490,7 @@ const Dashboard = () => {
           font: { family: 'Cairo' },
           color: '#6c757d',
           callback: function(value) {
-          return convertAmount(value, 'USD', currentCurrency);
+            return formatCurrency(value, 'USD');
           }
         },
         grid: {
