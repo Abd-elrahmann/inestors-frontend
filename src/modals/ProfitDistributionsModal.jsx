@@ -288,7 +288,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                   {displayData.distributions.map((distribution) => (
                     <StyledTableRow key={distribution.id}>
                       <StyledTableCell align="center">{distribution.investor.fullName}</StyledTableCell>
-                      <StyledTableCell align="center">{convertCurrency(distribution.investor.amount, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
+                      <StyledTableCell align="center">{convertCurrency(distribution.amount, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
