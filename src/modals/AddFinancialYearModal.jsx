@@ -54,7 +54,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
 
     if (!formData.endDate) {
       newErrors.endDate = 'تاريخ النهاية مطلوب';
-    } else if (new Date(formData.endDate) <= new Date(formData.startDate)) {
+    } else if (new Date(formData.endDate) < new Date(formData.startDate)) {
       newErrors.endDate = 'يجب أن يكون تاريخ النهاية بعد تاريخ البداية';
     }
     

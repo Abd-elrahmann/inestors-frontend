@@ -105,17 +105,14 @@ const Dashboard = () => {
     try {
       if (!contentRef.current) return;
 
-      // Hide filters temporarily
       if (filterSectionRef.current) {
         filterSectionRef.current.style.display = 'none';
       }
 
-      // Create PDF with A4 dimensions
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
-      // Capture dashboard content
       const canvas = await html2canvas(contentRef.current, {
         scale: 2,
         useCORS: true,
@@ -124,7 +121,6 @@ const Dashboard = () => {
         backgroundColor: '#f0f2f5'
       });
 
-      // Calculate dimensions to fit A4 while maintaining aspect ratio
       const imgWidth = pageWidth - 20;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
@@ -133,11 +129,9 @@ const Dashboard = () => {
       
       const imgData = canvas.toDataURL('image/png');
 
-      // Add first page
       pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      // Add new pages if content overflows
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
@@ -145,7 +139,6 @@ const Dashboard = () => {
         heightLeft -= pageHeight;
       }
 
-      // Restore filters display
       if (filterSectionRef.current) {
         filterSectionRef.current.style.display = 'block';
       }
@@ -153,7 +146,6 @@ const Dashboard = () => {
       pdf.save('dashboard_report.pdf');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      // Restore filters even if error occurs
       if (filterSectionRef.current) {
         filterSectionRef.current.style.display = 'block';
       }
@@ -185,7 +177,6 @@ const Dashboard = () => {
         Api.get('/api/dashboard/top-investors')
       ]);
 
-      // Handle overview data
       if (overviewResponse.status === 'fulfilled') {
         const data = overviewResponse.value.data;
         setOverviewData({
@@ -197,7 +188,6 @@ const Dashboard = () => {
         console.error('Error fetching overview:', overviewResponse.reason);
       }
 
-      // Handle aggregates data
       if (aggregatesResponse.status === 'fulfilled') {
         const data = aggregatesResponse.value.data;
         setAggregatesData({
@@ -209,7 +199,6 @@ const Dashboard = () => {
         console.error('Error fetching aggregates:', aggregatesResponse.reason);
       }
 
-      // Handle transactions data
       if (transactionsResponse.status === 'fulfilled') {
         const data = transactionsResponse.value.data;
         const convertedDays = data.days.map(day => ({
@@ -218,7 +207,7 @@ const Dashboard = () => {
           averageWithdraw: convertAmount(day.averageWithdraw, 'USD', currentCurrency),
           averageProfit: convertAmount(day.averageProfit, 'USD', currentCurrency),
           averageRollover: convertAmount(day.averageRollover, 'USD', currentCurrency),
-          averageWithdrawProfit: convertAmount(day.averageWithdrawProfit, 'USD', currentCurrency)
+          averageWithdrawProfit: convertAmount(day.averageWithdrawProfit, 'IQD', currentCurrency)
         }));
         setTransactionsData({
           ...data,
@@ -228,14 +217,13 @@ const Dashboard = () => {
         console.error('Error fetching transactions:', transactionsResponse.reason);
       }
 
-      // Handle financial years data
       if (financialYearsResponse.status === 'fulfilled') {
         const data = financialYearsResponse.value.data;
         const convertedData = data.map(year => ({
           ...year,
           financialYears: year.financialYears.map(fy => ({
             ...fy,
-            totalProfit: convertAmount(fy.totalProfit, 'IQD', currentCurrency)
+            totalProfit: convertAmount(fy.totalProfit, 'USD', currentCurrency)
           }))
         }));
         setFinancialYearsData(convertedData);
@@ -243,7 +231,6 @@ const Dashboard = () => {
         console.error('Error fetching financial years:', financialYearsResponse.reason);
       }
 
-      // Handle top investors data
       if (topInvestorsResponse.status === 'fulfilled') {
         const data = topInvestorsResponse.value.data.topInvestors;
         const convertedInvestors = data.map(investor => ({
@@ -262,7 +249,6 @@ const Dashboard = () => {
     }
   };
 
-  // Prepare data for charts
   const prepareFinancialsChartData = () => {
     return {
       labels: [aggregatesData.period || 'الفترة الحالية'],
@@ -345,7 +331,6 @@ const Dashboard = () => {
       };
     }
 
-    // ترتيب الأيام حسب التاريخ
     const sortedDays = [...transactionsData.days].sort((a, b) => 
       new Date(a.day) - new Date(b.day)
     );
@@ -542,7 +527,6 @@ const Dashboard = () => {
           </div>
         ) : (
           <div ref={contentRef}>
-            {/* Statistics Row - جميع البوكسات بنفس الحجم */}
             <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               {stats.map((stat, index) => (
                 <Col xs={24} sm={12} md={6} lg={6} key={index}>
@@ -577,7 +561,6 @@ const Dashboard = () => {
               ))}
             </Row>
 
-            {/* Top Investors Chart */}
             {topInvestorsData.length > 0 && (
               <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
                 <Col xs={24}>
@@ -597,9 +580,7 @@ const Dashboard = () => {
               </Row>
             )}
 
-            {/* Charts Section */}
             <Row gutter={[16, 16]}>
-              {/* البيانات المالية */}
               <Col xs={24}>
                 <Card 
                   title={
@@ -624,7 +605,6 @@ const Dashboard = () => {
                 </Card>
               </Col>
 
-              {/* توزيعات السنة المالية (أعمدة بدلاً من دائرة) */}
               {financialYearsData.length > 0 && financialYearsData[0].financialYears.length > 0 && (
                 <Col xs={24}>
                   <Card 
@@ -642,7 +622,6 @@ const Dashboard = () => {
                 </Col>
               )}
 
-              {/* مؤشرات العمليات اليومية */}
               {transactionsData.days.length > 0 && (
                 <Col xs={24}>
                   <Card 
