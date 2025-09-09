@@ -23,7 +23,7 @@ import {
   FilterOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
-import { QuestionMark } from "@mui/icons-material";
+import { QuestionMark, CloudUpload } from "@mui/icons-material";
 import { Spin } from "antd";
 import AddInvestorModal from "../modals/AddInvestorModal";
 import { RestartAltOutlined } from "@mui/icons-material";
@@ -49,6 +49,7 @@ const Investors = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
+  const [importLoading, setImportLoading] = useState(false);
   const { data: settings } = useSettings();
   const isMobile = useMediaQuery('(max-width: 480px)');
 
@@ -157,25 +158,24 @@ const Investors = () => {
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.aoa_to_sheet(template);
 
-    // Set column formats
     const range = XLSX.utils.decode_range(worksheet['!ref']);
-    const phoneCol = 1; // Column B (0-based)
-    const dateCol = 3; // Column D (0-based)
+    const phoneCol = 1; 
+    const dateCol = 3; 
 
-    // Format phone numbers as text
+    
     for(let R = range.s.r + 1; R <= range.e.r; ++R) {
       const phoneCell = XLSX.utils.encode_cell({r: R, c: phoneCol});
       if(!worksheet[phoneCell]) continue;
-      worksheet[phoneCell].t = 's'; // Set type to string/text
-      worksheet[phoneCell].z = '@'; // Format as text
+      worksheet[phoneCell].t = 's'; 
+      worksheet[phoneCell].z = '@'; 
     }
 
-    // Format dates
+    
     for(let R = range.s.r + 1; R <= range.e.r; ++R) {
       const dateCell = XLSX.utils.encode_cell({r: R, c: dateCol});
       if(!worksheet[dateCell]) continue;
-      worksheet[dateCell].t = 'd'; // Set type to date
-      worksheet[dateCell].z = 'yyyy-mm-dd'; // Format as date
+      worksheet[dateCell].t = 'd'; 
+      worksheet[dateCell].z = 'yyyy-mm-dd'; 
     }
 
     XLSX.utils.book_append_sheet(workbook, worksheet, 'التقرير');
@@ -185,6 +185,45 @@ const Investors = () => {
     link.href = URL.createObjectURL(blob);
     link.download = 'investors_template.xlsx';
     link.click();
+  };
+
+  const handleImportInvestors = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const validTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'
+    ];
+    
+    if (!validTypes.includes(file.type)) {
+      toast.error('يرجى اختيار ملف Excel صالح (.xlsx or .xls)');
+      return;
+    }
+
+    setImportLoading(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await Api.post('/api/investors/import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      toast.success(`تم استيراد ${response.data.importedCount || 0} مستثمر بنجاح`);
+      queryClient.invalidateQueries("investors");
+      
+    } catch (error) {
+      console.error('Error importing investors:', error);
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'فشل في استيراد الملف';
+      toast.error(errorMessage);
+    } finally {
+      setImportLoading(false);
+      event.target.value = '';
+    }
   };
 
   const filteredInvestors = investorsData?.investors || [];
@@ -238,6 +277,24 @@ const Investors = () => {
               <QuestionMark style={{marginRight: '10px'}} />
             </IconButton>
           </Tooltip>
+
+          <Tooltip title="استيراد مستثمرين من Excel">
+            <IconButton 
+              component="label" 
+              disabled={importLoading}
+              sx={{ 
+                color: importLoading ? 'grey' : 'primary.main',
+              }}
+            >
+              <CloudUpload style={{marginRight: '10px'}} />
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleImportInvestors}
+                style={{ display: 'none' }}
+              />
+            </IconButton>
+          </Tooltip>
         </Stack>
 
         <Stack 
@@ -285,6 +342,23 @@ const Investors = () => {
           )}
         </Stack>
       </Stack>
+
+      {importLoading && (
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          mb: 2,
+          p: 2,
+          backgroundColor: 'rgba(25, 118, 210, 0.1)',
+          borderRadius: 1,
+          border: '1px solid rgba(25, 118, 210, 0.3)'
+        }}>
+          <Spin size="small" style={{ marginLeft: '10px' }} />
+          <span style={{ color: '#1976d2', fontWeight: 500 }}>جاري استيراد المستثمرين...</span>
+        </Box>
+      )}
+
       <Box className="content-area">
         <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
           <Table stickyHeader>
@@ -328,7 +402,7 @@ const Investors = () => {
                         {investor.fullName}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {investor.phone}
+                        {investor.phone||'-'}
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         {convertCurrency(investor.amount, 'IQD', settings?.defaultCurrency).toLocaleString('en-US', {
@@ -346,7 +420,7 @@ const Investors = () => {
                         2
                       )}%`}</StyledTableCell>
                       <StyledTableCell align="center">
-                        {investor.createdAt}
+                        {investor.createdAt||'-'}
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         <Link to={`/transactions/${investor.id}`}>
