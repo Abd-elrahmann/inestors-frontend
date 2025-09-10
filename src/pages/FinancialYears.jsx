@@ -129,17 +129,6 @@ const FinancialYear = () => {
     setDistributionModalOpen(true);
   };
 
-  const handleApprove = async (yearId) => {
-    try {
-      await Api.patch(`/api/financial-years/${yearId}/approve`);
-      toast.success('تم اعتماد السنة المالية بنجاح');
-      queryClient.invalidateQueries('financialYears');
-    } catch (error) {
-      console.error('Error approving financial year:', error);
-      toast.error('فشل في اعتماد السنة المالية');
-    }
-  };
-
   const handleDelete = async (yearId) => {
     try {
       await Api.delete(`/api/financial-years/${yearId}`);
@@ -343,17 +332,6 @@ const FinancialYear = () => {
               عرض التوزيعات
             </MenuItem>
           )}
-
-          {selectedYearForMenu?.status === 'PENDING' && (
-            <MenuItem onClick={() => {
-              handleApprove(selectedYearForMenu.id);
-              setAnchorEl(null);
-            }}>
-              <CheckCircleOutlined style={{marginLeft: 8,color:'green'}} />
-              موافقة على التوزيعات
-            </MenuItem>
-          )}
-
           {['PENDING', 'DISTRIBUTED'].includes(selectedYearForMenu?.status) && (
             <MenuItem onClick={() => {
               setShowDeleteModal(true);
