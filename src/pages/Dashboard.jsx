@@ -428,7 +428,7 @@ const Dashboard = () => {
     },
     {
       title: `الأرباح المحققة`,
-      value: convertAmount(overviewData.totalProfit, 'USD', currentCurrency),
+      value: convertAmount(overviewData.totalRollover, 'USD', currentCurrency),
       icon: <RiseOutlined style={{ color: '#ffc107', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.profit || 0,
       color: '#ffc107',

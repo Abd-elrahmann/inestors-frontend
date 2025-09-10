@@ -13,7 +13,8 @@ import {
   InputBase,
   Fab,
   useMediaQuery,
-  Tooltip
+  Tooltip,
+  Checkbox
 } from "@mui/material";
 import {
   EditOutlined,
@@ -52,6 +53,7 @@ const Investors = () => {
   const [page, setPage] = useState(1);
   const { data: settings } = useSettings();
   const isMobile = useMediaQuery('(max-width: 480px)');
+  const [selectedIds, setSelectedIds] = useState([]);
 
   // Fetch investors query
   const {
@@ -78,7 +80,24 @@ const Investors = () => {
     }
   );
   const totalPages = investorsData?.totalPages || 0;
-  // Delete investor mutation
+
+  // Delete investors mutation
+  const deleteInvestorsMutation = useMutation(
+    (ids) => Api.delete('/api/investors', { data: { ids } }),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries("investors");
+        toast.success("تم حذف المستثمرين بنجاح");
+        setSelectedIds([]);
+      },
+      onError: (error) => {
+        console.error("Error deleting investors:", error);
+        toast.error("فشل في حذف المستثمرين");
+      },
+    }
+  );
+
+  // Delete single investor mutation
   const deleteInvestorMutation = useMutation(
     (investorId) => Api.delete(`/api/investors/${investorId}`),
     {
@@ -121,7 +140,11 @@ const Investors = () => {
   };
 
   const handleDeleteInvestor = async (investor) => {
-    deleteInvestorMutation.mutate(investor.id);
+    if (selectedIds.length > 0) {
+      deleteInvestorsMutation.mutate(selectedIds);
+    } else {
+      deleteInvestorMutation.mutate(investor.id);
+    }
     setShowDeleteModal(false);
     setSelectedInvestor(null); 
   };
@@ -241,6 +264,23 @@ const Investors = () => {
     return amount;
   };
 
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      const newSelectedIds = filteredInvestors.map((investor) => investor.id);
+      setSelectedIds(newSelectedIds);
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (event, id) => {
+    if (event.target.checked) {
+      setSelectedIds([...selectedIds, id]);
+    } else {
+      setSelectedIds(selectedIds.filter((selectedId) => selectedId !== id));
+    }
+  };
+
   return (
     <>
       <Helmet>
@@ -272,6 +312,25 @@ const Investors = () => {
             <PlusOutlined style={{ marginLeft: 8 }} />
             إضافة مستثمر
           </Fab>
+
+          {selectedIds.length > 0 && (
+            <IconButton
+              color="error"
+              variant="extended"
+              onClick={() => setShowDeleteModal(true)}
+              sx={{
+                width: isMobile ? '100%' : '100px',
+                borderRadius: '8px',
+                fontWeight: 'bold',
+                height: '40px',
+                fontSize: '14px',
+                order: isMobile ? 1 : 0
+              }}
+            >
+              <DeleteOutlined style={{ marginLeft: 8 }} />
+           ({selectedIds.length})
+            </IconButton>
+          )}
 
           <Tooltip title="تحميل نموذج المستثمرين">
             <IconButton onClick={handleDownloadTemplate}>
@@ -361,10 +420,18 @@ const Investors = () => {
       )}
 
       <Box className="content-area">
-        <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
+        <TableContainer component={Paper} sx={{ maxHeight: 650,scrollbarWidth: 'none' }}>
           <Table stickyHeader>
             <TableHead>
               <TableRow>
+                <StyledTableCell padding="checkbox">
+                  <Checkbox
+                  style={{color: 'white'}}
+                    checked={selectedIds.length === filteredInvestors.length && filteredInvestors.length > 0}
+                    indeterminate={selectedIds.length > 0 && selectedIds.length < filteredInvestors.length}
+                    onChange={handleSelectAll}
+                  />
+                </StyledTableCell>
                 <StyledTableCell align="center"> مسلسل المستثمر</StyledTableCell>
                 <StyledTableCell align="center">اسم المستثمر</StyledTableCell>
                 <StyledTableCell align="center"> الهاتف</StyledTableCell>
@@ -381,8 +448,8 @@ const Investors = () => {
             </TableHead>
             <TableBody>
               {isLoading || isFetching ? (
-                <StyledTableRow>
-                  <StyledTableCell colSpan={7} align="center">
+                <StyledTableRow>  
+                  <StyledTableCell colSpan={11} align="center">
                     <Spin style={{marginRight:'230px'}} size="large" />
                   </StyledTableCell>
                 </StyledTableRow>
@@ -396,6 +463,12 @@ const Investors = () => {
                 <>
                   {filteredInvestors.map((investor) => (
                     <StyledTableRow key={investor.id}>
+                      <StyledTableCell padding="checkbox">
+                        <Checkbox
+                          checked={selectedIds.includes(investor.id)}
+                          onChange={(event) => handleSelectOne(event, investor.id)}
+                        />
+                      </StyledTableCell>
                       <StyledTableCell align="center">
                         {investor.id}
                       </StyledTableCell>
@@ -455,7 +528,7 @@ const Investors = () => {
                   ))}
                   <StyledTableRow>
                     <StyledTableCell
-                      colSpan={3}
+                      colSpan={4}
                       align="center"
                       sx={{ fontWeight: "bold" }}
                     >
@@ -508,9 +581,12 @@ const Investors = () => {
           open={showDeleteModal}
           onClose={handleCloseDeleteModal}
           onConfirm={() => handleDeleteInvestor(selectedInvestor)}
-          title="حذف المستثمر"
-          message={`هل أنت متأكد من حذف المستثمر؟`}
-          isLoading={deleteInvestorMutation.isLoading}
+          title={selectedIds.length > 0 ? "حذف المستثمرين المحددين" : "حذف المستثمر"}
+          message={selectedIds.length > 0 
+            ? `هل أنت متأكد من حذف ${selectedIds.length} مستثمرين؟`
+            : "هل أنت متأكد من حذف المستثمر؟"
+          }
+          isLoading={deleteInvestorMutation.isLoading || deleteInvestorsMutation.isLoading}
           ButtonText="حذف"
         />
 

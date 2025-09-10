@@ -246,7 +246,7 @@ const AddFinancialYearModal = ({ open, onClose, onSuccess }) => {
               fullWidth
               label="الفترة"
               value={formData.endDate && formData.startDate ? 
-                `${Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)) + 1} يوم` : ''}
+                `${Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24))} يوم` : ''}
               disabled={true}
             />
           </Box>
