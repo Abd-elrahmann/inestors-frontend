@@ -195,7 +195,7 @@ const Users = () => {
             
                 sx={{ border: '1px solid', borderColor: 'divider' }}
               >
-                <RestartAltOutlined style={{color: 'blue'}} />
+                <RestartAltOutlined style={{color: 'red'}} />
               </IconButton>
             )}
           </Stack>

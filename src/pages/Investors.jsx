@@ -397,7 +397,7 @@ const Investors = () => {
               }}
               sx={{ border: isMobile ? 'none' : "1px solid", borderColor: isMobile ? 'none' : "divider" }}
             >
-              <RestartAltOutlined style={{ color: "blue" }} />
+              <RestartAltOutlined style={{ color: "red" }} />
             </IconButton>
           )}
         </Stack>
@@ -554,7 +554,7 @@ const Investors = () => {
           </Table>
           <TablePagination
             component="div"
-            count={totalPages * rowsPerPage}
+            count={totalPages * rowsPerPage }
             page={page - 1}
             onPageChange={(e, newPage) => {
               setPage(newPage + 1);

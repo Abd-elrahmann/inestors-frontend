@@ -512,7 +512,7 @@ const Reports = () => {
                 <TableBody>
                   {(reportData.transactions || []).slice(0, 5).map((transaction) => (
                     <StyledTableRow key={transaction.id}>
-                      <StyledTableCell align="center">{transaction.type === 'DEPOSIT' ? 'إيداع' : transaction.type === 'WITHDRAWAL' ? 'سحب' : transaction.type === 'ROLLOVER' ? 'تدوير' : 'غير محدد'}</StyledTableCell>
+                      <StyledTableCell align="center">{transaction.type === 'DEPOSIT' ? 'إيداع' : transaction.type === 'WITHDRAWAL' ? 'سحب' : transaction.type === 'PROFIT' ? 'ربح' : 'غير محدد'}</StyledTableCell>
                       <StyledTableCell align="center">{convertCurrency(transaction.amount || 0, transaction.currency || 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 0
@@ -618,7 +618,7 @@ const Reports = () => {
                   reportData.slice(0, 5).map((transaction) => (
                     <StyledTableRow key={transaction.id}>
                       <StyledTableCell align="center">{transaction.investors?.fullName}</StyledTableCell>
-                      <StyledTableCell align="center">{transaction.type === 'DEPOSIT' ? 'إيداع' : 'سحب'}</StyledTableCell>
+                      <StyledTableCell align="center">{transaction.type === 'DEPOSIT' ? 'إيداع' : transaction.type === 'WITHDRAWAL' ? 'سحب' : transaction.type === 'PROFIT' ? 'ربح' : 'غير محدد'}</StyledTableCell>
                           <StyledTableCell align="center">{convertCurrency(transaction.amount || 0, transaction.currency || 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 0
@@ -696,16 +696,28 @@ const Reports = () => {
                 <TableHead>
                   <TableRow>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      مسلسل المستثمر
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                       المستثمر
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                            رأس المال
+                      رأس المال
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      الربح
+                      مبلغ التدوير (المستقبل)
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      تاريخ الانضمام
+                      نسبة المساهمة
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      الربح اليومي
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      اجمالي الربح
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      تاريخ المساهمة
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                       تاريخ التوزيع
@@ -715,26 +727,39 @@ const Reports = () => {
                 <TableBody>
                   {(reportData.profitDistributions || []).map((distribution, index) => (
                     <StyledTableRow key={index}>
+                      <StyledTableCell align="center">{distribution.investors?.id || 'غير معروف'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.investors?.fullName || 'غير معروف'}</StyledTableCell>
                       <StyledTableCell align="center">
                         {convertCurrency(distribution.amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0
+                          minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
+                          maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                          {convertCurrency(distribution.investors?.amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0
+                        {distribution.investors?.rollover_amount ? 
+                          convertCurrency(distribution.investors.rollover_amount, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
+                            minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
+                            maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0
+                          })
+                          : '0'
+                        } {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
+                      </StyledTableCell>
+                      <StyledTableCell align="center">{distribution.percentage?.toFixed(2)}%</StyledTableCell>
+                      <StyledTableCell align="center">
+                        {convertCurrency(distribution.dailyProfit || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
+                          minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
+                          maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {distribution.investors?.createdAt ? distribution.investors.createdAt : 'غير محدد'}
+                        {convertCurrency(distribution.totalProfit || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
+                          minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
+                          maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0
+                        })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
-                      <StyledTableCell align="center">
-                        {reportData.distributedAt ? reportData.distributedAt : 'غير محدد'}
-                      </StyledTableCell>
-                      </StyledTableRow>
+                      <StyledTableCell align="center">{distribution.investors?.createdAt || 'غير محدد'}</StyledTableCell>
+                      <StyledTableCell align="center">{reportData.distributedAt || 'غير محدد'}</StyledTableCell>
+                    </StyledTableRow>
                   ))}
                 </TableBody>
               </Table>

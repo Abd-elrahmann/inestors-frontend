@@ -35,7 +35,6 @@ import {
 } from '@mui/icons-material';
 import { StyledTableCell, StyledTableRow } from '../styles/TableLayout';
 import dayjs from 'dayjs';
-import Api from '../services/api';
 import { useSettings } from '../hooks/useSettings';
 const TabPanel = (props) => {
   const { children, value, index, ...other } = props;
@@ -113,14 +112,14 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
       open={open} 
       onClose={onClose} 
       maxWidth="lg"
-      sx={{marginRight: '250px'}} 
+      sx={{marginRight: '250px',scrollbarWidth: 'none'}} 
       fullWidth
       TransitionProps={{
           timeout: { enter: 200, exit: 150 }
       }}
     >
       <DialogTitle>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
+        <Box display="flex" alignItems="center" justifyContent="space-between" sx={{scrollbarWidth: 'none'}}>
           <Typography variant="h6" component="div" fontWeight="bold">
             توزيعات أرباح {financialYear.periodName || `السنة المالية`}
           </Typography>
@@ -130,7 +129,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
         </Box>
       </DialogTitle>
 
-      <DialogContent>
+      <DialogContent sx={{scrollbarWidth: 'none'}}>
         <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
           <Tab label="ملخص التوزيعات" />
           <Tab label="تفاصيل التوزيعات" />
@@ -150,8 +149,8 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
             </Typography>
             <Typography variant="body2" component="div" sx={{mb: 2}}>
               <strong>💰  مبلغ التوزيع:</strong> {convertCurrency(displayData.summary.totalDistributed, displayData.summary.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
+                minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
+                maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
               })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
               <br />
               <strong>🧮 طريقة حساب الارباح للمستثمر:</strong> اجمالي الربح x نسبة المساهمة
@@ -188,8 +187,8 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                       </Typography>
                       <Typography variant="h5" component="div">
                         {convertCurrency(displayData.summary.totalProfit,displayData.summary.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0
+                          minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
+                          maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </Typography>
                     </Box>
@@ -209,8 +208,8 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                       </Typography>
                       <Typography variant="h5" component="div">
                         {convertCurrency(displayData.summary.dailyProfit, displayData.summary.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0
+                          minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
+                          maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </Typography>
                     </Box>
@@ -274,10 +273,13 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
             <TableContainer component={Paper} sx={{ maxHeight: 650,width: '100%' }}>
               <Table stickyHeader>
                 <TableHead>
-                  <StyledTableRow>
+                  <StyledTableRow >
+                    <StyledTableCell align="center">مسلسل المستثمر</StyledTableCell>
                     <StyledTableCell align="center">المستثمر</StyledTableCell>
                     <StyledTableCell align="center">رأس المال</StyledTableCell>
+                    <StyledTableCell align="center">مبلغ التدوير (المستقبل)</StyledTableCell>
                     <StyledTableCell align="center">نسبة المساهمة</StyledTableCell>
+                    <StyledTableCell align="center">الايام حتي الان</StyledTableCell>
                     <StyledTableCell align="center"> الربح اليومي</StyledTableCell>
                     <StyledTableCell align="center">اجمالي الربح</StyledTableCell>
                     <StyledTableCell align='center'>تاريخ المساهمة</StyledTableCell>
@@ -287,19 +289,30 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                 <TableBody>
                   {displayData.distributions.map((distribution) => (
                     <StyledTableRow key={distribution.id}>
+                      <StyledTableCell align="center">{distribution.investor.id}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.investor.fullName}</StyledTableCell>
                       <StyledTableCell align="center">{convertCurrency(distribution.amount, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
+                        minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
+                        maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
+                      <StyledTableCell align="center">
+                        {distribution.investor.rollover_amount ? 
+                          convertCurrency(distribution.investor.rollover_amount, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
+                            minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
+                            maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0
+                          })
+                          : '0'
+                        } {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
+                      </StyledTableCell>
                       <StyledTableCell align="center">{distribution.percentage.toFixed(2)}%</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.daysSoFar}</StyledTableCell>
                       <StyledTableCell align="center">{convertCurrency(distribution.dailyProfit, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                      })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
+                        minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
+                        maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
+                      })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell> 
                       <StyledTableCell align="center">{convertCurrency(distribution.totalProfit, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
+                        minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
+                        maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.investor.createdAt}</StyledTableCell>
                       <StyledTableCell align="center">{displayData.summary.distributedAt}</StyledTableCell>

@@ -17,6 +17,7 @@ import {
   Card,
   Typography,
   useMediaQuery,
+  Checkbox,
 } from "@mui/material";
 import { toast } from "react-toastify";
 import { Spin } from "antd";
@@ -28,6 +29,7 @@ import {
   FilterOutlined,
   ArrowLeftOutlined,
 } from "@ant-design/icons";
+import { RestartAltOutlined } from "@mui/icons-material";
 import AddTransactionModal from "../modals/AddTransactionModal";
 import { StyledTableCell, StyledTableRow } from "../styles/TableLayout";
 import Api from "../services/api";
@@ -59,6 +61,7 @@ const Transactions = () => {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
   const { data: settings } = useSettings();
+  const [selectedIds, setSelectedIds] = useState([]);
   const convertCurrency = (amount, fromCurrency, toCurrency) => {
     if (fromCurrency === toCurrency) return amount;
     if (!settings?.USDtoIQD) return amount;
@@ -103,6 +106,7 @@ const Transactions = () => {
         queryClient.invalidateQueries("transactions");
         setShowDeleteModal(false);
         setSelectedTransaction(null);
+        setSelectedIds([]);
         toast.success("تم حذف العملية بنجاح");
       },
       onError: (error) => {
@@ -111,7 +115,22 @@ const Transactions = () => {
       },
     }
   );
-
+  const deleteTransactionsMutation = useMutation(
+    (ids) => Api.delete('/api/transactions', { data: { ids } }),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries("transactions");
+        setShowDeleteModal(false);
+        setSelectedTransaction(null);
+        setSelectedIds([]);
+        toast.success("تم حذف العمليات بنجاح");
+      },
+      onError: (error) => {
+        console.error("Error deleting transactions:", error);
+        toast.error("فشل في حذف العمليات");
+      }
+    }
+  );
   const handleAddTransaction = () => {
     setAddModalOpen(true);
   };
@@ -125,9 +144,16 @@ const Transactions = () => {
     setSelectedTransaction(transaction);
     setShowDeleteModal(true);
   };
-
   const handleDeleteTransaction = async (transaction) => {
-    deleteTransactionMutation.mutate(transaction.id);
+    try {
+      if (selectedIds.length > 0) {
+        await deleteTransactionsMutation.mutateAsync(selectedIds);
+      } else if (transaction?.id) {
+        await deleteTransactionMutation.mutateAsync(transaction.id);
+      }
+    } catch (error) {
+      console.error("Error in delete operation:", error);
+    }
   };
 
   const handleAddSuccess = () => {
@@ -155,14 +181,33 @@ const Transactions = () => {
     setPage(1);
   };
 
+  const handleSelectAll = (event) => {
+    if (event.target.checked && transactionsData?.transactions) {
+      const newSelectedIds = transactionsData.transactions.map((transaction) => transaction.id);
+      setSelectedIds(newSelectedIds);
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (event, id) => {
+    if (!id) return;
+    
+    if (event.target.checked) {
+      setSelectedIds(prev => [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
+    }
+  };
+
   const getTransactionTypeLabel = (type) => {
     switch (type) {
       case "DEPOSIT":
         return "ايداع";
       case "WITHDRAWAL":
         return "سحب";
-      case "ROLLOVER":
-        return "تدوير";
+      case "PROFIT":
+        return "ربح";
       default:
         return "غير محدد";
     }
@@ -171,21 +216,21 @@ const Transactions = () => {
   const getTransactionTypeColor = (type) => {
     switch (type) {
       case "DEPOSIT":
-        return "success";
+        return "warning";
       case "WITHDRAWAL":
         return "error";
-      case "ROLLOVER":
-        return "secondary";
+      case "PROFIT":
+        return "primary";
       default:
         return "default";
     }
   };
 
   const transactions = transactionsData?.transactions || [];
-  const totalPages = transactionsData?.totalPages || 0;
+  const totalPages = transactionsData?.totalPages || 0; 
   const investorDetails = transactions[0]?.investors;
   const amount = transactions.reduce((total, transaction) => {
-    return total + transaction.amount;
+    return total + (transaction?.amount || 0);
   }, 0);
   const currency = settings?.defaultCurrency || 'USD';
 
@@ -233,7 +278,7 @@ const Transactions = () => {
           </Card>
         )}
 
-        <Stack
+          <Stack
           direction={isMobile ? 'column' : 'row'}
           justifyContent="space-between"
           alignItems="center"
@@ -241,25 +286,47 @@ const Transactions = () => {
           mt={5}
           spacing={2}
         >
-          {isAdmin && (
-            <Fab
-              variant="extended"
-              color="primary"
-              onClick={handleAddTransaction}
-              sx={{
-                borderRadius: "8px",
-                fontWeight: "bold",
-                textTransform: "none",
-                height: "40px",
-                width: isMobile ? '100%' : '180px',
-              }}
-            >
-              <PlusOutlined style={{ marginLeft: 8 }} />
-              إضافة عملية جديدة
-            </Fab>
-          )}
+          <Stack direction={isMobile ? 'column' : 'row'} spacing={1}>
+            {isAdmin && (
+              <>
+                <Fab
+                  variant="extended"
+                  color="primary"
+                  onClick={handleAddTransaction}
+                  sx={{
+                    borderRadius: "8px",
+                    fontWeight: "bold",
+                    textTransform: "none",
+                    height: "40px",
+                    width: isMobile ? '100%' : '180px',
+                  }}
+                >
+                  <PlusOutlined style={{ marginLeft: 8 }} />
+                  إضافة عملية جديدة
+                </Fab>
+                {selectedIds.length > 0 && (
+                  <IconButton
+                    color="error"
+                    variant="extended"
+                    onClick={() => setShowDeleteModal(true)}
+                    sx={{
+                      width: isMobile ? '100%' : '100px',
+                      borderRadius: '8px',
+                      fontWeight: 'bold',
+                      height: '40px',
+                      fontSize: '14px',
+                      order: isMobile ? 1 : 0
+                    }}
+                  >
+                    <DeleteOutlined style={{ marginLeft: 8 }} />
+                    ({selectedIds.length})
+                  </IconButton>
+                )}
+              </>
+            )}
+          </Stack>
 
-          <Stack direction={isMobile ? 'column' : 'row'} justifyContent={isMobile ? 'center' : 'space-between'} spacing={1}>
+          <Stack direction={isMobile ? 'column' : 'row'} spacing={1}>
             {isAdmin && (
               <>
                 <InputBase
@@ -288,15 +355,34 @@ const Transactions = () => {
                 >
                   <FilterOutlined />
                 </IconButton>
+                {(searchQuery || Object.keys(advancedFilters).length > 0) && (
+                  <IconButton
+                    onClick={() => {
+                      setSearchQuery("");
+                      setPage(1);
+                      setAdvancedFilters({});
+                    }}
+                    sx={{ border: isMobile ? 'none' : "1px solid", borderColor: isMobile ? 'none' : "divider" }}
+                  >
+                    <RestartAltOutlined style={{ color: "red" }} />
+                  </IconButton>
+                )}
               </>
             )}
           </Stack>
         </Stack>
-
-        <TableContainer component={Paper} sx={{ maxHeight: 650 }}>
+        <TableContainer component={Paper} sx={{ maxHeight: 650,scrollbarWidth: 'none' }}>
   <Table stickyHeader>
     <TableHead>
       <TableRow>
+        <StyledTableCell padding="checkbox">
+          <Checkbox
+          style={{color: 'white'}}
+            checked={selectedIds.length === transactions.length && transactions.length > 0}
+            indeterminate={selectedIds.length > 0 && selectedIds.length < transactions.length}
+            onChange={handleSelectAll}
+          />
+        </StyledTableCell>
         <StyledTableCell align="center">مسلسل العملية</StyledTableCell>
         <StyledTableCell align="center">اسم المساهم</StyledTableCell>
         <StyledTableCell align="center">نوع المعاملة</StyledTableCell>
@@ -326,6 +412,12 @@ const Transactions = () => {
       ) : (
         transactions.map((transaction) => (
           <StyledTableRow key={transaction.id}>
+            <StyledTableCell padding="checkbox">
+              <Checkbox
+                checked={selectedIds.includes(transaction.id)}
+                onChange={(event) => handleSelectOne(event, transaction.id)}
+              />
+            </StyledTableCell>
             <StyledTableCell align="center">
               {transaction.id || "غير محدد"}
             </StyledTableCell>
@@ -357,7 +449,7 @@ const Transactions = () => {
               {transaction.currency || "USD"}
             </StyledTableCell>
             <StyledTableCell align="center">
-              {transaction.withdrawSource === "AMOUNT" ? "رأس المال" : transaction.withdrawSource === "ROLLOVER" ? "مبلغ التدوير" : "-"}
+              {transaction.withdrawSource === "AMOUNT" ? "رأس المال" : transaction.withdrawSource === "PROFIT" ? "ربح" : "-"}
             </StyledTableCell>
             <StyledTableCell align="center">
               {transaction.financialYear?.year || "-"} {transaction.financialYear?.periodName ? `- ${transaction.financialYear.periodName}` : ''}
@@ -407,9 +499,9 @@ const Transactions = () => {
           open={showDeleteModal}
           onClose={handleCloseDeleteModal}
           onConfirm={() => handleDeleteTransaction(selectedTransaction)}
-          title="حذف العملية"
-          message={`هل أنت متأكد من حذف العملية؟`}
-          isLoading={deleteTransactionMutation.isLoading}
+          title={selectedIds.length > 0 ? "حذف العمليات المحددة" : "حذف العملية"}
+          message={selectedIds.length > 0 ? `هل أنت متأكد من حذف ${selectedIds.length} عمليات؟` : `هل أنت متأكد من حذف العملية؟`}
+          isLoading={deleteTransactionMutation.isLoading || deleteTransactionsMutation.isLoading}
           ButtonText="حذف"
         />
 
@@ -417,6 +509,7 @@ const Transactions = () => {
           open={searchModalOpen}
           onClose={() => setSearchModalOpen(false)}
           onSearch={handleAdvancedSearch}
+          transactions={transactions}
         />
       </Box>
     </>

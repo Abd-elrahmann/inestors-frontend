@@ -15,17 +15,22 @@ import { Close as CloseIcon } from '@mui/icons-material';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import Api from '../services/api';
 import { toast } from 'react-toastify';
+import dayjs from 'dayjs';
 
 const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    periodName: ''
+    periodName: '',
+    startDate: '',
+    endDate: ''
   });
 
   useEffect(() => {
     if (financialYear && open) {
       setFormData({
-        periodName: financialYear.periodName || ''
+        periodName: financialYear.periodName || '',
+        startDate: financialYear.startDate ? dayjs(financialYear.startDate).format('MM/DD/YYYY') : '',
+        endDate: financialYear.endDate ? dayjs(financialYear.endDate).format('MM/DD/YYYY') : ''
       });
     }
   }, [financialYear, open]);
@@ -49,7 +54,9 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
     setLoading(true);
     try {
       await Api.put(`/api/financial-years/${financialYear.id}`, {
-        periodName: formData.periodName
+        periodName: formData.periodName,
+        startDate: formData.startDate,
+        endDate: formData.endDate
       });
       toast.success('تم تحديث إعدادات التدوير بنجاح');
       onSuccess();
@@ -65,7 +72,9 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
   const handleClose = () => {
     if (!loading) {
       setFormData({
-        periodName: ''
+        periodName: '',
+        startDate: '',
+        endDate: ''
       });
       onClose();
     }
@@ -126,6 +135,24 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
               value={formData.periodName}
               onChange={(e) => setFormData(prev => ({ ...prev, periodName: e.target.value }))}
               disabled={loading}
+            />
+
+            <TextField
+              fullWidth
+              label="تاريخ البدء"
+              value={formData.startDate}
+              onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+              disabled={loading}
+              placeholder="MM/DD/YYYY"
+            />
+
+            <TextField
+              fullWidth
+              label="تاريخ النهاية"
+              value={formData.endDate}
+              onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+              disabled={loading}
+              placeholder="MM/DD/YYYY"
             />
           </Box>
         </DialogContent>

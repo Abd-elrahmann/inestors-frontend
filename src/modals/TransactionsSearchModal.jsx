@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -11,7 +11,8 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Select
+  Select,
+  Autocomplete
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
@@ -19,14 +20,39 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
-const TransactionsSearchModal = ({ open, onClose, onSearch }) => {
+  const TransactionsSearchModal = ({ open, onClose, onSearch, transactions }) => {
   const [filters, setFilters] = useState({
     type: '',
     minAmount: '',
     maxAmount: '',
     startDate: null,
-    endDate: null
+    endDate: null,
+    year: null,
+    periodName: null
   });
+
+  const [financialYears, setFinancialYears] = useState([]);
+
+  // استخراج السنوات المالية الفريدة من البيانات
+  useEffect(() => {
+    if (transactions && transactions.length > 0) {
+      const yearsMap = new Map();
+      
+      transactions.forEach(transaction => {
+        if (transaction.financialYear) {
+          const key = `${transaction.financialYear.year}-${transaction.financialYear.periodName}`;
+          if (!yearsMap.has(key)) {
+            yearsMap.set(key, {
+              year: transaction.financialYear.year,
+              periodName: transaction.financialYear.periodName
+            });
+          }
+        }
+      });
+      
+      setFinancialYears(Array.from(yearsMap.values()));
+    }
+  }, [transactions]);
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({
@@ -36,7 +62,6 @@ const TransactionsSearchModal = ({ open, onClose, onSearch }) => {
   };
 
   const handleSearch = () => {
-    // إنشاء كائن فلترة صحيح مع إزالة الحقول الفارغة
     const searchFilters = {};
     
     if (filters.type) searchFilters.type = filters.type;
@@ -44,6 +69,12 @@ const TransactionsSearchModal = ({ open, onClose, onSearch }) => {
     if (filters.maxAmount) searchFilters.maxAmount = filters.maxAmount;
     if (filters.startDate) searchFilters.startDate = filters.startDate.toISOString().split('T')[0];
     if (filters.endDate) searchFilters.endDate = filters.endDate.toISOString().split('T')[0];
+    if (filters.year) {
+      searchFilters.year = filters.year;
+    }
+    if (filters.periodName) {
+      searchFilters.periodName = filters.periodName;
+    }
     
     onSearch(searchFilters);
     onClose();
@@ -55,16 +86,18 @@ const TransactionsSearchModal = ({ open, onClose, onSearch }) => {
       minAmount: '',
       maxAmount: '',
       startDate: null,
-      endDate: null
+      endDate: null,
+      year: null,
+      periodName: null
     });
     onSearch({});
     onClose();
   };
 
   const transactionTypes = [
-    { value: 'deposit', label: 'ايداع' },
-    { value: 'withdrawal', label: 'سحب' },
-    { value: 'rollover', label: 'تدوير' }, 
+    { value: 'DEPOSIT', label: 'ايداع' },
+    { value: 'WITHDRAWAL', label: 'سحب' },
+    { value: 'PROFIT', label: 'ربح' }, 
   ];
 
   return (
@@ -105,6 +138,31 @@ const TransactionsSearchModal = ({ open, onClose, onSearch }) => {
                 ))}
               </Select>
             </FormControl>
+
+            <Autocomplete
+              value={financialYears.find(y => y.year === filters.year && y.periodName === filters.periodName) || null}
+              onChange={(event, newValue) => {
+                if (newValue) {
+                  handleFilterChange('year', newValue.year);
+                  handleFilterChange('periodName', newValue.periodName);
+                } else {
+                  handleFilterChange('year', null);
+                  handleFilterChange('periodName', null);
+                }
+              }}
+              options={financialYears}
+              getOptionLabel={(option) => `${option.year} - ${option.periodName}`}
+              isOptionEqualToValue={(option, value) => 
+                option.year === value.year && option.periodName === value.periodName
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="السنة المالية"
+                  fullWidth
+                />
+              )}
+            />
 
             <TextField
               label="الحد الأدنى للمبلغ"

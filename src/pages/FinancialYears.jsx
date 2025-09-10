@@ -143,6 +143,9 @@ const FinancialYear = () => {
     try {
       await Api.delete(`/api/financial-years/${yearId}`);
       toast.success('تم حذف السنة المالية بنجاح');
+      setShowDeleteModal(false);
+      setSelectedYear(null);
+      setAnchorEl(null);
       queryClient.invalidateQueries('financialYears');
     } catch (error) {
       console.error('Error deleting financial year:', error);
@@ -191,7 +194,7 @@ const FinancialYear = () => {
       </Helmet>
       
       <Box className="content-area">
-        <Stack direction={isMobile ? 'column' : 'row'} justifyContent={isMobile ? 'center' : "space-between"} alignItems="center" mb={3} mr={1} mt={2} spacing={2}>
+        <Stack direction={isMobile ? 'column' : 'row'} justifyContent={isMobile ? 'center' : "space-between"} alignItems="center" mb={1} mr={1} mt={5} spacing={2}>
           <Fab
             color="primary"
             variant="extended"

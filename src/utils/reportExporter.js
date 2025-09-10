@@ -17,7 +17,7 @@ const formatTransactionType = (type) => {
   switch (type) {
     case 'DEPOSIT': return 'إيداع';
     case 'WITHDRAWAL': return 'سحب';
-    case 'ROLLOVER': return 'تدوير';
+    case 'PROFIT': return 'ربح';
     default: return 'غير محدد';
   }
 };
