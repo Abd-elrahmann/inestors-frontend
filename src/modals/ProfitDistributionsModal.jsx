@@ -22,7 +22,10 @@ import {
   Chip,
   CircularProgress,
   Alert,
-  Tooltip
+  Tooltip,
+  TextField,
+  InputAdornment,
+  InputBase
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -31,7 +34,8 @@ import {
   Person as PersonIcon,
   TrendingUp as ProfitIcon,
   CalendarToday as CalendarIcon,
-  AccountBalance as AccountBalanceIcon
+  AccountBalance as AccountBalanceIcon,
+  Search as SearchIcon
 } from '@mui/icons-material';
 import { StyledTableCell, StyledTableRow } from '../styles/TableLayout';
 import dayjs from 'dayjs';
@@ -56,12 +60,21 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
   const [tabValue, setTabValue] = useState(0);
   // eslint-disable-next-line no-unused-vars
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const { data: settings } = useSettings();
 
   if (!distributions || !financialYear) return null;
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+    if (newValue === 0) {
+      setSearchQuery('');
+    }
+  };
+
+  const handleClose = () => {
+    setSearchQuery('');
+    onClose();
   };
 
   const formatDate = (date) => {
@@ -94,7 +107,6 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
     },
     distributions: distributions.distributions
   } : distributions;
-
   const convertCurrency = (amount, fromCurrency, toCurrency) => {
     if (fromCurrency === toCurrency) return amount;
     if (!settings?.USDtoIQD) return amount;
@@ -107,15 +119,31 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
     return amount;
   };
 
+  const filteredDistributions = displayData.distributions?.filter(distribution => {
+    if (!searchQuery.trim()) return true;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return (
+      distribution.investor.id.toString().includes(query) ||
+      distribution.investor.fullName.toLowerCase().includes(query) ||
+      distribution.percentage.toString().includes(query) ||
+      distribution.daysSoFar.toString().includes(query) ||
+      convertCurrency(distribution.amount, displayData.currency||'USD', settings?.defaultCurrency).toString().includes(query) ||
+      convertCurrency(distribution.dailyProfit, displayData.currency||'USD', settings?.defaultCurrency).toString().includes(query) ||
+      convertCurrency(distribution.totalProfit, displayData.currency||'USD', settings?.defaultCurrency).toString().includes(query)
+    );
+  }) || [];
+
   return (
     <Dialog 
       open={open} 
-      onClose={onClose} 
+      onClose={handleClose}
       maxWidth="lg"
-      sx={{marginRight: '250px',scrollbarWidth: 'none'}} 
-      fullWidth
+      fullWidth={tabValue === 0}
+      sx={{marginRight: tabValue === 1 ? '0' : '250px',scrollbarWidth: 'none'}} 
+      fullScreen={tabValue === 1}
       TransitionProps={{
-          timeout: { enter: 200, exit: 150 }
+          timeout: { enter: 50, exit: 50 }
       }}
     >
       <DialogTitle>
@@ -123,17 +151,35 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
           <Typography variant="h6" component="div" fontWeight="bold">
             توزيعات أرباح {financialYear.periodName || `السنة المالية`}
           </Typography>
-          <IconButton onClick={onClose} size="small">
+          <IconButton onClick={handleClose} size="small">
             <CloseIcon />
           </IconButton>
         </Box>
       </DialogTitle>
 
       <DialogContent sx={{scrollbarWidth: 'none'}}>
-        <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
-          <Tab label="ملخص التوزيعات" />
-          <Tab label="تفاصيل التوزيعات" />
-        </Tabs>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Tabs value={tabValue} onChange={handleTabChange}>
+            <Tab label="ملخص التوزيعات" />
+            <Tab label="تفاصيل التوزيعات" />
+          </Tabs>
+          
+          {tabValue === 1 && (
+            <InputBase
+              placeholder="بحث في التوزيعات..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              size="small"
+              sx={{ width: '250px' }}
+              startAdornment={
+                (
+                  <InputAdornment position="start" style={{marginLeft: '10px'}}>
+                    <SearchIcon />
+                  </InputAdornment>
+                )}
+              />
+            )}
+        </Box>
 
         <TabPanel value={tabValue} index={0}>
           <Box sx={{ 
@@ -269,6 +315,12 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
               <br />
               برجاء الانتظار حتى يتم توزيع الأرباح.
             </Alert>
+          ) : filteredDistributions.length === 0 ? (
+            <Alert severity="warning">
+              <strong>لا توجد نتائج للبحث "{searchQuery}"</strong>
+              <br />
+              جرب البحث بكلمات مختلفة أو امسح حقل البحث لعرض جميع التوزيعات.
+            </Alert>
           ) : (
             <TableContainer component={Paper} sx={{ maxHeight: 650,width: '100%' }}>
               <Table stickyHeader>
@@ -287,7 +339,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                   </StyledTableRow>
                 </TableHead>
                 <TableBody>
-                  {displayData.distributions.map((distribution) => (
+                  {filteredDistributions.map((distribution) => (
                     <StyledTableRow key={distribution.id}>
                       <StyledTableCell align="center">{distribution.investor.id}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.investor.fullName}</StyledTableCell>

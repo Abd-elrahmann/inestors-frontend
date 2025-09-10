@@ -420,7 +420,7 @@ const Dashboard = () => {
     },
     {
       title: `إجمالي رأس المال`,
-      value: convertAmount(overviewData.totalAmount, 'USD', currentCurrency),
+      value: overviewData.totalAmount,
       icon: <DollarOutlined style={{ color: '#007bff', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.amount || 0,
       color: '#007bff',

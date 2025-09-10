@@ -795,7 +795,7 @@ const Reports = () => {
             hoverable
             style={cardStyle(reportType === 'investors')}
             onClick={() => setReportType('investors')}
-            bordered={false}
+            variant="outlined"
           >
             <UsergroupAddOutlined style={iconStyle} />
             <Title level={5}>جميع المستثمرين</Title>
@@ -806,7 +806,7 @@ const Reports = () => {
             hoverable
             style={cardStyle(reportType === 'individual')}
             onClick={() => setReportType('individual')}
-            bordered={false}
+            variant="outlined"
           >
             <UserOutlined style={iconStyle} />
             <Title level={5}>مستثمر فردي</Title>
@@ -817,7 +817,7 @@ const Reports = () => {
             hoverable
             style={cardStyle(reportType === 'transactions')}
             onClick={() => setReportType('transactions')}
-            bordered={false}
+            variant="outlined"
           >
             <TransactionOutlined style={iconStyle} />
             <Title level={5}>تقرير المعاملات</Title>
@@ -828,7 +828,7 @@ const Reports = () => {
             hoverable
             style={cardStyle(reportType === 'financial-year')}
             onClick={() => setReportType('financial-year')}
-            bordered={false}
+            variant="outlined"
           >
             <CalendarOutlined style={iconStyle} />
             <Title level={5}>سنة مالية</Title>

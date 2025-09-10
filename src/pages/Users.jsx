@@ -138,6 +138,7 @@ const Users = () => {
   };
   const totalPages = usersData?.totalPages || 0;
   const filteredUsers = usersData?.users || [];
+  const totalUsers = usersData?.totalUsers || 0;
 
   return (
     <>
@@ -258,7 +259,8 @@ const Users = () => {
           </Table>
           <TablePagination
             component="div"
-            count={totalPages*rowsPerPage} 
+            count={totalUsers} 
+            totalPages={totalPages}
             page={page - 1}
             onPageChange={(e, newPage) => setPage(newPage + 1)}
             rowsPerPage={rowsPerPage}

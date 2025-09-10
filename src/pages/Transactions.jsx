@@ -227,6 +227,7 @@ const Transactions = () => {
   };
 
   const transactions = transactionsData?.transactions || [];
+  const totalTransactions = transactionsData?.totalTransactions || 0; 
   const totalPages = transactionsData?.totalPages || 0; 
   const investorDetails = transactions[0]?.investors;
   const amount = transactions.reduce((total, transaction) => {
@@ -478,7 +479,8 @@ const Transactions = () => {
   {isAdmin && (
     <TablePagination
       component="div"
-      count={totalPages*rowsPerPage} 
+      count={totalTransactions} 
+      totalPages={totalPages}
       page={page - 1}
       onPageChange={(e, newPage) => setPage(newPage + 1)}
       rowsPerPage={rowsPerPage}

@@ -66,7 +66,7 @@ const Investors = () => {
       const params = {
         limit: rowsPerPage,
         page: page,
-        search: searchQuery,
+        fullName: searchQuery?.trim() || undefined, // إزالة المسافات وتجنب إرسال قيم فارغة
         ...advancedFilters,
       };
 
@@ -80,6 +80,7 @@ const Investors = () => {
     }
   );
   const totalPages = investorsData?.totalPages || 0;
+  const totalInvestors = investorsData?.totalInvestors || 0;
 
   // Delete investors mutation
   const deleteInvestorsMutation = useMutation(
@@ -155,9 +156,9 @@ const Investors = () => {
   };
 
   const debouncedSearch = useMemo(() => debounce((val) => {
-    setSearchQuery(val);
+    setSearchQuery(val.trim()); // إزالة المسافات الزائدة
     setPage(1);
-  }, 300), []);
+  }, 100), []);
 
   const handleSearch = (event) => {
     debouncedSearch(event.target.value);
@@ -387,7 +388,7 @@ const Investors = () => {
             <FilterOutlined style={{ color: "green" }} />
           </IconButton>
 
-          {(searchQuery || Object.keys(advancedFilters).length > 0) && (
+          {(searchQuery?.trim() || Object.keys(advancedFilters).length > 0) && (
             <IconButton
               onClick={() => {
                 setSearchQuery("");
@@ -450,7 +451,7 @@ const Investors = () => {
               {isLoading || isFetching ? (
                 <StyledTableRow>  
                   <StyledTableCell colSpan={11} align="center">
-                    <Spin style={{marginRight:'230px'}} size="large" />
+                    <Spin style={{marginLeft:'100px'}} size="large" />
                   </StyledTableCell>
                 </StyledTableRow>
               ) : !investorsData?.investors?.length ? (
@@ -554,7 +555,8 @@ const Investors = () => {
           </Table>
           <TablePagination
             component="div"
-            count={totalPages * rowsPerPage }
+            count={totalInvestors}
+            totalPages={totalPages}
             page={page - 1}
             onPageChange={(e, newPage) => {
               setPage(newPage + 1);
@@ -594,6 +596,7 @@ const Investors = () => {
           open={searchModalOpen}
           onClose={() => setSearchModalOpen(false)}
           onSearch={handleAdvancedSearch}
+          fetchInvestors={fetchInvestorsQuery}
         />
       </Box>
     </>

@@ -99,6 +99,7 @@ const FinancialYear = () => {
   );
 
   const totalPages = yearsData?.totalPages || 0;
+  const total = yearsData?.total || 0;
 
   const { data: distributionsData } = useQuery(
     ['distributions', selectedYear?.id],
@@ -306,7 +307,8 @@ const FinancialYear = () => {
           </Table>
           <TablePagination
             component="div"
-            count={totalPages*rowsPerPage} 
+            count={total} 
+            totalPages={totalPages}
             page={page - 1}
             onPageChange={(e, newPage) => setPage(newPage + 1)}
             rowsPerPage={rowsPerPage}
