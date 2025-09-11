@@ -40,7 +40,7 @@ import {toast} from 'react-toastify';
 import AddFinancialYearModal from '../modals/AddFinancialYearModal';
 import ProfitDistributionsModal from '../modals/ProfitDistributionsModal';
 import FinancialSearchModal from '../modals/FinancialSearchModal';
-import EditRolloverModal from '../modals/EditRolloverModal';
+import EditFinancialYearModal from '../modals/EditFinancialYear';
 import { StyledTableCell, StyledTableRow } from '../styles/TableLayout';
 import { Helmet } from 'react-helmet-async';
 import { useSettings } from '../hooks/useSettings';
@@ -55,7 +55,7 @@ const FinancialYear = () => {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [distributionModalOpen, setDistributionModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const [editRolloverModalOpen, setEditRolloverModalOpen] = useState(false);
+  const [editFinancialYearModalOpen, setEditFinancialYearModalOpen] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedYear, setSelectedYear] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
@@ -143,9 +143,9 @@ const FinancialYear = () => {
     }
   };
 
-  const handleEditRollover = (year) => {
+  const handleEditFinancialYear = (year) => {
     setSelectedYear(year);
-    setEditRolloverModalOpen(true);
+    setEditFinancialYearModalOpen(true);
   };
 
   const getStatusChip = (status) => {
@@ -315,7 +315,7 @@ const FinancialYear = () => {
         >
           {selectedYearForMenu?.status === 'PENDING' && (
             <MenuItem onClick={() => {
-              handleEditRollover(selectedYearForMenu);
+              handleEditFinancialYear(selectedYearForMenu);
               setAnchorEl(null);
             }}>
               <EditOutlined style={{marginLeft: 8, color: 'orange'}} />
@@ -371,10 +371,10 @@ const FinancialYear = () => {
           initialFilters={filters}
         />
 
-        <EditRolloverModal
-          open={editRolloverModalOpen}
+        <EditFinancialYearModal
+          open={editFinancialYearModalOpen}
           onClose={() => {
-            setEditRolloverModalOpen(false);
+            setEditFinancialYearModalOpen(false);
             setSelectedYear(null);
           }}
           financialYear={selectedYear}

@@ -1,10 +1,10 @@
 import React from 'react';
 import { Box, Button, Typography, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
+import { FaExclamationTriangle } from 'react-icons/fa';
 import { Spin } from "antd";
-import { DeleteOutlined } from '@ant-design/icons';
 import { CloseOutlined } from '@ant-design/icons';
-const DeleteModal = ({ open, onClose, onConfirm, title, message, isLoading, ButtonText}) => {
+
+const CancelTransactionModal = ({ open, onClose, onConfirm, title, message, isLoading, ButtonText}) => {
 
   return (
     <Dialog
@@ -13,9 +13,9 @@ const DeleteModal = ({ open, onClose, onConfirm, title, message, isLoading, Butt
       fullWidth
       maxWidth="xs"
       dir={'rtl'}
-      >
+    >
       <DialogTitle sx={{ textAlign: 'center' }}>
-        {title || 'حذف العنصر'} 
+        {title || 'الغاء العملية'} 
       </DialogTitle>
       <DialogContent>
         <Box sx={{ 
@@ -27,7 +27,7 @@ const DeleteModal = ({ open, onClose, onConfirm, title, message, isLoading, Butt
         }}>
           <FaExclamationTriangle size={48} color="#f44336" />
           <Typography>
-            {message || 'هل أنت متأكد من حذف العنصر؟'}
+            {message || 'هل أنت متأكد من الغاء العملية؟'}
           </Typography>
         </Box>
       </DialogContent>
@@ -48,21 +48,21 @@ const DeleteModal = ({ open, onClose, onConfirm, title, message, isLoading, Butt
           sx={{fontSize: '15px'}}
           size="small"
         >
-          { 'إلغاء'}
+          {'إلغاء'}
         </Button>
         <Button 
           onClick={onConfirm}
           variant="contained" 
           color={"error"}
           disabled={isLoading}
-          sx={{fontSize: '15px'}}
           size="small"
+          sx={{fontSize: '15px'}}
         >
-          {isLoading? <Spin size="large" /> : ButtonText || 'حذف'}
+          {isLoading ? <Spin size="large" /> : ButtonText || 'الغاء العملية'}
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
 
-export default DeleteModal;
+export default CancelTransactionModal;

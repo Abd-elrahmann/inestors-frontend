@@ -329,9 +329,8 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                     <StyledTableCell align="center">مسلسل المستثمر</StyledTableCell>
                     <StyledTableCell align="center">المستثمر</StyledTableCell>
                     <StyledTableCell align="center">رأس المال</StyledTableCell>
-                    <StyledTableCell align="center">مبلغ التدوير (المستقبل)</StyledTableCell>
+                    <StyledTableCell align="center">مبلغ الربح (المستقبل)</StyledTableCell>
                     <StyledTableCell align="center">نسبة المساهمة</StyledTableCell>
-                    <StyledTableCell align="center">الايام حتي الان</StyledTableCell>
                     <StyledTableCell align="center"> الربح اليومي</StyledTableCell>
                     <StyledTableCell align="center">اجمالي الربح</StyledTableCell>
                     <StyledTableCell align='center'>تاريخ المساهمة</StyledTableCell>
@@ -357,7 +356,6 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                         } {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">{distribution.percentage.toFixed(2)}%</StyledTableCell>
-                      <StyledTableCell align="center">{distribution.daysSoFar}</StyledTableCell>
                       <StyledTableCell align="center">{convertCurrency(distribution.dailyProfit, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
                         maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0

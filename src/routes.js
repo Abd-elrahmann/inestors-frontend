@@ -57,11 +57,6 @@ const routes = [
     protected: true,
   },
   {
-    path: '/users',
-    element: Users,
-    protected: true,
-  },
-  {
     path: '/',
     element: Dashboard,
     protected: true,

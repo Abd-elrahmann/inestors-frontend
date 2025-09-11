@@ -28,6 +28,7 @@ import {
   SearchOutlined,
   FilterOutlined,
   ArrowLeftOutlined,
+  CloseOutlined,
 } from "@ant-design/icons";
 import { RestartAltOutlined } from "@mui/icons-material";
 import AddTransactionModal from "../modals/AddTransactionModal";
@@ -37,11 +38,11 @@ import { Helmet } from "react-helmet-async";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import DeleteModal from "../modals/DeleteModal";
 import TransactionsSearchModal from "../modals/TransactionsSearchModal";
-import dayjs from "dayjs";
 import { useParams, useNavigate } from "react-router-dom";
 import { useUser } from "../utils/user";
 import { debounce } from 'lodash';
 import { useSettings } from "../hooks/useSettings";
+import CancelTransactionModal from "../modals/CancelTransactionModal";
 
 const Transactions = () => {
   const { investorId } = useParams();
@@ -62,6 +63,7 @@ const Transactions = () => {
   const [advancedFilters, setAdvancedFilters] = useState({});
   const { data: settings } = useSettings();
   const [selectedIds, setSelectedIds] = useState([]);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const convertCurrency = (amount, fromCurrency, toCurrency) => {
     if (fromCurrency === toCurrency) return amount;
     if (!settings?.USDtoIQD) return amount;
@@ -73,7 +75,9 @@ const Transactions = () => {
     }
     return amount;
   };
+
   const isMobile = useMediaQuery('(max-width: 480px)');
+
   // Fetch transactions query
   const {
     data: transactionsData,
@@ -98,6 +102,26 @@ const Transactions = () => {
     }
   );
 
+  // Cancel transaction mutation
+  const cancelTransactionMutation = useMutation(
+    (transactionId) => Api.patch(`/api/transactions/${transactionId}/cancel`),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries("transactions");
+        queryClient.invalidateQueries("investors");
+        setShowCancelModal(false);
+        setSelectedTransaction(null);
+        toast.success("تم الغاء العملية بنجاح");
+      },
+      onError: (error) => {
+        console.error("Error canceling transaction:", error);
+        toast.error("فشل في الغاء العملية");
+        setShowCancelModal(false);
+        setSelectedTransaction(null);
+      },
+    }
+  );
+
   // Delete transaction mutation
   const deleteTransactionMutation = useMutation(
     (transactionId) => Api.delete(`/api/transactions/${transactionId}`),
@@ -115,6 +139,7 @@ const Transactions = () => {
       },
     }
   );
+
   const deleteTransactionsMutation = useMutation(
     (ids) => Api.delete('/api/transactions', { data: { ids } }),
     {
@@ -131,6 +156,7 @@ const Transactions = () => {
       }
     }
   );
+
   const handleAddTransaction = () => {
     setAddModalOpen(true);
   };
@@ -144,6 +170,23 @@ const Transactions = () => {
     setSelectedTransaction(transaction);
     setShowDeleteModal(true);
   };
+
+  const handleOpenCancelModal = (transaction) => {
+    setSelectedTransaction(transaction);
+    setShowCancelModal(true);
+  };
+
+  const handleCancelTransaction = async (transactionId) => {
+    try {
+      await cancelTransactionMutation.mutateAsync(transactionId);
+    } catch (error) {
+      console.error("Error canceling transaction:", error);
+      toast.error("فشل في الغاء العملية");
+      setShowCancelModal(false);
+      setSelectedTransaction(null);
+    }
+  };
+
   const handleDeleteTransaction = async (transaction) => {
     try {
       if (selectedIds.length > 0) {
@@ -230,9 +273,6 @@ const Transactions = () => {
   const totalTransactions = transactionsData?.totalTransactions || 0; 
   const totalPages = transactionsData?.totalPages || 0; 
   const investorDetails = transactions[0]?.investors;
-  const amount = transactions.reduce((total, transaction) => {
-    return total + (transaction?.amount || 0);
-  }, 0);
   const currency = settings?.defaultCurrency || 'USD';
 
   const isAdmin = profile?.role === 'ADMIN';  
@@ -251,7 +291,9 @@ const Transactions = () => {
                 المساهم: {investorDetails?.fullName}
               </Typography>
               <Typography variant="h6">
-                إجمالي المبالغ: {convertCurrency(amount, currency, settings?.defaultCurrency).toLocaleString('en-US', {
+                إجمالي المبالغ: {convertCurrency(transactions.reduce((total, transaction) => {
+                  return transaction.status !== 'CANCELED' ? total + (transaction?.amount || 0) : total;
+                }, 0), currency, settings?.defaultCurrency).toLocaleString('en-US', {
                   minimumFractionDigits: 0,
                   maximumFractionDigits: 0
                 })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
@@ -394,19 +436,21 @@ const Transactions = () => {
         <StyledTableCell align="center">مصدر العملية</StyledTableCell>
         <StyledTableCell align="center">السنة المالية</StyledTableCell>
         <StyledTableCell align="center">تاريخ المعاملة</StyledTableCell>
+        <StyledTableCell align="center">الحالة</StyledTableCell>
+        <StyledTableCell align="center">الغاء العملية</StyledTableCell>
         {isAdmin && <StyledTableCell align="center">حذف</StyledTableCell>}
       </TableRow>
     </TableHead>
     <TableBody>
       {isLoading || isFetching ? (
         <StyledTableRow>
-          <StyledTableCell colSpan={isAdmin ? 9 : 8} align="center">
+          <StyledTableCell colSpan={isAdmin ? 11 : 10} align="center">
             <Spin size="large" />
           </StyledTableCell>
         </StyledTableRow>
       ) : transactions.length === 0 ? (
         <StyledTableRow>
-          <StyledTableCell colSpan={isAdmin ? 9 : 8} align="center">
+          <StyledTableCell colSpan={isAdmin ? 11 : 10} align="center">
             لا توجد معاملات
           </StyledTableCell>
         </StyledTableRow>
@@ -456,9 +500,27 @@ const Transactions = () => {
               {transaction.financialYear?.year || "-"} {transaction.financialYear?.periodName ? `- ${transaction.financialYear.periodName}` : ''}
             </StyledTableCell>
             <StyledTableCell align="center">
-              {dayjs(transaction.date).isValid() 
-                ? dayjs(transaction.date).format('MMM DD, YYYY, hh:mm A')
-                : "-"}
+              {transaction.date? transaction.date : "-"}
+            </StyledTableCell>
+            <StyledTableCell align="center">
+              {transaction.status === "CANCELED" ? (
+                <Chip
+                  label="ملغاة"
+                  color="error"
+                  variant="outlined"
+                  size="small"
+                />
+              ) : "-"}
+            </StyledTableCell>
+            <StyledTableCell align="center">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => handleOpenCancelModal(transaction)}
+                disabled={transaction.status === "CANCELED"}
+              >
+                <CloseOutlined />
+              </IconButton>
             </StyledTableCell>
             {isAdmin && (
               <StyledTableCell align="center">
@@ -511,7 +573,17 @@ const Transactions = () => {
           open={searchModalOpen}
           onClose={() => setSearchModalOpen(false)}
           onSearch={handleAdvancedSearch}
-          transactions={transactions}
+          transactions={transactions} 
+        />
+
+        <CancelTransactionModal
+          open={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          onConfirm={() => handleCancelTransaction(selectedTransaction.id)}
+          isLoading={cancelTransactionMutation.isLoading}
+          title="الغاء العملية"
+          message="هل أنت متأكد من الغاء العملية؟"
+          ButtonText="الغاء العملية"
         />
       </Box>
     </>

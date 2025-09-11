@@ -46,8 +46,7 @@ export const exportAllInvestorsToPDF = async (data, settings) => {
       'الاسم', 
       'الهاتف', 
       'مبلغ المساهمة', 
-      'مبلغ التدوير', 
-      'نسبة المساهمة',
+      'مبلغ الربح', 
       'تاريخ الانضمام'
     ];
     
@@ -56,7 +55,6 @@ export const exportAllInvestorsToPDF = async (data, settings) => {
       investor.phone,
       formatCurrency(investor.amount || 0, 'USD', currentCurrency),
       formatCurrency(investor.rollover_amount || 0, 'USD', currentCurrency),
-      `${(investor.sharePercentage || 0).toFixed(2)}%`,
       investor.createdAt
     ]);
 
@@ -112,13 +110,12 @@ export const exportIndividualInvestorToPDF = async (data, settings) => {
     
     const currentCurrency = settings?.defaultCurrency || 'USD';
     
-    const infoHeaders = ['الاسم', 'الهاتف', 'مبلغ المساهمة', 'مبلغ التدوير', 'نسبة المساهمة (%)', 'تاريخ الانضمام'];
+    const infoHeaders = ['الاسم', 'الهاتف', 'مبلغ المساهمة', 'مبلغ الربح', 'تاريخ الانضمام'];
     const infoRows = [[
       data.fullName,
       data.phone,
       formatCurrency(data.amount || 0, 'USD', currentCurrency),
       formatCurrency(data.rollover_amount || 0, 'USD', currentCurrency),
-      (data.sharePercentage || 0).toFixed(2),
       data.createdAt
     ]];
     
@@ -151,7 +148,7 @@ export const exportIndividualInvestorToPDF = async (data, settings) => {
       startY += 10;
       
       const transHeaders = ['النوع', `المبلغ`, 'العملة', 'مصدر العملية', 'السنة المالية', 'التاريخ'];
-      const transRows = data.transactions.map(transaction => [
+      const transRows = data.transactions.filter(transaction => transaction.status !== 'CANCELED').map(transaction => [
         formatTransactionType(transaction.type),
         formatCurrency(transaction.amount || 0, transaction.currency || 'USD', currentCurrency),
         transaction.currency || 'USD',
@@ -193,7 +190,6 @@ export const exportIndividualInvestorToPDF = async (data, settings) => {
         'السنة المالية', 
         `رأس المال`, 
         'العملة', 
-        'نسبة المساهمة (%)', 
         `الربح اليومي`, 
         `إجمالي الربح`, 
         'تاريخ التوزيع'
@@ -203,7 +199,6 @@ export const exportIndividualInvestorToPDF = async (data, settings) => {
         `${distribution.financialYear.year} - ${distribution.financialYear.periodName}`,
         formatCurrency(distribution.amount || 0, 'USD', currentCurrency),
         distribution.currency || 'USD',
-        (distribution.percentage || 0).toFixed(2),
         formatCurrency(distribution.dailyProfit || 0, 'USD', currentCurrency),
         formatCurrency(distribution.financialYear.totalRollover || 0, 'USD', currentCurrency),
         distribution.financialYear.distributedAt
@@ -266,7 +261,7 @@ export const exportTransactionsToPDF = async (data, settings) => {
       'التاريخ'
     ];
     
-    const rows = data.map(transaction => [
+    const rows = data.filter(transaction => transaction.status !== 'CANCELED').map(transaction => [
       transaction.investors?.fullName || 'غير معروف',
       formatTransactionType(transaction.type),
       formatCurrency(transaction.amount || 0, transaction.currency || 'USD', currentCurrency),
@@ -448,13 +443,12 @@ export const exportToExcel = (data, reportType, settings) => {
     case 'investors':
       filename = 'تقرير-جميع-المستثمرين.xlsx';
       worksheetData = [
-        createStyledHeader(['الاسم', 'الهاتف', 'مبلغ المساهمة', 'مبلغ التدوير', 'نسبة المساهمة', 'تاريخ الإنشاء']),
+        createStyledHeader(['الاسم', 'الهاتف', 'مبلغ المساهمة', 'مبلغ الربح', 'تاريخ الإنشاء']),
         ...data.map(investor => [
           investor.fullName,
           investor.phone,
           formatCurrency(investor.amount || 0, 'USD', currentCurrency),
           formatCurrency(investor.rollover_amount || 0, 'USD', currentCurrency),
-          `${(investor.sharePercentage || 0).toFixed(2)}%`,
           investor.createdAt
         ])
       ];
@@ -463,19 +457,18 @@ export const exportToExcel = (data, reportType, settings) => {
     case 'individual':
       filename = `تقرير-المستثمر-${data.fullName.replace(/\s+/g, '-')}.xlsx`;
       worksheetData = [
-        createStyledHeader(['الاسم', 'الهاتف', 'مبلغ المساهمة', 'مبلغ التدوير', 'نسبة المساهمة', 'تاريخ الإنشاء']),
+        createStyledHeader(['الاسم', 'الهاتف', 'مبلغ المساهمة', 'مبلغ الربح', 'تاريخ الإنشاء']),
         [
           data.fullName,
           data.phone,
           formatCurrency(data.amount || 0, 'USD', currentCurrency),
           formatCurrency(data.rollover_amount || 0, 'USD', currentCurrency),
-          `${(data.sharePercentage || 0).toFixed(2)}%`,
           data.createdAt
         ],
         [],
-        createStyledHeader(['المعاملات']),
+        createStyledHeader(['المعاملات']),  
         createStyledHeader(['النوع', 'المبلغ', 'العملة', 'مصدر العملية', 'السنة المالية', 'التاريخ']),
-        ...(data.transactions || []).map(transaction => [
+        ...(data.transactions || []).filter(transaction => transaction.status !== 'CANCELED').map(transaction => [
           formatTransactionType(transaction.type),
           formatCurrency(transaction.amount || 0, transaction.currency || 'USD', currentCurrency),
           transaction.currency || 'USD',
@@ -485,12 +478,11 @@ export const exportToExcel = (data, reportType, settings) => {
         ]),
         [],
         createStyledHeader(['توزيعات الأرباح']),
-        createStyledHeader(['السنة المالية', 'رأس المال', 'العملة', 'نسبة المساهمة', 'الربح اليومي', 'إجمالي الربح', 'تاريخ التوزيع']),
+        createStyledHeader(['السنة المالية', 'رأس المال', 'العملة', 'الربح اليومي', 'إجمالي الربح', 'تاريخ التوزيع']),
         ...(data.profitDistributions || []).map(distribution => [
           `${distribution.financialYear.year} - ${distribution.financialYear.periodName}`,
           formatCurrency(distribution.amount || 0, 'USD', currentCurrency),
           distribution.currency || 'USD',
-          `${(distribution.percentage || 0).toFixed(2)}%`,
           formatCurrency(distribution.dailyProfit || 0, 'USD', currentCurrency),
           formatCurrency(distribution.financialYear.totalRollover || 0, 'USD', currentCurrency),
           distribution.financialYear.distributedAt
@@ -502,7 +494,7 @@ export const exportToExcel = (data, reportType, settings) => {
       filename = 'تقرير-المعاملات.xlsx';
       worksheetData = [
         createStyledHeader(['المستثمر', 'النوع', 'المبلغ', 'العملة', 'مصدر العملية', 'السنة المالية', 'التاريخ']),
-        ...data.map(transaction => [
+        ...data.filter(transaction => transaction.status !== 'CANCELED').map(transaction => [
           transaction.investors?.fullName || 'غير معروف',
           formatTransactionType(transaction.type),
           formatCurrency(transaction.amount || 0, transaction.currency || 'USD', currentCurrency),

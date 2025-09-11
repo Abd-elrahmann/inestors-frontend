@@ -10,10 +10,6 @@ import {
   IconButton,
   InputAdornment,
   CircularProgress,
-  FormControl,
-  FormControlLabel,
-  RadioGroup,
-  Radio,
   Alert
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -26,14 +22,13 @@ import { useSettings } from '../hooks/useSettings';
 
 const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorData = null }) => {
   const [loading, setLoading] = useState(false);
-  const { currentCurrency, convertAmount } = useCurrencyManager();
+  const { convertAmount } = useCurrencyManager();
   const { data: settings } = useSettings();
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
     amount: '',
     createdAt: '',
-    currency: 'USD'
   });
 
   const formatNumber = (num) => {
@@ -61,10 +56,9 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
         phone: '',
         amount: '',
         createdAt: '',
-        currency: 'USD'
       });
     } else if (mode === 'edit' && investorData) {
-      const convertedAmount = convertAmount(investorData.amount, 'USD', currentCurrency);
+      const convertedAmount = convertAmount(investorData.amount, 'USD', settings?.defaultCurrency);
       const formattedDate = investorData.createdAt
       ? new Date(investorData.createdAt).toISOString().split('T')[0]
       : '';
@@ -74,7 +68,6 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
         phone: investorData.phone || '',
         amount: convertedAmount?.toString() || '',
         createdAt: formattedDate || '',
-        currency: 'USD'
       });
     } else {
       setFormData({
@@ -83,11 +76,10 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
         phone: '',
         amount: '',
         createdAt: '',
-        currency: 'USD'
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, investorData, currentCurrency, open]);
+  }, [mode, investorData, settings?.defaultCurrency, open]);
 
   const [errors, setErrors] = useState({});
 
@@ -149,14 +141,11 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
     
     try {
       const rawAmount = formData.amount.replace(/,/g, '');
-      const convertedAmount = formData.currency === 'IQD' ? 
-        convertCurrency(parseFloat(rawAmount), 'IQD', 'USD') :
-        parseFloat(rawAmount);
       
       const payload = {
         fullName: formData.fullName,
         phone: formData.phone,
-        amount: convertedAmount,
+        amount: parseFloat(rawAmount),
         createdAt: new Date(formData.createdAt)
       };
 
@@ -175,7 +164,6 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
         phone: '',
         amount: '',
         createdAt: '',
-        currency: 'USD'
       });
       
       onClose();
@@ -204,7 +192,6 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
         phone: '',
         amount: '',
         createdAt: '',
-        currency: 'USD'
       });
       setErrors({});
       onClose();
@@ -299,38 +286,14 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
               }}
             />
 
-            <FormControl component="fieldset" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', marginLeft: '40px'}}>
-              <RadioGroup
-                row
-                value={formData.currency}
-                onChange={(e) => {
-                  handleInputChange('currency', e.target.value);
-                  handleInputChange('amount', '');
-                }}
-              >
-                <FormControlLabel 
-                  value="IQD" 
-                  control={<Radio />} 
-                  label="دينار عراقي" 
-                  disabled={loading}
-                />
-                   <FormControlLabel 
-                  value="USD" 
-                  control={<Radio />} 
-                  label="دولار أمريكي"
-                  disabled={loading}
-                />
-              </RadioGroup>
-            </FormControl>
-
             <TextField
               sx={{width:'250px'}}
-              label={`المبلغ (${formData.currency})`}
+              label={`المبلغ (${settings?.defaultCurrency})`}
               value={formData.amount}
               onChange={(e) => handleInputChange('amount', e.target.value)}
               error={!!errors.amount}
               helperText={errors.amount}
-              disabled={loading}
+              disabled={loading||mode === 'edit'}
               inputProps={{
                 step: "1",
                 min: "0"
@@ -338,13 +301,13 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    {formData.currency === 'USD' ? '$' : 'د.ع'}
+                    {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                   </InputAdornment>
                 ),
               }}
             />
 
-            {formData.currency === 'IQD' && parseFloat(formData.amount.replace(/,/g, '')) > 0 && (
+            {settings?.defaultCurrency === 'IQD' && parseFloat(formData.amount.replace(/,/g, '')) > 0 && (
               <Alert severity="info">
                 {formData.amount && ` سوف يتم استلام ${formatNumber(convertCurrency(parseFloat(formData.amount.replace(/,/g, '')), 'IQD', 'USD').toFixed(2))}$`}
               </Alert>

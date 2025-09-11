@@ -401,10 +401,7 @@ const Reports = () => {
                   مبلغ المساهمة
                   </StyledTableCell>
                   <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                    مبلغ التدوير
-                  </StyledTableCell>
-                  <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                    نسبة المساهمة
+                    مبلغ الربح
                   </StyledTableCell>
                   <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                     تاريخ الانضمام
@@ -417,14 +414,13 @@ const Reports = () => {
                     <StyledTableCell align="center">{row.fullName}</StyledTableCell>
                     <StyledTableCell align="center">{row.phone||'-'}</StyledTableCell>
                     <StyledTableCell align="center">{convertCurrency(row.amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0
+                      minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
+                      maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                     })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                     <StyledTableCell align="center">{convertCurrency(row.rollover_amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0
+                      minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
+                      maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                     })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
-                    <StyledTableCell align="center">{row.sharePercentage.toFixed(2) || 0}%</StyledTableCell>
                     <StyledTableCell align="center">{row.createdAt}</StyledTableCell>
                   </StyledTableRow>
                 ))}
@@ -453,10 +449,7 @@ const Reports = () => {
                       مبلغ المساهمة
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      مبلغ التدوير
-                    </StyledTableCell>
-                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      نسبة المساهمة
+                      مبلغ الربح
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                       تاريخ الانضمام
@@ -468,14 +461,13 @@ const Reports = () => {
                     <StyledTableCell align="center">{reportData.fullName}</StyledTableCell>
                     <StyledTableCell align="center">{reportData.phone||'-'}</StyledTableCell>
                     <StyledTableCell align="center">{convertCurrency(reportData.amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0
+                      minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
+                      maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                     })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                     <StyledTableCell align="center">{convertCurrency(reportData.rollover_amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0
+                      minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
+                      maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                     })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
-                    <StyledTableCell align="center">{reportData.sharePercentage?.toFixed(2) || 0}%</StyledTableCell>
                     <StyledTableCell align="center">{reportData.createdAt}</StyledTableCell>
                   </StyledTableRow>
                 </TableBody>
@@ -510,12 +502,12 @@ const Reports = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {(reportData.transactions || []).slice(0, 5).map((transaction) => (
+                  {(reportData.transactions || []).filter(transaction => transaction.status !== 'CANCELED').slice(0, 5).map((transaction) => (
                     <StyledTableRow key={transaction.id}>
                       <StyledTableCell align="center">{transaction.type === 'DEPOSIT' ? 'إيداع' : transaction.type === 'WITHDRAWAL' ? 'سحب' : transaction.type === 'PROFIT' ? 'ربح' : 'غير محدد'}</StyledTableCell>
                       <StyledTableCell align="center">{convertCurrency(transaction.amount || 0, transaction.currency || 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
+                        minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
+                        maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                         <StyledTableCell align="center">{transaction.currency || 'USD'}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.withdrawSource || 'غير محدد'}</StyledTableCell>
@@ -544,9 +536,6 @@ const Reports = () => {
                       العملة
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      نسبة المساهمة
-                    </StyledTableCell>
-                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                       الربح اليومي
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
@@ -562,18 +551,17 @@ const Reports = () => {
                     <StyledTableRow key={distribution.financialYear.year}>
                       <StyledTableCell align="center">{`${distribution.financialYear.year} - ${distribution.financialYear.periodName}`}</StyledTableCell>
                       <StyledTableCell align="center">{convertCurrency(distribution.amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
+                        minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
+                        maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.currency || 'USD'}</StyledTableCell>
-                      <StyledTableCell align="center">{distribution.percentage.toFixed(2) || 0}%</StyledTableCell>
                         <StyledTableCell align="center">{convertCurrency(distribution.dailyProfit || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
+                        minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
+                        maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{convertCurrency(distribution.financialYear.totalRollover || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
+                        minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
+                        maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.financialYear.distributedAt}</StyledTableCell>
                     </StyledTableRow>
@@ -615,13 +603,13 @@ const Reports = () => {
               </TableHead>
               <TableBody>
                 {Array.isArray(reportData) &&
-                  reportData.slice(0, 5).map((transaction) => (
+                  reportData.filter(transaction => transaction.status !== 'CANCELED').slice(0, 5).map((transaction) => (
                     <StyledTableRow key={transaction.id}>
                       <StyledTableCell align="center">{transaction.investors?.fullName}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.type === 'DEPOSIT' ? 'إيداع' : transaction.type === 'WITHDRAWAL' ? 'سحب' : transaction.type === 'PROFIT' ? 'ربح' : 'غير محدد'}</StyledTableCell>
                           <StyledTableCell align="center">{convertCurrency(transaction.amount || 0, transaction.currency || 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
+                        minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
+                        maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.currency || 'USD'}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.withdrawSource || 'غير محدد'}</StyledTableCell>
@@ -670,8 +658,8 @@ const Reports = () => {
                     <StyledTableCell align="center">{reportData.periodName}</StyledTableCell>
                     <StyledTableCell align="center">
                       {convertCurrency(reportData.totalProfit || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
+                          minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
+                        maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                     </StyledTableCell>
                     <StyledTableCell align="center">
@@ -705,10 +693,7 @@ const Reports = () => {
                       رأس المال
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      مبلغ التدوير (المستقبل)
-                    </StyledTableCell>
-                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      نسبة المساهمة
+                      مبلغ الربح (المستقبل)
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                       الربح اليومي
@@ -744,7 +729,6 @@ const Reports = () => {
                           : '0'
                         } {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
-                      <StyledTableCell align="center">{distribution.percentage?.toFixed(2)}%</StyledTableCell>
                       <StyledTableCell align="center">
                         {convertCurrency(distribution.dailyProfit || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                           minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,

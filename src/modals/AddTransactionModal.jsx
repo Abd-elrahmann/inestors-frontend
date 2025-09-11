@@ -16,7 +16,8 @@ import {
   FormControl,
   FormControlLabel,
   RadioGroup,
-  Radio
+  Radio,
+  Alert
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
@@ -24,7 +25,6 @@ import PersonIcon from '@mui/icons-material/Person';
 import { toast } from 'react-toastify';
 import Api from '../services/api';
 import { useQueryClient } from 'react-query';
-import { Alert } from '@mui/material';
 import { useSettings } from '../hooks/useSettings';
 const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const queryClient = useQueryClient();
@@ -36,8 +36,8 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     investorId: null,
     type: 'DEPOSIT',
-    currency: 'IQD',
-    amount: ''
+    amount: '',
+    currency: settings?.defaultCurrency || 'USD'
   });
 
   const formatNumber = (num) => {
@@ -70,6 +70,15 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
     }
   }, [open]);
 
+  useEffect(() => {
+    if (settings?.defaultCurrency) {
+      setFormData(prev => ({
+        ...prev,
+        currency: settings.defaultCurrency
+      }));
+    }
+  }, [settings]);
+
   const fetchInvestors = async () => {
     try {
       setInvestorsLoading(true);
@@ -96,10 +105,6 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       newErrors.amount = 'المبلغ مطلوب';
     } else if (isNaN(formData.amount.replace(/,/g, '')) || parseFloat(formData.amount.replace(/,/g, '')) < 0) {
       newErrors.amount = 'المبلغ يجب أن يكون رقم أكبر من صفر';
-    }
-
-    if (!formData.currency) {
-      newErrors.currency = 'اختيار العملة مطلوب';
     }
 
     setErrors(newErrors);
@@ -156,8 +161,8 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       setFormData({
         investorId: null,
         type: 'DEPOSIT',
-        currency: 'IQD',
-        amount: ''
+        amount: '',
+        currency: settings?.defaultCurrency || 'USD'
       });
       
       onClose();
@@ -178,8 +183,8 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
       setFormData({
         investorId: null,
         type: 'DEPOSIT',
-        currency: 'IQD',
-        amount: ''
+        amount: '',
+        currency: settings?.defaultCurrency || 'USD'
       });
       setErrors({});
       onClose();
@@ -262,32 +267,9 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
                 />
               )}
             />
-                <FormControl component="fieldset" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', marginLeft: '80px'}}>
-              <RadioGroup
-                row
-                value={formData.currency}
-                onChange={(e) => {
-                  handleInputChange('currency', e.target.value);
-                  handleInputChange('amount', '');
-                }}
-              >
-                <FormControlLabel 
-                  value="IQD" 
-                  control={<Radio />} 
-                  label="دينار عراقي" 
-                  disabled={loading}
-                />
-                <FormControlLabel 
-                  value="USD" 
-                  control={<Radio />} 
-                  label="دولار أمريكي"
-                  disabled={loading}
-                />
-              </RadioGroup>
-            </FormControl>
-
             <TextField
               fullWidth
+              type="text"
               label="المبلغ"
               value={formData.amount}
               onChange={(e) => handleInputChange('amount', e.target.value)}
@@ -297,12 +279,12 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    {formData.currency === 'IQD' ? 'د.ع' : '$' }
+                    {settings?.defaultCurrency === 'IQD' ? 'د.ع' : '$' }
                   </InputAdornment>
                 ),
               }}
             />
-            {formData.currency === 'IQD' && parseFloat(formData.amount.replace(/,/g, '')) > 0 && (
+            {settings?.defaultCurrency === 'IQD' && parseFloat(formData.amount.replace(/,/g, '')) > 0 && (
               <Alert severity="info">
                 {formData.amount && ` سوف يتم استلام ${formatNumber(convertCurrency(parseFloat(formData.amount.replace(/,/g, '')), 'IQD', 'USD').toFixed(2))}$`}
               </Alert>

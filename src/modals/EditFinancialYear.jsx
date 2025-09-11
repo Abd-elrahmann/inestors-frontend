@@ -17,7 +17,7 @@ import Api from '../services/api';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 
-const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
+const EditFinancialYearModal = ({ open, onClose, financialYear, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     periodName: '',
@@ -186,4 +186,4 @@ const EditRolloverModal = ({ open, onClose, financialYear, onSuccess }) => {
   );
 };
 
-export default EditRolloverModal;
+export default EditFinancialYearModal;

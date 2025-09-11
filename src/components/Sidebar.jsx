@@ -4,7 +4,6 @@ import { Button, Box, List, ListItem, ListItemIcon, ListItemText } from '@mui/ma
 import {
   MdDashboard as Dashboard,
   MdPeople as People,
-  MdGroup as Group,
   MdAccountBalance as AccountBalance,
   MdTrendingUp as TrendingUp,
   MdAssessment as Assessment,
@@ -53,7 +52,6 @@ const Sidebar = ({ isOpen, onClose }) => {
   const prefetchPage = {
     '/dashboard': () => import('../pages/Dashboard'),
     '/investors': () => import('../pages/Investors'),
-    '/users': () => import('../pages/Users'),
     '/transactions': () => import('../pages/Transactions'),
     '/financial-years': () => import('../pages/FinancialYears'),
     '/reports': () => import('../pages/Reports'),
@@ -68,12 +66,6 @@ const Sidebar = ({ isOpen, onClose }) => {
         path: '/dashboard',
         label: 'لوحة التحكم',
         icon: <Dashboard size={22} />,
-        roles: ['ADMIN'] 
-      },
-      {
-        path: '/users',
-        label: 'المديرين',
-        icon: <Group size={22} />,
         roles: ['ADMIN'] 
       },
       {
@@ -175,7 +167,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               sx={{
                 borderRadius: 2,
                 mb: 2,
-                mt: 1,
+                mt: 2,
                 textDecoration: 'none',
                 color: 'inherit',
                 opacity: isOpen ? 1 : 0,

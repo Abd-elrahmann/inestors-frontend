@@ -70,7 +70,7 @@ const InvestorSearchModal = ({ open, onClose, onSearch }) => {
       <Dialog 
         open={open} 
         onClose={onClose}
-        maxWidth="sm"
+        maxWidth="xs"
         fullWidth
       >
         <DialogTitle sx={{ 
@@ -88,66 +88,70 @@ const InvestorSearchModal = ({ open, onClose, onSearch }) => {
 
         <DialogContent sx={{ mt: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="الحد الأدنى لرأس المال"
-                type="number"
-                value={filters.minAmount || ''}
-                onChange={(e) => handleFilterChange('minAmount', e.target.value)}
-                fullWidth
-              />
-              
-              <TextField
-                label="الحد الأقصى لرأس المال"
-                type="number"
-                value={filters.maxAmount || ''}
-                onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
-                fullWidth
-              />
-            </Box>
+            <TextField
+              label="الحد الأدنى لرأس المال"
+              type="number"
+              value={filters.minAmount || ''}
+              onChange={(e) => handleFilterChange('minAmount', e.target.value)}
+              fullWidth
+            />
+            
+            <TextField
+              label="الحد الأقصى لرأس المال"
+              type="number"
+              value={filters.maxAmount || ''}
+              onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
+              fullWidth
+            />
 
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                label="الحد الأدنى لنسبة المساهمة"
-                type="number"
-                value={filters.minShare || ''}
-                onChange={(e) => handleFilterChange('minShare', e.target.value)}
-                fullWidth
-              />
+            <TextField
+              label="الحد الأدنى لنسبة المساهمة"
+              type="number"
+              value={filters.minShare || ''}
+              onChange={(e) => handleFilterChange('minShare', e.target.value)}
+              fullWidth
+            />
 
-              <TextField
-                label="الحد الأقصى لنسبة المساهمة"
-                type="number"
-                value={filters.maxShare || ''}
-                onChange={(e) => handleFilterChange('maxShare', e.target.value)}
-                fullWidth
-              />
-            </Box>
+            <TextField
+              label="الحد الأقصى لنسبة المساهمة"
+              type="number"
+              value={filters.maxShare || ''}
+              onChange={(e) => handleFilterChange('maxShare', e.target.value)}
+              fullWidth
+            />
 
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-              <DatePicker
-                label="من تاريخ"
-                value={filters.startDate ? dayjs(filters.startDate) : null}
-                onChange={(date) => handleFilterChange('startDate', date)}
-                renderInput={(params) => <TextField {...params} fullWidth />}
-              />
+            <DatePicker
+              label="من تاريخ"
+              value={filters.startDate ? dayjs(filters.startDate) : null}
+              onChange={(date) => handleFilterChange('startDate', date)}
+              renderInput={(params) => <TextField {...params} fullWidth />}
+            />
 
-              <DatePicker
-                label="إلى تاريخ"
-                value={filters.endDate ? dayjs(filters.endDate) : null}
-                onChange={(date) => handleFilterChange('endDate', date)}
-                renderInput={(params) => <TextField {...params} fullWidth />}
-              />
-            </Box>
+            <DatePicker
+              label="إلى تاريخ"
+              value={filters.endDate ? dayjs(filters.endDate) : null}
+              onChange={(date) => handleFilterChange('endDate', date)}
+              renderInput={(params) => <TextField {...params} fullWidth />}
+            />
           </Box>
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, gap: 2,flexDirection:'row-reverse',justifyContent:'center' }}>
-          <Button onClick={handleReset} variant="outlined" color="secondary" startIcon={<ReloadOutlined style={{marginLeft: '10px'}} />}>
-            إعادة تعيين
-          </Button>
-          <Button onClick={handleSearch} variant="contained" color="primary" startIcon={<SearchOutlined style={{marginLeft: '10px'}} />}>
+        <DialogActions sx={{ p: 3, gap: 2, display: 'flex', flexDirection: 'row',justifyContent:'center' }}>
+          <Button 
+            onClick={handleSearch} 
+            variant="contained" 
+            color="primary" 
+            startIcon={<SearchOutlined style={{marginLeft: '10px'}} />}
+          >
             بحث
+          </Button>
+          <Button 
+            onClick={handleReset} 
+            variant="outlined" 
+            color="secondary" 
+            startIcon={<ReloadOutlined style={{marginLeft: '10px'}} />}
+          >
+            إعادة تعيين
           </Button>
         </DialogActions>
       </Dialog>

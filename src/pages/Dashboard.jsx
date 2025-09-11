@@ -66,7 +66,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [overviewData, setOverviewData] = useState({
     totalInvestors: 0,
-    totalAmount: 0,
+    totalInvested: 0,
     totalProfit: 0,
     totalTransactions: 0,
     weeklyIncreases: {
@@ -235,7 +235,7 @@ const Dashboard = () => {
         const data = topInvestorsResponse.value.data?.topInvestors;
         const convertedInvestors = data?.map(investor => ({
           ...investor,
-          amount: convertAmount(investor.amount || 0, 'USD', currentCurrency)
+          amount: convertAmount((investor.amount || 0) + (investor.rolloverAmount || 0), 'USD', currentCurrency)
         })) || [];
         setTopInvestorsData(convertedInvestors);
       } else {
@@ -384,7 +384,7 @@ const Dashboard = () => {
           pointHoverRadius: 6
         },
         {
-          label: 'متوسط التدوير',
+          label: 'متوسط الربح',
           data: sortedDays.map(day => day.averageRollover || 0),
           borderColor: '#F59E0B',
           backgroundColor: 'rgba(245, 158, 11, 0.1)',
@@ -420,7 +420,7 @@ const Dashboard = () => {
     },
     {
       title: `إجمالي رأس المال`,
-      value: overviewData.totalAmount,
+      value: overviewData.totalInvested,
       icon: <DollarOutlined style={{ color: '#007bff', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.amount || 0,
       color: '#007bff',
@@ -607,8 +607,7 @@ const Dashboard = () => {
                   </div>
                 </Card>
               </Col>
-
-              {financialYearsData.length > 0 && financialYearsData[0].financialYears.length > 0 && (
+           
                 <Col xs={24}>
                   <Card 
                     title={
@@ -623,7 +622,6 @@ const Dashboard = () => {
                     </div>
                   </Card>
                 </Col>
-              )}
 
               {transactionsData.days.length > 0 && (
                 <Col xs={24}>

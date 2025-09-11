@@ -14,7 +14,7 @@ import {
   Fab,
   useMediaQuery,
   Tooltip,
-  Checkbox
+  Checkbox,
 } from "@mui/material";
 import {
   EditOutlined,
@@ -36,8 +36,8 @@ import { useQuery, useMutation, useQueryClient } from "react-query";
 import DeleteModal from "../modals/DeleteModal";
 import InvestorSearchModal from "../modals/InvestorSearchModal";
 import { Link } from "react-router-dom";
-import { debounce } from 'lodash';
-import * as XLSX from 'xlsx';
+import { debounce } from "lodash";
+import * as XLSX from "xlsx";
 import { useSettings } from "../hooks/useSettings";
 
 const Investors = () => {
@@ -52,7 +52,7 @@ const Investors = () => {
   const [importLoading, setImportLoading] = useState(false);
   const [page, setPage] = useState(1);
   const { data: settings } = useSettings();
-  const isMobile = useMediaQuery('(max-width: 480px)');
+  const isMobile = useMediaQuery("(max-width: 480px)");
   const [selectedIds, setSelectedIds] = useState([]);
 
   // Fetch investors query
@@ -61,7 +61,14 @@ const Investors = () => {
     isLoading,
     isFetching,
   } = useQuery(
-    ["investors", page, rowsPerPage, searchQuery, advancedFilters, settings?.USDtoIQD],
+    [
+      "investors",
+      page,
+      rowsPerPage,
+      searchQuery,
+      advancedFilters,
+      settings?.USDtoIQD,
+    ],
     async () => {
       const params = {
         limit: rowsPerPage,
@@ -84,7 +91,7 @@ const Investors = () => {
 
   // Delete investors mutation
   const deleteInvestorsMutation = useMutation(
-    (ids) => Api.delete('/api/investors', { data: { ids } }),
+    (ids) => Api.delete("/api/investors", { data: { ids } }),
     {
       onSuccess: () => {
         queryClient.invalidateQueries("investors");
@@ -116,7 +123,7 @@ const Investors = () => {
   const handleAddSuccess = () => {
     queryClient.invalidateQueries("investors");
     setShowAddModal(false);
-    setSelectedInvestor(null); 
+    setSelectedInvestor(null);
   };
 
   const handleCloseModal = () => {
@@ -131,7 +138,7 @@ const Investors = () => {
   };
 
   const handleAddInvestor = () => {
-    setSelectedInvestor(null); 
+    setSelectedInvestor(null);
     setShowAddModal(true);
   };
 
@@ -147,7 +154,7 @@ const Investors = () => {
       deleteInvestorMutation.mutate(investor.id);
     }
     setShowDeleteModal(false);
-    setSelectedInvestor(null); 
+    setSelectedInvestor(null);
   };
 
   const handleChangeRowsPerPage = (event) => {
@@ -155,10 +162,14 @@ const Investors = () => {
     setPage(1);
   };
 
-  const debouncedSearch = useMemo(() => debounce((val) => {
-    setSearchQuery(val.trim()); // إزالة المسافات الزائدة
-    setPage(1);
-  }, 100), []);
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((val) => {
+        setSearchQuery(val.trim()); // إزالة المسافات الزائدة
+        setPage(1);
+      }, 100),
+    []
+  );
 
   const handleSearch = (event) => {
     debouncedSearch(event.target.value);
@@ -176,39 +187,42 @@ const Investors = () => {
 
   const handleDownloadTemplate = () => {
     const template = [
-      ['الاسم الكامل', 'رقم الهاتف', 'المبلغ', 'تاريخ الانضمام'],
-      ['محمد احمد', '07700000000', '1000000', '2023-01-01']
+      ["الاسم الكامل", "رقم الهاتف", "المبلغ", "تاريخ الانضمام"],
+      ["محمد احمد", "07700000000", "1000000", "2023-01-01"],
     ];
-    
+
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.aoa_to_sheet(template);
 
-    const range = XLSX.utils.decode_range(worksheet['!ref']);
-    const phoneCol = 1; 
-    const dateCol = 3; 
+    const range = XLSX.utils.decode_range(worksheet["!ref"]);
+    const phoneCol = 1;
+    const dateCol = 3;
 
-    
-    for(let R = range.s.r + 1; R <= range.e.r; ++R) {
-      const phoneCell = XLSX.utils.encode_cell({r: R, c: phoneCol});
-      if(!worksheet[phoneCell]) continue;
-      worksheet[phoneCell].t = 's'; 
-      worksheet[phoneCell].z = '@'; 
+    for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+      const phoneCell = XLSX.utils.encode_cell({ r: R, c: phoneCol });
+      if (!worksheet[phoneCell]) continue;
+      worksheet[phoneCell].t = "s";
+      worksheet[phoneCell].z = "@";
     }
 
-    
-    for(let R = range.s.r + 1; R <= range.e.r; ++R) {
-      const dateCell = XLSX.utils.encode_cell({r: R, c: dateCol});
-      if(!worksheet[dateCell]) continue;
-      worksheet[dateCell].t = 'd'; 
-      worksheet[dateCell].z = 'yyyy-mm-dd'; 
+    for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+      const dateCell = XLSX.utils.encode_cell({ r: R, c: dateCol });
+      if (!worksheet[dateCell]) continue;
+      worksheet[dateCell].t = "d";
+      worksheet[dateCell].z = "yyyy-mm-dd";
     }
 
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'التقرير');
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const link = document.createElement('a');
+    XLSX.utils.book_append_sheet(workbook, worksheet, "التقرير");
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "buffer",
+    });
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = 'investors_template.xlsx';
+    link.download = "investors_template.xlsx";
     link.click();
   };
 
@@ -217,49 +231,53 @@ const Investors = () => {
     if (!file) return;
 
     const validTypes = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel'
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
     ];
-    
+
     if (!validTypes.includes(file.type)) {
-      toast.error('يرجى اختيار ملف Excel صالح (.xlsx or .xls)');
+      toast.error("يرجى اختيار ملف Excel صالح (.xlsx or .xls)");
       return;
     }
 
     setImportLoading(true);
-    
+
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append("file", file);
 
-      const response = await Api.post('/api/investors/import', formData, {
+      const response = await Api.post("/api/investors/import", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
 
-      toast.success(`تم استيراد ${response.data.importedCount || 0} مستثمر بنجاح`);
+      toast.success(
+        `تم استيراد ${response.data.importedCount || 0} مستثمر بنجاح`
+      );
       queryClient.invalidateQueries("investors");
-      
     } catch (error) {
-      console.error('Error importing investors:', error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'فشل في استيراد الملف';
+      console.error("Error importing investors:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "فشل في استيراد الملف";
       toast.error(errorMessage);
     } finally {
       setImportLoading(false);
-      event.target.value = '';
+      event.target.value = "";
     }
-  };  
+  };
 
   const filteredInvestors = investorsData?.investors || [];
 
   const convertCurrency = (amount, fromCurrency, toCurrency) => {
     if (fromCurrency === toCurrency) return amount;
     if (!settings?.USDtoIQD) return amount;
-    
-    if (fromCurrency === 'IQD' && toCurrency === 'USD') {
+
+    if (fromCurrency === "IQD" && toCurrency === "USD") {
       return amount / settings.USDtoIQD;
-    } else if (fromCurrency === 'USD' && toCurrency === 'IQD') {
+    } else if (fromCurrency === "USD" && toCurrency === "IQD") {
       return amount * settings.USDtoIQD;
     }
     return amount;
@@ -286,10 +304,13 @@ const Investors = () => {
     <>
       <Helmet>
         <title>المستثمرين</title>
-        <meta name="description" content="المستثمرين في نظام إدارة المستثمرين" />
+        <meta
+          name="description"
+          content="المستثمرين في نظام إدارة المستثمرين"
+        />
       </Helmet>
       <Stack
-        direction={isMobile ? 'column' : 'row'}
+        direction={isMobile ? "column" : "row"}
         justifyContent="space-between"
         alignItems="center"
         mb={1}
@@ -302,12 +323,12 @@ const Investors = () => {
             variant="extended"
             onClick={handleAddInvestor}
             sx={{
-              width: isMobile ? '100%' : '150px',
-              borderRadius: '8px',
-              fontWeight: 'bold',
-              textTransform: 'none',
-              height: '40px',
-              order: isMobile ? 1 : 0
+              width: isMobile ? "100%" : "150px",
+              borderRadius: "8px",
+              fontWeight: "bold",
+              textTransform: "none",
+              height: "40px",
+              order: isMobile ? 1 : 0,
             }}
           >
             <PlusOutlined style={{ marginLeft: 8 }} />
@@ -320,49 +341,48 @@ const Investors = () => {
               variant="extended"
               onClick={() => setShowDeleteModal(true)}
               sx={{
-                width: isMobile ? '100%' : '100px',
-                borderRadius: '8px',
-                fontWeight: 'bold',
-                height: '40px',
-                fontSize: '14px',
-                order: isMobile ? 1 : 0
+                width: isMobile ? "100%" : "100px",
+                borderRadius: "8px",
+                fontWeight: "bold",
+                height: "40px",
+                fontSize: "14px",
+                order: isMobile ? 1 : 0,
               }}
             >
-              <DeleteOutlined style={{ marginLeft: 8 }} />
-           ({selectedIds.length})
+              <DeleteOutlined style={{ marginLeft: 8 }} />({selectedIds.length})
             </IconButton>
           )}
 
           <Tooltip title="تحميل نموذج المستثمرين">
             <IconButton onClick={handleDownloadTemplate}>
-              <QuestionMark style={{marginRight: '10px'}} />
+              <QuestionMark style={{ marginRight: "10px" }} />
             </IconButton>
           </Tooltip>
 
           <Tooltip title="استيراد مستثمرين من Excel">
-            <IconButton 
-              component="label" 
+            <IconButton
+              component="label"
               disabled={importLoading}
-              sx={{ 
-                color: importLoading ? 'grey' : 'primary.main',
+              sx={{
+                color: importLoading ? "grey" : "primary.main",
               }}
             >
-              <CloudUpload style={{marginRight: '10px'}} />
+              <CloudUpload style={{ marginRight: "10px" }} />
               <input
                 type="file"
                 accept=".xlsx,.xls"
                 onChange={handleImportInvestors}
-                style={{ display: 'none' }}
+                style={{ display: "none" }}
               />
             </IconButton>
           </Tooltip>
         </Stack>
 
-        <Stack 
-          direction={isMobile ? 'column' : 'row'} 
+        <Stack
+          direction={isMobile ? "column" : "row"}
           spacing={1}
           sx={{
-            order: isMobile ? 0 : 1
+            order: isMobile ? 0 : 1,
           }}
         >
           <InputBase
@@ -373,7 +393,7 @@ const Investors = () => {
               />
             }
             sx={{
-              width: isMobile ? '100%' : '250px',
+              width: isMobile ? "100%" : "250px",
               borderRadius: "4px",
               fontSize: "16px",
             }}
@@ -383,7 +403,10 @@ const Investors = () => {
 
           <IconButton
             onClick={() => setSearchModalOpen(true)}
-            sx={{ border: isMobile ? 'none' : "1px solid", borderColor: isMobile ? 'none' : "divider" }}
+            sx={{
+              border: isMobile ? "none" : "1px solid",
+              borderColor: isMobile ? "none" : "divider",
+            }}
           >
             <FilterOutlined style={{ color: "green" }} />
           </IconButton>
@@ -396,7 +419,10 @@ const Investors = () => {
                 setPage(1);
                 setAdvancedFilters({});
               }}
-              sx={{ border: isMobile ? 'none' : "1px solid", borderColor: isMobile ? 'none' : "divider" }}
+              sx={{
+                border: isMobile ? "none" : "1px solid",
+                borderColor: isMobile ? "none" : "divider",
+              }}
             >
               <RestartAltOutlined style={{ color: "red" }} />
             </IconButton>
@@ -405,53 +431,91 @@ const Investors = () => {
       </Stack>
 
       {importLoading && (
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          mb: 2,
-          p: 2,
-          backgroundColor: 'rgba(25, 118, 210, 0.1)',
-          borderRadius: 1,
-          border: '1px solid rgba(25, 118, 210, 0.3)'
-        }}>
-          <Spin size="small" style={{ marginLeft: '10px' }} />
-          <span style={{ color: '#1976d2', fontWeight: 500 }}>جاري استيراد المستثمرين...</span>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            mb: 2,
+            p: 2,
+            backgroundColor: "rgba(25, 118, 210, 0.1)",
+            borderRadius: 1,
+            border: "1px solid rgba(25, 118, 210, 0.3)",
+          }}
+        >
+          <Spin size="small" style={{ marginLeft: "10px" }} />
+          <span style={{ color: "#1976d2", fontWeight: 500 }}>
+            جاري استيراد المستثمرين...
+          </span>
         </Box>
       )}
 
       <Box className="content-area">
-        <TableContainer component={Paper} sx={{ maxHeight: 650,scrollbarWidth: 'none' }}>
+        <TableContainer
+          component={Paper}
+          sx={{ maxHeight: 650, scrollbarWidth: "none" }}
+        >
           <Table stickyHeader>
             <TableHead>
               <TableRow>
                 <StyledTableCell padding="checkbox">
                   <Checkbox
-                  style={{color: 'white'}}
-                    checked={selectedIds.length === filteredInvestors.length && filteredInvestors.length > 0}
-                    indeterminate={selectedIds.length > 0 && selectedIds.length < filteredInvestors.length}
+                    style={{ color: "white" }}
+                    checked={
+                      selectedIds.length === filteredInvestors.length &&
+                      filteredInvestors.length > 0
+                    }
+                    indeterminate={
+                      selectedIds.length > 0 &&
+                      selectedIds.length < filteredInvestors.length
+                    }
                     onChange={handleSelectAll}
                   />
                 </StyledTableCell>
-                <StyledTableCell align="center"> مسلسل المستثمر</StyledTableCell>
-                <StyledTableCell align="center">اسم المستثمر</StyledTableCell>
-                <StyledTableCell align="center"> الهاتف</StyledTableCell>
-                <StyledTableCell align="center">
-                   رأس المال ({settings?.defaultCurrency})
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  {" "}
+                  مسلسل المستثمر
                 </StyledTableCell>
-                <StyledTableCell align="center"> مبلغ التدوير ({settings?.defaultCurrency})</StyledTableCell>
-                <StyledTableCell align="center">نسبة المستثمر</StyledTableCell>
-                <StyledTableCell align="center">تاريخ الانضمام</StyledTableCell>
-                <StyledTableCell align="center">عرض المعاملات</StyledTableCell>
-                <StyledTableCell align="center">تعديل</StyledTableCell>
-                <StyledTableCell align="center">حذف</StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  اسم المستثمر
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  {" "}
+                  الهاتف
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  رأس المال ({settings?.defaultCurrency})
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  {" "}
+                  مبلغ الربح ({settings?.defaultCurrency})
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  {" "}
+                  اجمالي المبلغ ({settings?.defaultCurrency})
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  نسبة المستثمر
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  تاريخ الانضمام
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  عرض المعاملات
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  تعديل
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  حذف
+                </StyledTableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {isLoading || isFetching ? (
-                <StyledTableRow>  
+                <StyledTableRow>
                   <StyledTableCell colSpan={11} align="center">
-                    <Spin style={{marginLeft:'100px'}} size="large" />
+                    <Spin style={{ marginLeft: "100px" }} size="large" />
                   </StyledTableCell>
                 </StyledTableRow>
               ) : !investorsData?.investors?.length ? (
@@ -467,44 +531,96 @@ const Investors = () => {
                       <StyledTableCell padding="checkbox">
                         <Checkbox
                           checked={selectedIds.includes(investor.id)}
-                          onChange={(event) => handleSelectOne(event, investor.id)}
+                          onChange={(event) =>
+                            handleSelectOne(event, investor.id)
+                          }
                         />
                       </StyledTableCell>
-                      <StyledTableCell align="center">
+                      <StyledTableCell
+                        align="center"
+                        sx={{ whiteSpace: "nowrap" }}
+                      >
                         {investor.id}
                       </StyledTableCell>
-                      <StyledTableCell align="center">
+                      <StyledTableCell
+                        align="center"
+                        sx={{ whiteSpace: "nowrap" }}
+                      >
                         {investor.fullName}
                       </StyledTableCell>
-                      <StyledTableCell align="center">
-                        {investor.phone||'-'}
+                      <StyledTableCell
+                        align="center"
+                        sx={{ whiteSpace: "nowrap" }}
+                      >
+                        {investor.phone || "-"}
                       </StyledTableCell>
-                      <StyledTableCell align="center">
-                        {convertCurrency(investor.amount, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0
-                        })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
+                      <StyledTableCell
+                        align="center"
+                        sx={{ whiteSpace: "nowrap" }}
+                      >
+                        {convertCurrency(
+                          investor.amount,
+                          "USD",
+                          settings?.defaultCurrency
+                        ).toLocaleString("en-US", {
+                          minimumFractionDigits:0,
+                          maximumFractionDigits:0,
+                        })}{" "}
+                        {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
                       </StyledTableCell>
-                      <StyledTableCell align="center">
-                        {convertCurrency(investor.rollover || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0
-                        })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
+                      <StyledTableCell
+                        align="center"
+                        sx={{ whiteSpace: "nowrap" }}
+                      >
+                        {convertCurrency(
+                          investor.rollover || 0,
+                          "USD",
+                          settings?.defaultCurrency
+                        ).toLocaleString("en-US", {
+                          minimumFractionDigits:
+                            settings?.defaultCurrency === "USD" ? 2 : 0,
+                          maximumFractionDigits:
+                            settings?.defaultCurrency === "USD" ? 2 : 0,
+                        })}{" "}
+                        {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
+                      </StyledTableCell>
+                      <StyledTableCell
+                        align="center"
+                        sx={{ whiteSpace: "nowrap" }}
+                      >
+                        {convertCurrency(
+                          investor.totalAmount,
+                          "USD",
+                          settings?.defaultCurrency
+                        ).toLocaleString("en-US", {
+                          minimumFractionDigits:0,
+                          maximumFractionDigits:0,
+                        })}{" "}
+                        {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
                       </StyledTableCell>
                       <StyledTableCell align="center">{`${investor.sharePercentage.toFixed(
                         2
                       )}%`}</StyledTableCell>
-                      <StyledTableCell align="center">
-                        {investor.createdAt||'-'}
+                      <StyledTableCell
+                        align="center"
+                        sx={{ whiteSpace: "nowrap" }}
+                      >
+                        {investor.createdAt || "-"}
                       </StyledTableCell>
-                      <StyledTableCell align="center">
+                      <StyledTableCell
+                        align="center"
+                        sx={{ whiteSpace: "nowrap" }}
+                      >
                         <Link to={`/transactions/${investor.id}`}>
                           <IconButton size="small">
                             <EyeOutlined style={{ color: "green" }} />
                           </IconButton>
                         </Link>
                       </StyledTableCell>
-                      <StyledTableCell align="center">
+                      <StyledTableCell
+                        align="center"
+                        sx={{ whiteSpace: "nowrap" }}
+                      >
                         <IconButton
                           size="small"
                           color="primary"
@@ -516,7 +632,10 @@ const Investors = () => {
                           <EditOutlined style={{ color: "blue" }} />
                         </IconButton>
                       </StyledTableCell>
-                      <StyledTableCell align="center">
+                      <StyledTableCell
+                        align="center"
+                        sx={{ whiteSpace: "nowrap" }}
+                      >
                         <IconButton
                           size="small"
                           color="error"
@@ -535,19 +654,55 @@ const Investors = () => {
                     >
                       الإجمالي
                     </StyledTableCell>
-                    <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
-                      {convertCurrency(investorsData?.totalAmount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                      })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
+                    <StyledTableCell
+                      align="center"
+                      sx={{ fontWeight: "bold", whiteSpace: "nowrap" }}
+                    >
+                      {convertCurrency(
+                        investorsData?.totalAmount || 0,
+                        "USD",
+                        settings?.defaultCurrency
+                      ).toLocaleString("en-US", {
+                        minimumFractionDigits:0,
+                        maximumFractionDigits:0,
+                      })}{" "}
+                      {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
                     </StyledTableCell>
-                    <StyledTableCell align="center" sx={{ fontWeight: "bold" }}>
-                      {convertCurrency(investorsData?.totalRollover || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                      })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
+                    <StyledTableCell
+                      align="center"
+                      sx={{ fontWeight: "bold", whiteSpace: "nowrap" }}
+                    >
+                      {convertCurrency(
+                        investorsData?.totalRollover || 0,
+                        "USD",
+                        settings?.defaultCurrency
+                      ).toLocaleString("en-US", {
+                        minimumFractionDigits:
+                          settings?.defaultCurrency === "USD" ? 2 : 0,
+                        maximumFractionDigits:
+                          settings?.defaultCurrency === "USD" ? 2 : 0,
+                      })}{" "}
+                      {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
                     </StyledTableCell>
-                    <StyledTableCell colSpan={5} />
+                    <StyledTableCell
+                      align="center"
+                      sx={{ fontWeight: "bold", whiteSpace: "nowrap" }}
+                    >
+                      {convertCurrency(
+                        (investorsData?.totalAmount || 0) +
+                          (investorsData?.totalRollover || 0),
+                        "USD",
+                        settings?.defaultCurrency
+                      ).toLocaleString("en-US", {
+                        minimumFractionDigits:0,
+                        maximumFractionDigits:0,
+                      })}{" "}
+                      {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
+                    </StyledTableCell>
+                    <StyledTableCell
+                      colSpan={5}
+                      sx={{ whiteSpace: "nowrap" }}
+                    />
                   </StyledTableRow>
                 </>
               )}
@@ -565,7 +720,7 @@ const Investors = () => {
             rowsPerPageOptions={[5, 10, 20, 50, 100]}
             onRowsPerPageChange={handleChangeRowsPerPage}
             labelRowsPerPage="عدد الصفوف في الصفحة"
-            labelDisplayedRows={({ from, to, count }) => 
+            labelDisplayedRows={({ from, to, count }) =>
               `${from}–${to} من ${count !== -1 ? count : `أكثر من ${to}`}`
             }
           />
@@ -576,19 +731,25 @@ const Investors = () => {
           onClose={handleCloseModal}
           onSuccess={handleAddSuccess}
           investorData={selectedInvestor}
-          mode={selectedInvestor ? 'edit' : 'add'}
+          mode={selectedInvestor ? "edit" : "add"}
         />
 
         <DeleteModal
           open={showDeleteModal}
           onClose={handleCloseDeleteModal}
           onConfirm={() => handleDeleteInvestor(selectedInvestor)}
-          title={selectedIds.length > 0 ? "حذف المستثمرين المحددين" : "حذف المستثمر"}
-          message={selectedIds.length > 0 
-            ? `هل أنت متأكد من حذف ${selectedIds.length} مستثمرين؟`
-            : "هل أنت متأكد من حذف المستثمر؟"
+          title={
+            selectedIds.length > 0 ? "حذف المستثمرين المحددين" : "حذف المستثمر"
           }
-          isLoading={deleteInvestorMutation.isLoading || deleteInvestorsMutation.isLoading}
+          message={
+            selectedIds.length > 0
+              ? `هل أنت متأكد من حذف ${selectedIds.length} مستثمرين؟`
+              : "هل أنت متأكد من حذف المستثمر؟"
+          }
+          isLoading={
+            deleteInvestorMutation.isLoading ||
+            deleteInvestorsMutation.isLoading
+          }
           ButtonText="حذف"
         />
 
