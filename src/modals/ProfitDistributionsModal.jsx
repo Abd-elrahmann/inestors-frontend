@@ -164,21 +164,27 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
             <Tab label="تفاصيل التوزيعات" />
           </Tabs>
           
-          {tabValue === 1 && (
-            <InputBase
-              placeholder="بحث في التوزيعات..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              size="small"
-              sx={{ width: '250px' }}
-              startAdornment={
-                (
-                  <InputAdornment position="start" style={{marginLeft: '10px'}}>
-                    <SearchIcon />
-                  </InputAdornment>
-                )}
-              />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="body2" color="textSecondary">
+              تاريخ الموافقة: {displayData.summary.approvedAt || 'لم يتم الموافقة بعد'}
+            </Typography>
+
+            {tabValue === 1 && (
+              <InputBase
+                placeholder="بحث في التوزيعات..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                size="small"
+                sx={{ width: '250px' }}
+                startAdornment={
+                  (
+                    <InputAdornment position="start" style={{marginLeft: '10px'}}>
+                      <SearchIcon />
+                    </InputAdornment>
+                  )}
+                />
             )}
+          </Box>
         </Box>
 
         <TabPanel value={tabValue} index={0}>
@@ -338,7 +344,6 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                     <StyledTableCell align="center"> الربح اليومي</StyledTableCell>
                     <StyledTableCell align="center">اجمالي الربح</StyledTableCell>
                     <StyledTableCell align='center'>تاريخ المساهمة</StyledTableCell>
-                    <StyledTableCell align='center'>تاريخ التوزيع</StyledTableCell>
                   </StyledTableRow>
                 </TableHead>
                 <TableBody>
@@ -361,7 +366,6 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                         maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.investor.createdAt}</StyledTableCell>
-                      <StyledTableCell align="center">{displayData.summary.distributedAt}</StyledTableCell>
                     </StyledTableRow>
                   ))}
                 </TableBody>

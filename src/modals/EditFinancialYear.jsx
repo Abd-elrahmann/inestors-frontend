@@ -19,9 +19,11 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import Api from '../services/api';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
+import { useQueryClient } from 'react-query';
 
 const EditFinancialYearModal = ({ open, onClose, financialYear, onSuccess }) => {
   const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     periodName: '',
     startDate: null,
@@ -56,9 +58,8 @@ const EditFinancialYearModal = ({ open, onClose, financialYear, onSuccess }) => 
 
     setLoading(true);
     try {
-      // Convert dayjs objects to ISO date strings before sending to backend
-      const startDateStr = formData.startDate ? formData.startDate.toISOString().split('T')[0] : null;
-      const endDateStr = formData.endDate ? formData.endDate.toISOString().split('T')[0] : null;
+      const startDateStr = formData.startDate ? formData.startDate.format('YYYY-MM-DD') : null;
+      const endDateStr = formData.endDate ? formData.endDate.format('YYYY-MM-DD') : null;
 
       await Api.put(`/api/financial-years/${financialYear.id}`, {
         periodName: formData.periodName,
@@ -67,6 +68,8 @@ const EditFinancialYearModal = ({ open, onClose, financialYear, onSuccess }) => 
       });
 
       toast.success('تم تحديث السنة المالية بنجاح');
+      queryClient.invalidateQueries('financial-years');
+      queryClient.invalidateQueries('distributions');
       onSuccess();
       handleClose();
     } catch (error) {
@@ -171,6 +174,13 @@ const EditFinancialYearModal = ({ open, onClose, financialYear, onSuccess }) => 
                   }
                 }}
               />
+                <TextField
+              fullWidth
+              label="الفترة"
+              value={formData.endDate && formData.startDate ? 
+                `${Math.ceil((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)) + 1} يوم` : ''}
+              disabled={true}
+            />
             </LocalizationProvider>
           </Box>
         </DialogContent>

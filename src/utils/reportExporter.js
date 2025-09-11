@@ -192,7 +192,7 @@ export const exportIndividualInvestorToPDF = async (data, settings) => {
         'العملة', 
         `الربح اليومي`, 
         `إجمالي الربح`, 
-        'تاريخ التوزيع'
+        'تاريخ الموافقة'
       ];
       
       const distRows = data.profitDistributions.map(distribution => [
@@ -201,7 +201,7 @@ export const exportIndividualInvestorToPDF = async (data, settings) => {
         distribution.currency || 'USD',
         formatCurrency(distribution.dailyProfit || 0, 'USD', currentCurrency),
         formatCurrency(distribution.financialYear.totalRollover || 0, 'USD', currentCurrency),
-        distribution.financialYear.distributedAt
+        distribution.financialYear.approvedAt
       ]);
 
       autoTableModule.default(doc, {
@@ -373,7 +373,7 @@ export const exportFinancialYearToPDF = async (data, settings) => {
         `رأس المال`, 
         `الربح`, 
         'تاريخ الانضمام', 
-        'تاريخ التوزيع'
+        'تاريخ الموافقة'
       ];
       
       const distRows = data.profitDistributions.map(distribution => [
@@ -381,7 +381,7 @@ export const exportFinancialYearToPDF = async (data, settings) => {
         formatCurrency(distribution.amount || 0, 'USD', currentCurrency),
         formatCurrency(distribution.financialYear?.totalProfit || 0, 'USD', currentCurrency),
         distribution.investors?.createdAt || '-',
-        data.distributedAt || '-'
+        data.approvedAt || '-'
       ]);
       
       autoTableModule.default(doc, {
@@ -478,14 +478,14 @@ export const exportToExcel = (data, reportType, settings) => {
         ]),
         [],
         createStyledHeader(['توزيعات الأرباح']),
-        createStyledHeader(['السنة المالية', 'رأس المال', 'العملة', 'الربح اليومي', 'إجمالي الربح', 'تاريخ التوزيع']),
+        createStyledHeader(['السنة المالية', 'رأس المال', 'العملة', 'الربح اليومي', 'إجمالي الربح', 'تاريخ الموافقة']),
         ...(data.profitDistributions || []).map(distribution => [
           `${distribution.financialYear.year} - ${distribution.financialYear.periodName}`,
           formatCurrency(distribution.amount || 0, 'USD', currentCurrency),
           distribution.currency || 'USD',
           formatCurrency(distribution.dailyProfit || 0, 'USD', currentCurrency),
           formatCurrency(distribution.financialYear.totalRollover || 0, 'USD', currentCurrency),
-          distribution.financialYear.distributedAt
+          distribution.financialYear.approvedAt
         ])
       ];
       break;
@@ -525,13 +525,13 @@ export const exportToExcel = (data, reportType, settings) => {
         ],
         [],
         createStyledHeader(['توزيعات الأرباح']),
-        createStyledHeader(['المستثمر', 'رأس المال', 'الربح', 'تاريخ الانضمام', 'تاريخ التوزيع']),
+        createStyledHeader(['المستثمر', 'رأس المال', 'الربح', 'تاريخ الانضمام', 'تاريخ الموافقة']),
         ...(data.profitDistributions || []).map(distribution => [
           distribution.investors?.fullName || '-',
           formatCurrency(distribution.amount || 0, 'USD', currentCurrency),
           formatCurrency(distribution.financialYear?.totalProfit || 0, 'USD', currentCurrency),
           distribution.investors?.createdAt || '-',
-          data.distributedAt || '-'
+          data.approvedAt || '-'
         ])
       ];
       break;

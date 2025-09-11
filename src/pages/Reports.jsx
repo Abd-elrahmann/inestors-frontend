@@ -168,6 +168,9 @@ const Reports = () => {
           break;
         case 'transactions':
           url = '/api/reports/transactions';
+          if (selectedFinancialYear?.periodName) {
+            params.periodName = selectedFinancialYear.periodName;
+          }
           break;
         case 'financial-year':
           if (!selectedFinancialYear) {
@@ -409,7 +412,7 @@ const Reports = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {Array.isArray(reportData) && reportData.slice(0, 5).map((row) => (
+                {Array.isArray(reportData) && reportData.map((row) => (
                   <StyledTableRow key={row.id}>
                     <StyledTableCell align="center">{row.fullName}</StyledTableCell>
                     <StyledTableCell align="center">{row.phone||'-'}</StyledTableCell>
@@ -502,7 +505,7 @@ const Reports = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {(reportData.transactions || []).filter(transaction => transaction.status !== 'CANCELED').slice(0, 5).map((transaction) => (
+                  {(reportData.transactions || []).filter(transaction => transaction.status !== 'CANCELED').map((transaction) => (
                     <StyledTableRow key={transaction.id}>
                       <StyledTableCell align="center">{transaction.type === 'DEPOSIT' ? 'إيداع' : transaction.type === 'WITHDRAWAL' ? 'سحب' : transaction.type === 'PROFIT' ? 'ربح' : '-'}</StyledTableCell>
                       <StyledTableCell align="center">{convertCurrency(transaction.amount || 0, transaction.currency || 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
@@ -542,12 +545,12 @@ const Reports = () => {
                       إجمالي الربح
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      تاريخ التوزيع
+                      تاريخ الموافقة
                     </StyledTableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {(reportData.profitDistributions || []).slice(0, 5).map((distribution) => (
+                  {(reportData.profitDistributions || []).map((distribution) => (
                     <StyledTableRow key={distribution.financialYear.year}>
                       <StyledTableCell align="center">{`${distribution.financialYear.year} - ${distribution.financialYear.periodName}`}</StyledTableCell>
                       <StyledTableCell align="center">{convertCurrency(distribution.amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
@@ -563,7 +566,7 @@ const Reports = () => {
                         minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                         maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
-                      <StyledTableCell align="center">{distribution.financialYear.distributedAt}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.financialYear.approvedAt}</StyledTableCell>
                     </StyledTableRow>
                   ))}
                 </TableBody>
@@ -603,7 +606,7 @@ const Reports = () => {
               </TableHead>
               <TableBody>
                 {Array.isArray(reportData) &&
-                  reportData.filter(transaction => transaction.status !== 'CANCELED').slice(0, 5).map((transaction) => (
+                  reportData.filter(transaction => transaction.status !== 'CANCELED').map((transaction) => (
                     <StyledTableRow key={transaction.id}>
                       <StyledTableCell align="center">{transaction.investors?.fullName}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.type === 'DEPOSIT' ? 'إيداع' : transaction.type === 'WITHDRAWAL' ? 'سحب' : transaction.type === 'PROFIT' ? 'ربح' : '-'}</StyledTableCell>
@@ -705,7 +708,7 @@ const Reports = () => {
                       تاريخ المساهمة
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      تاريخ التوزيع
+                      تاريخ الموافقة
                     </StyledTableCell>
                   </TableRow>
                 </TableHead>
@@ -736,7 +739,7 @@ const Reports = () => {
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">{distribution.investors?.createdAt || '-'}</StyledTableCell>
-                      <StyledTableCell align="center">{reportData.distributedAt || '-'}</StyledTableCell>
+                      <StyledTableCell align="center">{reportData.approvedAt || '-'}</StyledTableCell>
                     </StyledTableRow>
                   ))}
                 </TableBody>
@@ -818,7 +821,7 @@ const Reports = () => {
 
   const renderReportFilters = () => {
     if (!reportType) return null;
-
+  
     return (
       <Card
         style={{
@@ -887,15 +890,16 @@ const Reports = () => {
               </Col>
             </>
           )}
-
-          {reportType === 'financial-year' && (
+  
+          {/* التصحيح هنا: إضافة أقواس حول الشرطين */}
+          {(reportType === 'financial-year' || reportType === 'transactions') && (
             <Col xs={24} sm={12} md={6}>
               <Text strong style={{ display: 'flex', marginBottom: 8 }}>
-                اختر سنة مالية
+                {reportType === 'financial-year' ? 'اختر سنة مالية' : 'اختر سنة مالية (اختياري)'}
               </Text>
               <Select
                 showSearch
-                placeholder="اختر سنة مالية"
+                placeholder={reportType === 'financial-year' ? 'اختر سنة مالية' : 'اختر سنة مالية (اختياري)'}
                 optionFilterProp="children"
                 value={selectedFinancialYear?.periodName}
                 onChange={(value) => {
@@ -916,7 +920,7 @@ const Reports = () => {
               </Select>
             </Col>
           )}
-
+  
           {(reportType === 'investors' || reportType === 'transactions') && (
             <Col xs={24} sm={16} md={8} style={{display: 'flex', justifyContent: 'center'}}>
               <Text strong style={{ display: 'flex', marginBottom: 8 }}>
@@ -937,7 +941,7 @@ const Reports = () => {
               />
             </Col>
           )}
-
+  
           <Col xs={24} sm={24} md={reportType === 'individual' ? 6 : (reportType === 'financial-year' ? 6 : 8)}>
             <Space style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
               <Button
@@ -971,7 +975,6 @@ const Reports = () => {
       </Card>
     );
   };
-
   return (
     <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
       <Helmet>
