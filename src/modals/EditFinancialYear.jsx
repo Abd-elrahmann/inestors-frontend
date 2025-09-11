@@ -13,6 +13,9 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import Api from '../services/api';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
@@ -21,16 +24,16 @@ const EditFinancialYearModal = ({ open, onClose, financialYear, onSuccess }) => 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     periodName: '',
-    startDate: '',
-    endDate: ''
+    startDate: null,
+    endDate: null
   });
 
   useEffect(() => {
     if (financialYear && open) {
       setFormData({
         periodName: financialYear.periodName || '',
-        startDate: financialYear.startDate ? dayjs(financialYear.startDate).format('MM/DD/YYYY') : '',
-        endDate: financialYear.endDate ? dayjs(financialYear.endDate).format('MM/DD/YYYY') : ''
+        startDate: financialYear.startDate ? dayjs(financialYear.startDate) : null,
+        endDate: financialYear.endDate ? dayjs(financialYear.endDate) : null
       });
     }
   }, [financialYear, open]);
@@ -53,17 +56,22 @@ const EditFinancialYearModal = ({ open, onClose, financialYear, onSuccess }) => 
 
     setLoading(true);
     try {
+      // Convert dayjs objects to ISO date strings before sending to backend
+      const startDateStr = formData.startDate ? formData.startDate.toISOString().split('T')[0] : null;
+      const endDateStr = formData.endDate ? formData.endDate.toISOString().split('T')[0] : null;
+
       await Api.put(`/api/financial-years/${financialYear.id}`, {
         periodName: formData.periodName,
-        startDate: formData.startDate,
-        endDate: formData.endDate
+        startDate: startDateStr,
+        endDate: endDateStr
       });
-      toast.success('تم تحديث إعدادات التدوير بنجاح');
+
+      toast.success('تم تحديث السنة المالية بنجاح');
       onSuccess();
       handleClose();
     } catch (error) {
-      console.error('Error updating rollover:', error);
-      toast.error('فشل في تحديث إعدادات التدوير');
+      console.error('Error updating financial year:', error);
+      toast.error('فشل في تحديث السنة المالية');
     } finally {
       setLoading(false);
     }
@@ -73,8 +81,8 @@ const EditFinancialYearModal = ({ open, onClose, financialYear, onSuccess }) => 
     if (!loading) {
       setFormData({
         periodName: '',
-        startDate: '',
-        endDate: ''
+        startDate: null,
+        endDate: null
       });
       onClose();
     }
@@ -126,7 +134,7 @@ const EditFinancialYearModal = ({ open, onClose, financialYear, onSuccess }) => 
             mx: 'auto'
           }}>
             <Alert severity="info" sx={{ mb: 2 }}>
-              يمكنك تعديل السنة المالية {financialYear?.year} في حاله انها قيد التوزيع.
+              يمكنك تعديل السنة المالية {financialYear?.year} في حاله انها لم تتم الموافقة عليها.
             </Alert>
 
             <TextField
@@ -137,23 +145,33 @@ const EditFinancialYearModal = ({ open, onClose, financialYear, onSuccess }) => 
               disabled={loading}
             />
 
-            <TextField
-              fullWidth
-              label="تاريخ البدء"
-              value={formData.startDate}
-              onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-              disabled={loading}
-              placeholder="MM/DD/YYYY"
-            />
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                label="تاريخ البدء"
+                value={formData.startDate}
+                onChange={(newValue) => setFormData(prev => ({ ...prev, startDate: newValue }))}
+                disabled={loading}
+                format="YYYY-MM-DD"
+                slotProps={{
+                  textField: {
+                    fullWidth: true
+                  }
+                }}
+              />
 
-            <TextField
-              fullWidth
-              label="تاريخ النهاية"
-              value={formData.endDate}
-              onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-              disabled={loading}
-              placeholder="MM/DD/YYYY"
-            />
+              <DatePicker
+                label="تاريخ النهاية"
+                value={formData.endDate}
+                onChange={(newValue) => setFormData(prev => ({ ...prev, endDate: newValue }))}
+                disabled={loading}
+                format="YYYY-MM-DD"
+                slotProps={{
+                  textField: {
+                    fullWidth: true
+                  }
+                }}
+              />
+            </LocalizationProvider>
           </Box>
         </DialogContent>
         

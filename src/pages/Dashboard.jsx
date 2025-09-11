@@ -198,20 +198,17 @@ const Dashboard = () => {
       } else {
         console.error('Error fetching aggregates:', aggregatesResponse.reason);
       }
-
       if (transactionsResponse.status === 'fulfilled') {
         const data = transactionsResponse.value.data;
-        const convertedDays = data.days?.map(day => ({
+        const days = data.days?.map(day => ({
           ...day,
-          averageDeposit: convertAmount(day.averageDeposit || 0, 'USD', currentCurrency),
-          averageWithdraw: convertAmount(day.averageWithdraw || 0, 'USD', currentCurrency),
-          averageProfit: convertAmount(day.averageProfit || 0, 'USD', currentCurrency),
-          averageRollover: convertAmount(day.averageRollover || 0, 'USD', currentCurrency),
-          averageWithdrawProfit: convertAmount(day.averageWithdrawProfit || 0, 'IQD', currentCurrency)
+          averageDeposit: day.averageDeposit || 0,
+          averageWithdraw: day.averageWithdraw || 0, 
+          averageRollover: day.averageRollover || 0,
         })) || [];
         setTransactionsData({
           ...data,
-          days: convertedDays
+          days: days
         });
       } else {
         console.error('Error fetching transactions:', transactionsResponse.reason);
@@ -373,17 +370,6 @@ const Dashboard = () => {
           pointHoverRadius: 6
         },
         {
-          label: 'متوسط الأرباح',
-          data: sortedDays.map(day => day.averageProfit || 0),
-          borderColor: '#10B981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.3,
-          pointRadius: 3,
-          pointHoverRadius: 6
-        },
-        {
           label: 'متوسط الربح',
           data: sortedDays.map(day => day.averageRollover || 0),
           borderColor: '#F59E0B',
@@ -394,17 +380,6 @@ const Dashboard = () => {
           pointRadius: 3,
           pointHoverRadius: 6
         },
-        {
-          label: 'متوسط سحب الأرباح',
-          data: sortedDays.map(day => day.averageWithdrawProfit || 0),
-          borderColor: '#8B5CF6',
-          backgroundColor: 'rgba(139, 92, 246, 0.1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.3,
-          pointRadius: 3,
-          pointHoverRadius: 6
-        }
       ]
     };
   };
@@ -424,15 +399,15 @@ const Dashboard = () => {
       icon: <DollarOutlined style={{ color: '#007bff', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.amount || 0,
       color: '#007bff',
-      suffix: currentCurrency
+      suffix: null
     },
     {
       title: `الأرباح المحققة`,
-      value: overviewData.totalRollover,
+      value: convertAmount(overviewData.totalRollover, 'USD', currentCurrency),
       icon: <RiseOutlined style={{ color: '#ffc107', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.profit || 0,
       color: '#ffc107',
-      suffix: currentCurrency
+      suffix: null
     },
     {
       title: 'إجمالي المعاملات',
@@ -440,7 +415,7 @@ const Dashboard = () => {
       icon: <TransactionOutlined style={{ color: '#dc3545', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.transactions || 0,
       color: '#dc3545',
-      suffix: currentCurrency
+      suffix: null
     }
   ];
 

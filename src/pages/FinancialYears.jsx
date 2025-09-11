@@ -50,7 +50,7 @@ import debounce from 'lodash/debounce';
 import DeleteModal from '../modals/DeleteModal';
 const FinancialYear = () => {
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchTerm, setSearchTerm] = useState('');
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [distributionModalOpen, setDistributionModalOpen] = useState(false);
@@ -128,6 +128,20 @@ const FinancialYear = () => {
     setSelectedYear(year);
     setDistributionModalOpen(true);
   };
+  const handleApproveYear = async (year) => {
+    try {
+      setSelectedYear(year);
+      await Api.patch(`/api/financial-years/${year.id}/approve`);
+      toast.success('تم الموافقة على السنة المالية بنجاح');
+      setAnchorEl(null);
+      setSelectedYear(null);
+      queryClient.invalidateQueries('financialYears');
+      queryClient.invalidateQueries('transactions');
+    } catch (error) {
+      console.error('Error approving financial year:', error);
+      toast.error('فشل في الموافقة على السنة المالية');
+    }
+  };
 
   const handleDelete = async (yearId) => {
     try {
@@ -137,6 +151,7 @@ const FinancialYear = () => {
       setSelectedYear(null);
       setAnchorEl(null);
       queryClient.invalidateQueries('financialYears');
+      queryClient.invalidateQueries('transactions');
     } catch (error) {
       console.error('Error deleting financial year:', error);
       toast.error('فشل في حذف السنة المالية');
@@ -151,7 +166,7 @@ const FinancialYear = () => {
   const getStatusChip = (status) => {
     const statusConfig = {
       PENDING: { 
-        label: 'قيد التوزيع', 
+        label: 'في انتظار الموافقة', 
         color: 'info',
         icon: <BarChartOutlined style={{marginRight: '5px'}} />
       },
@@ -240,9 +255,9 @@ const FinancialYear = () => {
                 <StyledTableCell align="center">المسلسل</StyledTableCell>
                 <StyledTableCell align="center">السنة</StyledTableCell>
                 <StyledTableCell align="center">اسم الفترة</StyledTableCell>
-                <StyledTableCell align="center">الفترة الزمنية</StyledTableCell>
+                <StyledTableCell align="center" sx={{ width: '160px' }}>الفترة الزمنية</StyledTableCell>
                 <StyledTableCell align="center"> مبلغ التوزيع ({settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'})</StyledTableCell>
-                <StyledTableCell align="center">الحالة</StyledTableCell>
+                <StyledTableCell align="center" sx={{ width: '160px' }}>الحالة</StyledTableCell>
                 <StyledTableCell align="center">الإجراءات</StyledTableCell>
               </TableRow>
             </TableHead>
@@ -330,6 +345,15 @@ const FinancialYear = () => {
             }}>
               <EyeOutlined style={{marginLeft: 8,color:'blue'}} />
               عرض التوزيعات
+            </MenuItem>
+          )}
+          {['PENDING'].includes(selectedYearForMenu?.status) && (
+            <MenuItem onClick={() => {
+              handleApproveYear(selectedYearForMenu);
+              setAnchorEl(null);
+            }}>
+              <CheckOutlined style={{marginLeft: 8,color:'green'}} />
+                الموافقة علي التوزيع
             </MenuItem>
           )}
           {['PENDING', 'DISTRIBUTED'].includes(selectedYearForMenu?.status) && (

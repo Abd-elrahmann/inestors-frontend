@@ -504,14 +504,14 @@ const Reports = () => {
                 <TableBody>
                   {(reportData.transactions || []).filter(transaction => transaction.status !== 'CANCELED').slice(0, 5).map((transaction) => (
                     <StyledTableRow key={transaction.id}>
-                      <StyledTableCell align="center">{transaction.type === 'DEPOSIT' ? 'إيداع' : transaction.type === 'WITHDRAWAL' ? 'سحب' : transaction.type === 'PROFIT' ? 'ربح' : 'غير محدد'}</StyledTableCell>
+                      <StyledTableCell align="center">{transaction.type === 'DEPOSIT' ? 'إيداع' : transaction.type === 'WITHDRAWAL' ? 'سحب' : transaction.type === 'PROFIT' ? 'ربح' : '-'}</StyledTableCell>
                       <StyledTableCell align="center">{convertCurrency(transaction.amount || 0, transaction.currency || 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                         maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                         <StyledTableCell align="center">{transaction.currency || 'USD'}</StyledTableCell>
-                      <StyledTableCell align="center">{transaction.withdrawSource || 'غير محدد'}</StyledTableCell>
-                      <StyledTableCell align="center">{transaction.financialYear?.year || 'غير محدد'} {transaction.financialYear?.periodName ? `- ${transaction.financialYear.periodName}` : ''}</StyledTableCell>
+                      <StyledTableCell align="center">{transaction.withdrawSource === "AMOUNT_ROLLOVER" ? " مبلغ الربح + رأس المال" : transaction.withdrawSource === "ROLLOVER" ? "مبلغ الربح" : '-'}</StyledTableCell>
+                      <StyledTableCell align="center">{transaction.financialYear?.year || '-'} {transaction.financialYear?.periodName ? `- ${transaction.financialYear.periodName}` : ''}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.date}</StyledTableCell>
                     </StyledTableRow>
                   ))}
@@ -606,14 +606,14 @@ const Reports = () => {
                   reportData.filter(transaction => transaction.status !== 'CANCELED').slice(0, 5).map((transaction) => (
                     <StyledTableRow key={transaction.id}>
                       <StyledTableCell align="center">{transaction.investors?.fullName}</StyledTableCell>
-                      <StyledTableCell align="center">{transaction.type === 'DEPOSIT' ? 'إيداع' : transaction.type === 'WITHDRAWAL' ? 'سحب' : transaction.type === 'PROFIT' ? 'ربح' : 'غير محدد'}</StyledTableCell>
+                      <StyledTableCell align="center">{transaction.type === 'DEPOSIT' ? 'إيداع' : transaction.type === 'WITHDRAWAL' ? 'سحب' : transaction.type === 'PROFIT' ? 'ربح' : '-'}</StyledTableCell>
                           <StyledTableCell align="center">{convertCurrency(transaction.amount || 0, transaction.currency || 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                         maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.currency || 'USD'}</StyledTableCell>
-                      <StyledTableCell align="center">{transaction.withdrawSource || 'غير محدد'}</StyledTableCell>
-                      <StyledTableCell align="center">{transaction.financialYear?.year || 'غير محدد'} {transaction.financialYear?.periodName ? `- ${transaction.financialYear.periodName}` : ''}</StyledTableCell>
+                      <StyledTableCell align="center">{transaction.withdrawSource === "AMOUNT_ROLLOVER" ? " مبلغ الربح + رأس المال" : transaction.withdrawSource === "ROLLOVER" ? "مبلغ الربح" : '-'}</StyledTableCell>
+                      <StyledTableCell align="center">{transaction.financialYear?.year || '-'} {transaction.financialYear?.periodName ? `- ${transaction.financialYear.periodName}` : ''}</StyledTableCell>
                       <StyledTableCell align="center">{transaction.date}</StyledTableCell>
                     </StyledTableRow>
                   ))}
@@ -658,13 +658,13 @@ const Reports = () => {
                     <StyledTableCell align="center">{reportData.periodName}</StyledTableCell>
                     <StyledTableCell align="center">
                       {convertCurrency(reportData.totalProfit || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
-                        maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
+                          minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                     </StyledTableCell>
                     <StyledTableCell align="center">
                       {reportData.status === 'PENDING'
-                        ? 'قيد التوزيع'
+                        ? 'في انتظار الموافقة'
                         : reportData.status === 'DISTRIBUTED'
                         ? 'موزع'
                         : reportData.status}
@@ -693,7 +693,7 @@ const Reports = () => {
                       رأس المال
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      مبلغ الربح (المستقبل)
+                      ايام المستثمر
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                       الربح اليومي
@@ -712,22 +712,16 @@ const Reports = () => {
                 <TableBody>
                   {(reportData.profitDistributions || []).map((distribution, index) => (
                     <StyledTableRow key={index}>
-                      <StyledTableCell align="center">{distribution.investors?.id || 'غير معروف'}</StyledTableCell>
-                      <StyledTableCell align="center">{distribution.investors?.fullName || 'غير معروف'}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.investors?.id || '-'}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.investors?.fullName || '-'}</StyledTableCell>
                       <StyledTableCell align="center">
                         {convertCurrency(distribution.amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
-                          maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
                       <StyledTableCell align="center">
-                        {distribution.investors?.rollover_amount ? 
-                          convertCurrency(distribution.investors.rollover_amount, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                            minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
-                            maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0
-                          })
-                          : '0'
-                        } {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
+                        {distribution.daysSoFar || '-'}
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         {convertCurrency(distribution.dailyProfit || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
@@ -737,12 +731,12 @@ const Reports = () => {
                       </StyledTableCell>
                       <StyledTableCell align="center">
                         {convertCurrency(distribution.totalProfit || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
-                          maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </StyledTableCell>
-                      <StyledTableCell align="center">{distribution.investors?.createdAt || 'غير محدد'}</StyledTableCell>
-                      <StyledTableCell align="center">{reportData.distributedAt || 'غير محدد'}</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.investors?.createdAt || '-'}</StyledTableCell>
+                      <StyledTableCell align="center">{reportData.distributedAt || '-'}</StyledTableCell>
                     </StyledTableRow>
                   ))}
                 </TableBody>

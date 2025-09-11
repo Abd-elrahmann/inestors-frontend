@@ -18,7 +18,7 @@ const formatTransactionType = (type) => {
     case 'DEPOSIT': return 'إيداع';
     case 'WITHDRAWAL': return 'سحب';
     case 'PROFIT': return 'ربح';
-    default: return 'غير محدد';
+    default: return '-';
   }
 };
 
@@ -152,8 +152,8 @@ export const exportIndividualInvestorToPDF = async (data, settings) => {
         formatTransactionType(transaction.type),
         formatCurrency(transaction.amount || 0, transaction.currency || 'USD', currentCurrency),
         transaction.currency || 'USD',
-        transaction.withdrawSource || 'غير محدد',
-        transaction.financialYear ? `${transaction.financialYear.year || 'غير محدد'} ${transaction.financialYear.periodName ? `- ${transaction.financialYear.periodName}` : ''}` : 'غير محدد',
+        transaction.withdrawSource === "AMOUNT_ROLLOVER" ? " مبلغ الربح + رأس المال" : transaction.withdrawSource === "ROLLOVER" ? "مبلغ الربح" : '-',
+        transaction.financialYear ? `${transaction.financialYear.year || '-'} ${transaction.financialYear.periodName ? `- ${transaction.financialYear.periodName}` : ''}` : '-',
         transaction.date
       ]);
       
@@ -262,12 +262,12 @@ export const exportTransactionsToPDF = async (data, settings) => {
     ];
     
     const rows = data.filter(transaction => transaction.status !== 'CANCELED').map(transaction => [
-      transaction.investors?.fullName || 'غير معروف',
+      transaction.investors?.fullName || '-',
       formatTransactionType(transaction.type),
       formatCurrency(transaction.amount || 0, transaction.currency || 'USD', currentCurrency),
       transaction.currency || 'USD',
-      transaction.withdrawSource || 'غير محدد',
-      transaction.financialYear ? `${transaction.financialYear.year || 'غير محدد'} ${transaction.financialYear.periodName ? `- ${transaction.financialYear.periodName}` : ''}` : 'غير محدد',
+      transaction.withdrawSource === "AMOUNT_ROLLOVER" ? " مبلغ الربح + رأس المال" : transaction.withdrawSource === "ROLLOVER" ? "مبلغ الربح" : '-',
+      transaction.financialYear ? `${transaction.financialYear.year || '-'} ${transaction.financialYear.periodName ? `- ${transaction.financialYear.periodName}` : ''}` : '-',
       transaction.date
     ]);
     
@@ -325,7 +325,7 @@ export const exportFinancialYearToPDF = async (data, settings) => {
     
     // Financial year information table
     const statusMap = {
-      'PENDING': 'قيد التوزيع',
+      'PENDING': 'في انتظار الموافقة',
       'DISTRIBUTED': 'موزع'
     };
     
@@ -377,11 +377,11 @@ export const exportFinancialYearToPDF = async (data, settings) => {
       ];
       
       const distRows = data.profitDistributions.map(distribution => [
-        distribution.investors?.fullName || 'غير معروف',
+        distribution.investors?.fullName || '-',
         formatCurrency(distribution.amount || 0, 'USD', currentCurrency),
         formatCurrency(distribution.financialYear?.totalProfit || 0, 'USD', currentCurrency),
-        distribution.investors?.createdAt || 'غير محدد',
-        data.distributedAt || 'غير محدد'
+        distribution.investors?.createdAt || '-',
+        data.distributedAt || '-'
       ]);
       
       autoTableModule.default(doc, {
@@ -472,8 +472,8 @@ export const exportToExcel = (data, reportType, settings) => {
           formatTransactionType(transaction.type),
           formatCurrency(transaction.amount || 0, transaction.currency || 'USD', currentCurrency),
           transaction.currency || 'USD',
-          transaction.withdrawSource || 'غير محدد',
-          transaction.financialYear ? `${transaction.financialYear.year || 'غير محدد'} ${transaction.financialYear.periodName ? `- ${transaction.financialYear.periodName}` : ''}` : 'غير محدد',
+          transaction.withdrawSource === "AMOUNT_ROLLOVER" ? " مبلغ الربح + رأس المال" : transaction.withdrawSource === "ROLLOVER" ? "مبلغ الربح" : '-',
+          transaction.financialYear ? `${transaction.financialYear.year || '-'} ${transaction.financialYear.periodName ? `- ${transaction.financialYear.periodName}` : ''}` : '-',
           transaction.date
         ]),
         [],
@@ -495,12 +495,12 @@ export const exportToExcel = (data, reportType, settings) => {
       worksheetData = [
         createStyledHeader(['المستثمر', 'النوع', 'المبلغ', 'العملة', 'مصدر العملية', 'السنة المالية', 'التاريخ']),
         ...data.filter(transaction => transaction.status !== 'CANCELED').map(transaction => [
-          transaction.investors?.fullName || 'غير معروف',
+          transaction.investors?.fullName || '-',
           formatTransactionType(transaction.type),
           formatCurrency(transaction.amount || 0, transaction.currency || 'USD', currentCurrency),
           transaction.currency || 'USD',
-          transaction.withdrawSource || 'غير محدد',
-          transaction.financialYear ? `${transaction.financialYear.year || 'غير محدد'} ${transaction.financialYear.periodName ? `- ${transaction.financialYear.periodName}` : ''}` : 'غير محدد',
+          transaction.withdrawSource === "AMOUNT_ROLLOVER" ? " مبلغ الربح + رأس المال" : transaction.withdrawSource === "ROLLOVER" ? "مبلغ الربح" : '-',
+          transaction.financialYear ? `${transaction.financialYear.year || '-'} ${transaction.financialYear.periodName ? `- ${transaction.financialYear.periodName}` : ''}` : '-',
           transaction.date
         ])
       ];
@@ -509,7 +509,7 @@ export const exportToExcel = (data, reportType, settings) => {
     case 'financial-year': {
       filename = `تقرير-السنة-المالية-${data.periodName.replace(/\s+/g, '-')}.xlsx`;
       const statusMap = { 
-        'PENDING': 'قيد التوزيع',
+        'PENDING': 'في انتظار الموافقة',
         'DISTRIBUTED': 'موزع'
       };
         
@@ -527,11 +527,11 @@ export const exportToExcel = (data, reportType, settings) => {
         createStyledHeader(['توزيعات الأرباح']),
         createStyledHeader(['المستثمر', 'رأس المال', 'الربح', 'تاريخ الانضمام', 'تاريخ التوزيع']),
         ...(data.profitDistributions || []).map(distribution => [
-          distribution.investors?.fullName || 'غير معروف',
+          distribution.investors?.fullName || '-',
           formatCurrency(distribution.amount || 0, 'USD', currentCurrency),
           formatCurrency(distribution.financialYear?.totalProfit || 0, 'USD', currentCurrency),
-          distribution.investors?.createdAt || 'غير محدد',
-          data.distributedAt || 'غير محدد'
+          distribution.investors?.createdAt || '-',
+          data.distributedAt || '-'
         ])
       ];
       break;

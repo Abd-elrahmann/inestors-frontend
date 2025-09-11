@@ -56,7 +56,7 @@ const Transactions = () => {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
@@ -494,7 +494,7 @@ const Transactions = () => {
               {transaction.currency || "USD"}
             </StyledTableCell>
             <StyledTableCell align="center">
-              {transaction.withdrawSource === "AMOUNT" ? "رأس المال" : transaction.withdrawSource === "PROFIT" ? "ربح" : "-"}
+              {transaction.withdrawSource === "AMOUNT_ROLLOVER" ? " مبلغ الربح + رأس المال" : transaction.withdrawSource === "ROLLOVER" ? "مبلغ الربح" : "-"}
             </StyledTableCell>
             <StyledTableCell align="center">
               {transaction.financialYear?.year || "-"} {transaction.financialYear?.periodName ? `- ${transaction.financialYear.periodName}` : ''}

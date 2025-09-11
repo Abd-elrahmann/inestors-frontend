@@ -44,7 +44,7 @@ const Investors = () => {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedInvestor, setSelectedInvestor] = useState(null);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(100);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
@@ -256,6 +256,7 @@ const Investors = () => {
         `تم استيراد ${response.data.importedCount || 0} مستثمر بنجاح`
       );
       queryClient.invalidateQueries("investors");
+      queryClient.invalidateQueries("transactions");
     } catch (error) {
       console.error("Error importing investors:", error);
       const errorMessage =

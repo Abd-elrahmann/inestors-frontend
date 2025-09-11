@@ -91,7 +91,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
 
   const getStatusText = (status) => {
     const statusMap = {
-      'PENDING': 'قيد التوزيع',
+      'PENDING': 'في انتظار الموافقة',
       'DISTRIBUTED': 'موزع',
     };
     return statusMap[status] || status;
@@ -195,11 +195,15 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
             </Typography>
             <Typography variant="body2" component="div" sx={{mb: 2}}>
               <strong>💰  مبلغ التوزيع:</strong> {convertCurrency(displayData.summary.totalDistributed, displayData.summary.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
-                maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
               })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
               <br />
-              <strong>🧮 طريقة حساب الارباح للمستثمر:</strong> اجمالي الربح x نسبة المساهمة
+              <strong>🧮 طريقة حساب الارباح للمستثمر:</strong>
+              <br />
+              <span>الربح اليومي = (اجمالي مبلغ التوزيع / عدد الايام للمستثمر) * نسبة المساهمة</span>
+              <br />
+              <span>اجمالي الربح = الربح اليومي * عدد الايام للمستثمر</span>
               <br />
             </Typography>
           </Box>
@@ -233,8 +237,8 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                       </Typography>
                       <Typography variant="h5" component="div">
                         {convertCurrency(displayData.summary.totalProfit,displayData.summary.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
-                          maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </Typography>
                     </Box>
@@ -329,8 +333,8 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                     <StyledTableCell align="center">مسلسل المستثمر</StyledTableCell>
                     <StyledTableCell align="center">المستثمر</StyledTableCell>
                     <StyledTableCell align="center">رأس المال</StyledTableCell>
-                    <StyledTableCell align="center">مبلغ الربح (المستقبل)</StyledTableCell>
                     <StyledTableCell align="center">نسبة المساهمة</StyledTableCell>
+                    <StyledTableCell align="center"> ايام المستثمر</StyledTableCell>
                     <StyledTableCell align="center"> الربح اليومي</StyledTableCell>
                     <StyledTableCell align="center">اجمالي الربح</StyledTableCell>
                     <StyledTableCell align='center'>تاريخ المساهمة</StyledTableCell>
@@ -346,16 +350,8 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                         minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
                         maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
-                      <StyledTableCell align="center">
-                        {distribution.investor.rollover_amount ? 
-                          convertCurrency(distribution.investor.rollover_amount, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                            minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
-                            maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0
-                          })
-                          : '0'
-                        } {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
-                      </StyledTableCell>
                       <StyledTableCell align="center">{distribution.percentage.toFixed(2)}%</StyledTableCell>
+                      <StyledTableCell align="center">{distribution.daysSoFar}</StyledTableCell>
                       <StyledTableCell align="center">{convertCurrency(distribution.dailyProfit, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                         minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
                         maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
