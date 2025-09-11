@@ -401,10 +401,13 @@ const Reports = () => {
                     الهاتف
                   </StyledTableCell>
                   <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                  مبلغ المساهمة
+                  رأس المال
                   </StyledTableCell>
                   <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                     مبلغ الربح
+                  </StyledTableCell>
+                  <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                    المجموع
                   </StyledTableCell>
                   <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                     تاريخ الانضمام
@@ -421,6 +424,10 @@ const Reports = () => {
                       maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                     })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                     <StyledTableCell align="center">{convertCurrency(row.rollover_amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
+                      minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
+                      maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
+                    })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
+                    <StyledTableCell align="center">{convertCurrency(row.amount + row.rollover_amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                       minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                       maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                     })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
@@ -449,10 +456,13 @@ const Reports = () => {
                       الهاتف
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      مبلغ المساهمة
+                      رأس المال
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                       مبلغ الربح
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      المجموع
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                       تاريخ الانضمام
@@ -468,6 +478,10 @@ const Reports = () => {
                       maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                     })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                     <StyledTableCell align="center">{convertCurrency(reportData.rollover_amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
+                      minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
+                      maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
+                    })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
+                    <StyledTableCell align="center">{convertCurrency(reportData.amount + reportData.rollover_amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
                       minimumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                       maximumFractionDigits:  settings?.defaultCurrency === 'USD' ? 2 : 0,
                     })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
@@ -687,13 +701,13 @@ const Reports = () => {
                 <TableHead>
                   <TableRow>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      مسلسل المستثمر
+                      ت
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                       المستثمر
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      رأس المال
+                    المجموع
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                       ايام المستثمر
@@ -702,7 +716,7 @@ const Reports = () => {
                       الربح اليومي
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
-                      اجمالي الربح
+                      المجموع
                     </StyledTableCell>
                     <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
                       تاريخ المساهمة

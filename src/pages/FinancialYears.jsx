@@ -252,7 +252,7 @@ const FinancialYear = () => {
           <Table stickyHeader>
             <TableHead>
               <TableRow>
-                <StyledTableCell align="center">المسلسل</StyledTableCell>
+                <StyledTableCell align="center">ت</StyledTableCell>
                 <StyledTableCell align="center">السنة</StyledTableCell>
                 <StyledTableCell align="center">اسم الفترة</StyledTableCell>
                 <StyledTableCell align="center" sx={{ width: '160px' }}>الفترة الزمنية</StyledTableCell>

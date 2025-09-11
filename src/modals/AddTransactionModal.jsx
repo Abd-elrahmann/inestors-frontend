@@ -37,7 +37,8 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
     investorId: null,
     type: 'DEPOSIT',
     amount: '',
-    currency: settings?.defaultCurrency || 'USD'
+    currency: settings?.defaultCurrency || 'USD',
+    date: ''
   });
 
   const formatNumber = (num) => {
@@ -148,7 +149,8 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
         investorId: formData.investorId,
         type: formData.type,
         amount: parseFloat(formData.amount.replace(/,/g, '')),
-        currency: formData.currency
+        currency: formData.currency,
+        date: formData.date || undefined
       };
 
       console.log('Sending transaction data:', transactionData);
@@ -162,7 +164,8 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
         investorId: null,
         type: 'DEPOSIT',
         amount: '',
-        currency: settings?.defaultCurrency || 'USD'
+        currency: settings?.defaultCurrency || 'USD',
+        date: ''
       });
       
       onClose();
@@ -184,7 +187,8 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
         investorId: null,
         type: 'DEPOSIT',
         amount: '',
-        currency: settings?.defaultCurrency || 'USD'
+        currency: settings?.defaultCurrency || 'USD',
+        date: ''
       });
       setErrors({});
       onClose();
@@ -290,7 +294,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
               </Alert>
             )}
 
-         <TextField
+            <TextField
               select
               fullWidth
               label="نوع العملية"
@@ -304,6 +308,18 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
                 </MenuItem>
               ))}
             </TextField>
+
+            <TextField
+              fullWidth
+              type="date"
+              label="تاريخ العملية"
+              value={formData.date}
+              onChange={(e) => handleInputChange('date', e.target.value)}
+              disabled={loading}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
           </Box>
         </DialogContent>
 

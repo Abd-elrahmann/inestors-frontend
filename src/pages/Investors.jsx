@@ -475,7 +475,7 @@ const Investors = () => {
                 </StyledTableCell>
                 <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
                   {" "}
-                  مسلسل المستثمر
+                  ت
                 </StyledTableCell>
                 <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
                   اسم المستثمر
@@ -493,7 +493,7 @@ const Investors = () => {
                 </StyledTableCell>
                 <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
                   {" "}
-                  اجمالي المبلغ ({settings?.defaultCurrency})
+                   المجموع ({settings?.defaultCurrency})
                 </StyledTableCell>
                 <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
                   نسبة المستثمر

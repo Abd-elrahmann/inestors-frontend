@@ -336,9 +336,9 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
               <Table stickyHeader>
                 <TableHead>
                   <StyledTableRow >
-                    <StyledTableCell align="center">مسلسل المستثمر</StyledTableCell>
+                    <StyledTableCell align="center">ت</StyledTableCell>
                     <StyledTableCell align="center">المستثمر</StyledTableCell>
-                    <StyledTableCell align="center">رأس المال</StyledTableCell>
+                    <StyledTableCell align="center"> المجموع</StyledTableCell>
                     <StyledTableCell align="center">نسبة المساهمة</StyledTableCell>
                     <StyledTableCell align="center"> ايام المستثمر</StyledTableCell>
                     <StyledTableCell align="center"> الربح اليومي</StyledTableCell>

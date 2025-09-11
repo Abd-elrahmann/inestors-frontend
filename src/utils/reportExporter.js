@@ -45,8 +45,9 @@ export const exportAllInvestorsToPDF = async (data, settings) => {
     const headers = [
       'الاسم', 
       'الهاتف', 
-      'مبلغ المساهمة', 
+      ' رأس المال', 
       'مبلغ الربح', 
+      'المجموع',
       'تاريخ الانضمام'
     ];
     
@@ -55,6 +56,7 @@ export const exportAllInvestorsToPDF = async (data, settings) => {
       investor.phone,
       formatCurrency(investor.amount || 0, 'USD', currentCurrency),
       formatCurrency(investor.rollover_amount || 0, 'USD', currentCurrency),
+      formatCurrency(investor.amount + investor.rollover_amount || 0, 'USD', currentCurrency),
       investor.createdAt
     ]);
 
@@ -110,12 +112,13 @@ export const exportIndividualInvestorToPDF = async (data, settings) => {
     
     const currentCurrency = settings?.defaultCurrency || 'USD';
     
-    const infoHeaders = ['الاسم', 'الهاتف', 'مبلغ المساهمة', 'مبلغ الربح', 'تاريخ الانضمام'];
+    const infoHeaders = ['الاسم', 'الهاتف', ' رأس المال', 'مبلغ الربح', 'المجموع', 'تاريخ الانضمام'];
     const infoRows = [[
       data.fullName,
       data.phone,
       formatCurrency(data.amount || 0, 'USD', currentCurrency),
       formatCurrency(data.rollover_amount || 0, 'USD', currentCurrency),
+      formatCurrency(data.amount + data.rollover_amount || 0, 'USD', currentCurrency),
       data.createdAt
     ]];
     
@@ -322,7 +325,7 @@ export const exportFinancialYearToPDF = async (data, settings) => {
     let startY = 30;
     
     const currentCurrency = settings?.defaultCurrency || 'USD';
-    
+    const currencySymbol = currentCurrency === 'USD' ? '$' : 'د.ع';
     // Financial year information table
     const statusMap = {
       'PENDING': 'في انتظار الموافقة',
@@ -333,7 +336,7 @@ export const exportFinancialYearToPDF = async (data, settings) => {
     const infoRows = [[
       data.year,
       data.periodName,
-      formatCurrency(data.totalProfit || 0, 'USD', currentCurrency),
+      `${formatCurrency(data.totalProfit || 0, 'USD', currentCurrency)} ${currencySymbol}`,
       statusMap[data.status] || data.status,
       data.startDate,
       data.endDate
@@ -369,17 +372,23 @@ export const exportFinancialYearToPDF = async (data, settings) => {
       startY += 10;
       
       const distHeaders = [
-        'المستثمر', 
-        `رأس المال`, 
-        `الربح`, 
-        'تاريخ الانضمام', 
+        'ت',
+        'المستثمر',
+        'المجموع',
+        'ايام المستثمر',
+        'الربح اليومي',
+        'المجموع',
+        'تاريخ المساهمة',
         'تاريخ الموافقة'
       ];
       
       const distRows = data.profitDistributions.map(distribution => [
+        distribution.investors?.id || '-',
         distribution.investors?.fullName || '-',
-        formatCurrency(distribution.amount || 0, 'USD', currentCurrency),
-        formatCurrency(distribution.financialYear?.totalProfit || 0, 'USD', currentCurrency),
+        `${formatCurrency(distribution.amount || 0, 'USD', currentCurrency)} ${currencySymbol}`,
+        distribution.daysSoFar || '-',
+        `${formatCurrency(distribution.dailyProfit || 0, 'USD', currentCurrency)} ${currencySymbol}`,
+        `${formatCurrency(distribution.totalProfit || 0, 'USD', currentCurrency)} ${currencySymbol}`,
         distribution.investors?.createdAt || '-',
         data.approvedAt || '-'
       ]);
@@ -412,7 +421,6 @@ export const exportFinancialYearToPDF = async (data, settings) => {
     throw error;
   }
 };
-
 export const exportToExcel = (data, reportType, settings) => {
   let worksheetData = [];
   let filename = '';
@@ -525,11 +533,14 @@ export const exportToExcel = (data, reportType, settings) => {
         ],
         [],
         createStyledHeader(['توزيعات الأرباح']),
-        createStyledHeader(['المستثمر', 'رأس المال', 'الربح', 'تاريخ الانضمام', 'تاريخ الموافقة']),
+        createStyledHeader(['ت', 'المستثمر', 'المجموع', 'ايام المستثمر', 'الربح اليومي', 'المجموع', 'تاريخ المساهمة', 'تاريخ الموافقة']),
         ...(data.profitDistributions || []).map(distribution => [
+          distribution.investors?.id || '-',
           distribution.investors?.fullName || '-',
           formatCurrency(distribution.amount || 0, 'USD', currentCurrency),
-          formatCurrency(distribution.financialYear?.totalProfit || 0, 'USD', currentCurrency),
+          distribution.daysSoFar || '-',
+          formatCurrency(distribution.dailyProfit || 0, 'USD', currentCurrency),
+          formatCurrency(distribution.totalProfit || 0, 'USD', currentCurrency),
           distribution.investors?.createdAt || '-',
           data.approvedAt || '-'
         ])

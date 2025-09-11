@@ -426,7 +426,7 @@ const Transactions = () => {
             onChange={handleSelectAll}
           />
         </StyledTableCell>
-        <StyledTableCell align="center">مسلسل العملية</StyledTableCell>
+        <StyledTableCell align="center"> ت</StyledTableCell>
         <StyledTableCell align="center">اسم المساهم</StyledTableCell>
         <StyledTableCell align="center">نوع المعاملة</StyledTableCell>
         <StyledTableCell align="center">
