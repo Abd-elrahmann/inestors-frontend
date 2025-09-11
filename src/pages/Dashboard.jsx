@@ -420,19 +420,19 @@ const Dashboard = () => {
     },
     {
       title: `إجمالي رأس المال`,
-      value: overviewData.totalInvested,
+      value: convertAmount(overviewData.totalInvested, 'USD', currentCurrency),
       icon: <DollarOutlined style={{ color: '#007bff', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.amount || 0,
       color: '#007bff',
-      suffix: null
+      suffix: currentCurrency
     },
     {
       title: `الأرباح المحققة`,
-      value: convertAmount(overviewData.totalRollover, 'USD', currentCurrency),
+      value: overviewData.totalRollover,
       icon: <RiseOutlined style={{ color: '#ffc107', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.profit || 0,
       color: '#ffc107',
-      suffix: null
+      suffix: currentCurrency
     },
     {
       title: 'إجمالي المعاملات',
@@ -440,7 +440,7 @@ const Dashboard = () => {
       icon: <TransactionOutlined style={{ color: '#dc3545', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.transactions || 0,
       color: '#dc3545',
-      suffix: null
+      suffix: currentCurrency
     }
   ];
 
@@ -470,7 +470,7 @@ const Dashboard = () => {
           label: function(context) {
             const label = context.dataset.label || '';
             const value = context.raw || 0;
-            return `${label}: ${formatCurrency(value, 'USD')}`;
+            return `${label}: ${formatCurrency(value, currentCurrency)}`;
           }
         }
       }
@@ -490,7 +490,7 @@ const Dashboard = () => {
           font: { family: 'Cairo' },
           color: '#6c757d',
           callback: function(value) {
-            return formatCurrency(value, 'USD');
+            return formatCurrency(value, currentCurrency);
           }
         },
         grid: {

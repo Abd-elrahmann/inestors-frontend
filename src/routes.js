@@ -8,7 +8,6 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Reports = lazy(() => import('./pages/Reports'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Transactions = lazy(() => import('./pages/Transactions'));
-const Users = lazy(() => import('./pages/Users'));
 
 const routes = [
   {
