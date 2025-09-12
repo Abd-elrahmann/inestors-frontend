@@ -55,7 +55,6 @@ const Investors = () => {
   const isMobile = useMediaQuery("(max-width: 480px)");
   const [selectedIds, setSelectedIds] = useState([]);
 
-  // Fetch investors query
   const {
     data: investorsData,
     isLoading,
@@ -73,7 +72,7 @@ const Investors = () => {
       const params = {
         limit: rowsPerPage,
         page: page,
-        fullName: searchQuery?.trim() || undefined, // إزالة المسافات وتجنب إرسال قيم فارغة
+        fullName: searchQuery?.trim() || undefined,
         ...advancedFilters,
       };
 
@@ -89,7 +88,6 @@ const Investors = () => {
   const totalPages = investorsData?.totalPages || 0;
   const totalInvestors = investorsData?.totalInvestors || 0;
 
-  // Delete investors mutation
   const deleteInvestorsMutation = useMutation(
     (ids) => Api.delete("/api/investors", { data: { ids } }),
     {
@@ -105,7 +103,6 @@ const Investors = () => {
     }
   );
 
-  // Delete single investor mutation
   const deleteInvestorMutation = useMutation(
     (investorId) => Api.delete(`/api/investors/${investorId}`),
     {
@@ -165,7 +162,7 @@ const Investors = () => {
   const debouncedSearch = useMemo(
     () =>
       debounce((val) => {
-        setSearchQuery(val.trim()); // إزالة المسافات الزائدة
+        setSearchQuery(val.trim());
         setPage(1);
       }, 100),
     []
@@ -480,7 +477,7 @@ const Investors = () => {
                 <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
                   اسم المستثمر
                 </StyledTableCell>
-                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap",width: "70px" }}>
                   {" "}
                   الهاتف
                 </StyledTableCell>
@@ -551,7 +548,7 @@ const Investors = () => {
                       </StyledTableCell>
                       <StyledTableCell
                         align="center"
-                        sx={{ whiteSpace: "nowrap" }}
+                        sx={{ whiteSpace: "nowrap",width: "70px" }}
                       >
                         {investor.phone || "-"}
                       </StyledTableCell>
@@ -716,7 +713,7 @@ const Investors = () => {
               setPage(newPage + 1);
             }}
             rowsPerPage={rowsPerPage}
-            rowsPerPageOptions={[5, 10, 20, 50, 100]}
+            rowsPerPageOptions={[5, 10, 20]}
             onRowsPerPageChange={handleChangeRowsPerPage}
             labelRowsPerPage="عدد الصفوف في الصفحة"
             labelDisplayedRows={({ from, to, count }) =>

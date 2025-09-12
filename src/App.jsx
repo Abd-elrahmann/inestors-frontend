@@ -5,12 +5,10 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { Box } from '@mui/material';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { globalCurrencyManager } from './utils/globalCurrencyManager';
 import routes from './routes';
 
 const Navbar = React.lazy(() => import('./components/Navbar'));
 const Sidebar = React.lazy(() => import('./components/Sidebar'));
-
 
 const theme = createTheme({
   direction: 'rtl',
@@ -37,7 +35,6 @@ const AppLayout = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  
   useEffect(() => {
     const initializeSidebar = () => {
       try {
@@ -54,7 +51,6 @@ const AppLayout = () => {
       setIsInitialized(true);
     };
 
-    
     const timer = setTimeout(initializeSidebar, 100);
     return () => clearTimeout(timer);
   }, []);
@@ -73,15 +69,6 @@ const AppLayout = () => {
     };
   }, [location]);
 
-  
-  useEffect(() => {
-    if (isLoggedIn) {
-      globalCurrencyManager.initialize().catch(error => {
-        console.warn('Failed to initialize currency manager:', error);
-      });
-    }
-  }, [isLoggedIn]);
-
   const handleMenuToggle = () => {
     const newState = !isSidebarOpen;
     setIsSidebarOpen(newState);
@@ -98,43 +85,41 @@ const AppLayout = () => {
 
   if (isAuthPage) {
     return (
-        <Routes>
-          {routes
-            .filter(route => !route.protected)
-            .map(route => (
-              <Route
-                key={route.path}
-                path={route.path}
-                element={
-                  <PublicRoute>
-                    <route.element />
-                  </PublicRoute>
-                }
-              />
-            ))}
-        </Routes>
+      <Routes>
+        {routes
+          .filter(route => !route.protected)
+          .map(route => (
+            <Route
+              key={route.path}
+              path={route.path}
+              element={
+                <PublicRoute>
+                  <route.element />
+                </PublicRoute>
+              }
+            />
+          ))}
+      </Routes>
     );
   }
 
-      return (
+  return (
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      minHeight: '100vh',
+      overflow: 'hidden' 
+    }}>
+      <Navbar onMenuToggle={handleMenuToggle} isSidebarOpen={isSidebarOpen} />
+    
       <Box sx={{ 
         display: 'flex', 
-        flexDirection: 'column', 
-        minHeight: '100vh',
-        overflow: 'hidden' 
+        flex: 1, 
+        mt: '64px', 
+        position: 'relative',
+        overflow: 'hidden',
+        maxWidth: '100vw' 
       }}>
-        
-        <Navbar onMenuToggle={handleMenuToggle} isSidebarOpen={isSidebarOpen} />
-      
-              <Box sx={{ 
-          display: 'flex', 
-          flex: 1, 
-          mt: '64px', 
-          position: 'relative',
-          overflow: 'hidden',
-          maxWidth: '100vw' 
-        }}>
-          
         <Box 
           component="main" 
           sx={{ 
@@ -159,32 +144,32 @@ const AppLayout = () => {
             overflowX: 'hidden' 
           }}
         >
-            <Routes>
-              {routes
-                .filter(route => route.protected)
-                .map(route => (
-                  <Route
-                    key={route.path}
-                    path={route.path}
-                    element={
-                      <ProtectedRoute>
-                        <route.element />
-                      </ProtectedRoute>
-                    }
-                  />
-                ))}
-            </Routes>
-          </Box>
+          <Routes>
+            {routes
+              .filter(route => route.protected)
+              .map(route => (
+                <Route
+                  key={route.path}
+                  path={route.path}
+                  element={
+                    <ProtectedRoute>
+                      <route.element />
+                    </ProtectedRoute>
+                  }
+                />
+              ))}
+          </Routes>
         </Box>
-        
-        {isLoggedIn && isInitialized && (
-          <Sidebar 
-            isOpen={isSidebarOpen} 
-            onClose={handleSidebarClose}
-            onToggle={handleMenuToggle}
-          />
-        )}
       </Box>
+      
+      {isLoggedIn && isInitialized && (
+        <Sidebar 
+          isOpen={isSidebarOpen} 
+          onClose={handleSidebarClose}
+          onToggle={handleMenuToggle}
+        />
+      )}
+    </Box>
   );
 };
 
@@ -199,14 +184,6 @@ const PublicRoute = ({ children }) => {
 };
 
 function App() {
-
-  useEffect(() => {
-    globalCurrencyManager.initialize().catch(error => {
-      console.error('Error initializing currency manager:', error);
-    });
-
-  }, []);
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Button, Box, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
 import {
-  MdDashboard as Dashboard,
+  MdDashboard as DashboardIcon,
   MdPeople as People,
   MdAccountBalance as AccountBalance,
   MdTrendingUp as TrendingUp,
@@ -15,6 +15,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState('ADMIN');
   const sidebarRef = useRef(null);
+  const [prefetchedPages, setPrefetchedPages] = useState(new Set());
 
   useEffect(() => {
     const getUserRole = () => {
@@ -49,36 +50,59 @@ const Sidebar = ({ isOpen, onClose }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onClose]);
 
-  const prefetchPage = {
-    '/dashboard': () => import('../pages/Dashboard'),
-    '/investors': () => import('../pages/Investors'),
-    '/transactions': () => import('../pages/Transactions'),
-    '/financial-years': () => import('../pages/FinancialYears'),
-    '/reports': () => import('../pages/Reports'),
-    '/settings': () => import('../pages/Settings')
-  };
+  const prefetchComponent = async (path) => {
+    if (prefetchedPages.has(path)) return;
 
-  const hoverPrefetchCache = new Set();
+    const prefetchPromise = (async () => {
+      try {
+        const importPromise = (() => {
+          switch(path) {
+            case '/dashboard': return import('../pages/Dashboard');
+            case '/investors': return import('../pages/Investors');
+            case '/transactions': return import('../pages/Transactions');
+            case '/financial-years': return import('../pages/FinancialYears');
+            case '/reports': return import('../pages/Reports');
+            case '/settings': return import('../pages/Settings');
+            default: return null;
+          }
+        })();
+
+        if (importPromise) {
+          await importPromise;
+          setPrefetchedPages(prev => new Set([...prev, path]));
+        }
+      } catch (err) {
+        console.error('Error prefetching:', err);
+      }
+    })();
+
+    
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => prefetchPromise);
+    } else {
+      setTimeout(() => prefetchPromise, 0);
+    }
+  };
 
   const getAllMenuItems = () => {
     const orderedItems = [
       {
         path: '/dashboard',
         label: 'لوحة التحكم',
-        icon: <Dashboard size={22} />,
-        roles: ['ADMIN'] 
+        icon: <DashboardIcon size={22} />,
+        roles: ['ADMIN']
       },
       {
         path: '/investors',
         label: 'المستثمرين',
         icon: <People size={22} />,
-        roles: ['ADMIN'] 
+        roles: ['ADMIN']
       },
       {
         path: '/transactions',
         label: userRole === 'ADMIN' ? 'العمليات المالية' : '  معاملاتك المالية',
         icon: <AccountBalance size={22} />,
-        roles: ['ADMIN'] 
+        roles: ['ADMIN']
       },
       {
         path: '/financial-years',
@@ -90,13 +114,13 @@ const Sidebar = ({ isOpen, onClose }) => {
         path: '/reports',
         label: 'التقارير',
         icon: <Assessment size={22} />,
-        roles: ['ADMIN'] 
+        roles: ['ADMIN']
       },
       {
         path: '/settings',
         label: 'إعدادات النظام',
         icon: <Settings size={22} />,
-        roles: ['ADMIN'] 
+        roles: ['ADMIN']
       }
     ];
 
@@ -104,15 +128,6 @@ const Sidebar = ({ isOpen, onClose }) => {
   };
 
   const menuItems = getAllMenuItems();
-
-  const handleHoverPrefetch = (path) => {
-    if (!hoverPrefetchCache.has(path) && prefetchPage[path]) {
-      hoverPrefetchCache.add(path);
-      prefetchPage[path]().catch(() => {
-        hoverPrefetchCache.delete(path);
-      });
-    }
-  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -128,7 +143,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         width: isOpen ? 280 : 0,
         minWidth: isOpen ? 280 : 0,
         flexShrink: 0,
-        transition: 'all 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+        transition: 'all 0.05s ease-out',
         overflow: 'hidden',
         position: 'fixed',
         top: 64,
@@ -151,7 +166,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           display: 'flex',
           flexDirection: 'column',
           opacity: isOpen ? 1 : 0,
-          transition: 'all 0.1s ease-out',
+          transition: 'all 0.05s ease-out',
           transform: isOpen ? 'translateX(0)' : 'translateX(50px)'
         }}
       >
@@ -162,8 +177,8 @@ const Sidebar = ({ isOpen, onClose }) => {
               component={NavLink}
               to={item.path}
               onClick={onClose}
-              onMouseEnter={() => handleHoverPrefetch(item.path)}
-              onFocus={() => handleHoverPrefetch(item.path)}
+              onMouseEnter={() => prefetchComponent(item.path)}
+              onFocus={() => prefetchComponent(item.path)}
               sx={{
                 borderRadius: 2,
                 mb: 2,
@@ -171,7 +186,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 textDecoration: 'none',
                 color: 'inherit',
                 opacity: isOpen ? 1 : 0,
-                transition: `all 0.2s ease-out ${index * 0.03}s`,
+                transition: `all 0.1s ease-out ${index * 0.02}s`,
                 '&:hover': {
                   backgroundColor: 'rgba(40, 167, 69, 0.08)',
                   transform: isOpen ? 'translateX(-4px) scale(1.02)' : 'translateX(30px)',
@@ -193,7 +208,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               <ListItemIcon sx={{ 
                 minWidth: 40, 
                 justifyContent: 'center',
-                transition: 'transform 0.04s ',
+                transition: 'transform 0.03s ease',
                 transform: isOpen ? 'scale(1) rotate(0deg)' : 'scale(0.7) rotate(180deg)'
               }}>
                 {item.icon}
@@ -217,7 +232,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           borderTop: '1px solid #e0e0e0',
           opacity: isOpen ? 1 : 0,
           transform: isOpen ? 'translateY(0)' : 'translateY(20px)',
-          transition: 'all 0.04s ease-out 0.15s'
+          transition: 'all 0.03s ease-out 0.1s'
         }}>
           <Button
             fullWidth
@@ -228,10 +243,10 @@ const Sidebar = ({ isOpen, onClose }) => {
             sx={{
               fontFamily: 'Cairo',
               fontWeight: 500,
-              py: 1.5,
+              py: 1,
               direction: 'rtl',
               borderRadius: 2,
-              transition: 'all 0.05s ease-out',
+              transition: 'all 0.01s ease-out',
               '&:hover': {
                 transform: 'scale(1.02)',
                 boxShadow: '0 4px 12px rgba(220, 53, 69, 0.3)'

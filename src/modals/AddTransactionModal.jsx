@@ -83,10 +83,30 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
   const fetchInvestors = async () => {
     try {
       setInvestorsLoading(true);
-      const response = await Api.get('/api/investors/1');
-      if (response.data && response.data.investors) {
-        setInvestors(response.data.investors);
+      let allInvestors = [];
+      let currentPage = 1;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await Api.get(`/api/investors/${currentPage}`, {
+          params: {
+            limit: 1000,
+          }
+        });
+        
+        if (response.data?.investors && response.data.investors.length > 0) {
+          allInvestors = [...allInvestors, ...response.data.investors];
+          currentPage++;
+          
+          if (currentPage > response.data.totalPages) {
+            hasMore = false;
+          }
+        } else {
+          hasMore = false;
+        }
       }
+      
+      setInvestors(allInvestors);
     } catch (error) {
       console.error('Error fetching investors:', error);
       toast.error('خطأ في تحميل قائمة المساهمين');
