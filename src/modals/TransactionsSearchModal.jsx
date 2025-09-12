@@ -28,7 +28,8 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
     startDate: null,
     endDate: null,
     year: null,
-    periodName: null
+    periodName: null,
+    status: null
   });
 
   const [financialYears, setFinancialYears] = useState([]);
@@ -75,6 +76,9 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
     if (filters.periodName) {
       searchFilters.periodName = filters.periodName;
     }
+    if (filters.status) {
+      searchFilters.status = filters.status;
+    }
     
     onSearch(searchFilters);
     onClose();
@@ -88,7 +92,8 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
       startDate: null,
       endDate: null,
       year: null,
-      periodName: null
+      periodName: null,
+      status: null
     });
     onSearch({});
     onClose();
@@ -98,6 +103,10 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
     { value: 'DEPOSIT', label: 'ايداع' },
     { value: 'WITHDRAWAL', label: 'سحب' },
     { value: 'PROFIT', label: 'ربح' }, 
+  ];
+
+  const transactionStatuses = [
+    { value: 'CANCELED', label: 'ملغي' }
   ];
 
   return (
@@ -138,6 +147,22 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
                 ))}
               </Select>
             </FormControl>
+
+            <Autocomplete
+              value={transactionStatuses.find(s => s.value === filters.status) || null}
+              onChange={(event, newValue) => {
+                handleFilterChange('status', newValue ? newValue.value : null);
+              }}
+              options={transactionStatuses}
+              getOptionLabel={(option) => option.label}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="حالة المعاملة"
+                  fullWidth
+                />
+              )}
+            />
 
             <Autocomplete
               value={financialYears.find(y => y.year === filters.year && y.periodName === filters.periodName) || null}

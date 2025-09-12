@@ -10,7 +10,8 @@ import {
   Space,
   Segmented,
   DatePicker,
-  Button
+  Button,
+  Select
 } from 'antd';
 import { 
   UserOutlined, 
@@ -36,18 +37,18 @@ import {
   ArcElement,
   Filler
 } from 'chart.js';
-import { Line, Bar } from 'react-chartjs-2';
+import { Line, Bar, Pie } from 'react-chartjs-2';
 import { useCurrencyManager, formatCurrency } from '../utils/globalCurrencyManager';
 import { Helmet } from 'react-helmet-async';
 import { useMediaQuery } from '@mui/material';
 import Api from '../services/api';
-import dayjs from 'dayjs';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 const { Title: AntTitle, Text } = Typography;
 const { Content } = Layout;
 const { RangePicker } = DatePicker;
+const { Option } = Select;
 
 ChartJS.register(
   CategoryScale,
@@ -95,6 +96,10 @@ const Dashboard = () => {
   
   const [financialYearsData, setFinancialYearsData] = useState([]);
   const [topInvestorsData, setTopInvestorsData] = useState([]);
+  
+  const [aggregatesPeriod, setAggregatesPeriod] = useState('week');
+  const [dateRange, setDateRange] = useState([]);
+  const [financialYearsCount, setFinancialYearsCount] = useState(1);
   
   const isMobile = useMediaQuery('(max-width: 480px)');
   const { currentCurrency, convertAmount } = useCurrencyManager();
@@ -157,7 +162,7 @@ const Dashboard = () => {
     const interval = setInterval(fetchDashboardData, 15 * 60 * 1000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentCurrency]);
+  }, [currentCurrency, aggregatesPeriod, dateRange, financialYearsCount]);
 
   const fetchDashboardData = async () => {
     try {
@@ -171,9 +176,9 @@ const Dashboard = () => {
         topInvestorsResponse
       ] = await Promise.allSettled([
         Api.get('/api/dashboard/overview'),
-        Api.get('/api/dashboard/aggregates'),
-        Api.get('/api/dashboard/transactions-range'),
-        Api.get('/api/dashboard/financial-years'),
+        Api.get(`/api/dashboard/aggregates?period=${aggregatesPeriod}`),
+        Api.get(`/api/dashboard/transactions-range?startDate=${dateRange[0] || ''}&endDate=${dateRange[1] || ''}`),
+        Api.get(`/api/dashboard/financial-years?count=${financialYearsCount}`),
         Api.get('/api/dashboard/top-investors')
       ]);
 
@@ -193,11 +198,12 @@ const Dashboard = () => {
         setAggregatesData({
           ...data,
           totalAmount: convertAmount(data.totalAmount || 0, 'USD', currentCurrency),
-          totalProfit: convertAmount(data.totalProfit || 0, 'USD', currentCurrency)
+          totalProfit: convertAmount(data.totalRollover || 0, 'USD', currentCurrency)
         });
       } else {
         console.error('Error fetching aggregates:', aggregatesResponse.reason);
       }
+      
       if (transactionsResponse.status === 'fulfilled') {
         const data = transactionsResponse.value.data;
         const days = data.days?.map(day => ({
@@ -243,6 +249,14 @@ const Dashboard = () => {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDateRangeChange = (dates, dateStrings) => {
+    if (dates && dates.length === 2) {
+      setDateRange([dateStrings[0], dateStrings[1]]);
+    } else {
+      setDateRange([]);
     }
   };
 
@@ -331,55 +345,27 @@ const Dashboard = () => {
       };
     }
 
-    const sortedDays = [...transactionsData.days].sort((a, b) => 
-      new Date(a.day) - new Date(b.day)
-    );
-
-    const labels = sortedDays.map(day => {
-      const date = new Date(day.day);
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short'
-      });
-    });
+    const totalDeposit = transactionsData.days.reduce((sum, day) => sum + (day.averageDeposit || 0), 0);
+    const totalWithdraw = transactionsData.days.reduce((sum, day) => sum + (day.averageWithdraw || 0), 0);
+    const totalRollover = transactionsData.days.reduce((sum, day) => sum + (day.averageRollover || 0), 0);
     
     return {
-      labels,
+      labels: ['الإيداعات', 'السحوبات', 'الربح'],
       datasets: [
         {
-          label: 'متوسط الإيداعات',
-          data: sortedDays.map(day => day.averageDeposit || 0),
-          borderColor: '#3B82F6',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.3,
-          pointRadius: 3,
-          pointHoverRadius: 6
-        },
-        {
-          label: 'متوسط السحوبات',
-          data: sortedDays.map(day => day.averageWithdraw || 0),
-          borderColor: '#EF4444',
-          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.3,
-          pointRadius: 3,
-          pointHoverRadius: 6
-        },
-        {
-          label: 'متوسط الربح',
-          data: sortedDays.map(day => day.averageRollover || 0),
-          borderColor: '#F59E0B',
-          backgroundColor: 'rgba(245, 158, 11, 0.1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.3,
-          pointRadius: 3,
-          pointHoverRadius: 6
-        },
+          data: [totalDeposit, totalWithdraw, totalRollover],
+          backgroundColor: [
+            '#3B82F6',
+            '#EF4444',
+            '#F59E0B'
+          ],
+          borderColor: [
+            '#3B82F6',
+            '#EF4444',
+            '#F59E0B'
+          ],
+          borderWidth: 1
+        }
       ]
     };
   };
@@ -403,10 +389,10 @@ const Dashboard = () => {
     },
     {
       title: `الأرباح المحققة`,
-      value: convertAmount(overviewData.totalRollover, 'USD', currentCurrency),
+      value: Math.ceil(convertAmount(overviewData.totalRollover, 'USD', currentCurrency)),
       icon: <RiseOutlined style={{ color: '#ffc107', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.profit || 0,
-      color: '#ffc107',
+      color: '#ffc107', 
       suffix: null
     },
     {
@@ -445,7 +431,7 @@ const Dashboard = () => {
           label: function(context) {
             const label = context.dataset.label || '';
             const value = context.raw || 0;
-            return `${label}: ${formatCurrency(value, currentCurrency)}`;
+            return `${label}: ${formatCurrency(value, currentCurrency, 0)}`;
           }
         }
       }
@@ -465,11 +451,44 @@ const Dashboard = () => {
           font: { family: 'Cairo' },
           color: '#6c757d',
           callback: function(value) {
-            return formatCurrency(value, currentCurrency);
+            return formatCurrency(value, currentCurrency, 0);
           }
         },
         grid: {
           color: 'rgba(0, 0, 0, 0.1)'
+        }
+      }
+    }
+  };
+
+  const pieChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          fontFamily: 'Cairo',
+          color: '#495057',
+          usePointStyle: true,
+          padding: 20
+        }
+      },
+      tooltip: {
+        titleFont: { family: 'Cairo' },
+        bodyFont: { family: 'Cairo' },
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#ffffff',
+        bodyColor: '#ffffff',
+        borderColor: '#28a745',
+        borderWidth: 1,
+        cornerRadius: 8,
+        callbacks: {
+          label: function(context) {
+            const label = context.label || '';
+            const value = context.raw || 0;
+            return `${label}: ${formatCurrency(value, currentCurrency, 0)}`;
+          }
         }
       }
     }
@@ -570,8 +589,13 @@ const Dashboard = () => {
                   extra={
                     <div ref={filterSectionRef}>
                       <Segmented 
-                        options={['أسبوع', 'شهر', 'ربع سنة', 'سنة']} 
-                        defaultValue="أسبوع"
+                        options={[
+                          { label: 'أسبوع', value: 'week' },
+                          { label: 'شهر', value: 'month' },
+                          { label: 'سنة', value: 'year' }
+                        ]}
+                        value={aggregatesPeriod}
+                        onChange={setAggregatesPeriod}
                         size="small"
                       />
                     </div>
@@ -583,27 +607,43 @@ const Dashboard = () => {
                 </Card>
               </Col>
            
-                <Col xs={24}>
-                  <Card 
-                    title={
-                      <Space>
-                        <BarChartOutlined style={{ color: '#28a745', fontSize: '20px' }} />
-                        <span>توزيعات السنة المالية</span>
-                      </Space>
-                    }
-                  >
-                    <div style={{ height: '400px' }}>
-                      <Bar data={prepareFinancialYearsChartData()} options={chartOptions} />
+              <Col xs={24}>
+                <Card 
+                  title={
+                    <Space>
+                      <BarChartOutlined style={{ color: '#28a745', fontSize: '20px' }} />
+                      <span>توزيعات السنة المالية</span>
+                    </Space>
+                  }
+                  extra={
+                    <div ref={filterSectionRef}>
+                      <Select 
+                        value={financialYearsCount} 
+                        onChange={setFinancialYearsCount}
+                        size="small"
+                        style={{ width: 80 }}
+                      >
+                        <Option value={1}>1</Option>
+                        <Option value={2}>2</Option>
+                        <Option value={3}>3</Option>
+                        <Option value={4}>4</Option>
+                        <Option value={5}>5</Option>
+                      </Select>
                     </div>
-                  </Card>
-                </Col>
+                  }
+                >
+                  <div style={{ height: '400px' }}>
+                    <Bar data={prepareFinancialYearsChartData()} options={chartOptions} />
+                  </div>
+                </Card>
+              </Col>
 
               {transactionsData.days.length > 0 && (
                 <Col xs={24}>
                   <Card 
                     title={
                       <Space>
-                        <LineChartOutlined style={{ color: '#28a745', fontSize: '20px' }} />
+                        <PieChartOutlined style={{ color: '#28a745', fontSize: '20px' }} />
                         <span>مؤشرات العمليات اليومية</span>
                       </Space>
                     }
@@ -611,16 +651,13 @@ const Dashboard = () => {
                       <div ref={filterSectionRef}>
                         <RangePicker 
                           size="small"
-                          value={[
-                            transactionsData.startDate ? dayjs(transactionsData.startDate) : null,
-                            transactionsData.endDate ? dayjs(transactionsData.endDate) : null
-                          ]}
+                          onChange={handleDateRangeChange}
                         />
                       </div>
                     }
                   >
                     <div style={{ height: '400px' }}>
-                      <Line data={prepareDailyPerformanceData()} options={chartOptions} />
+                      <Pie data={prepareDailyPerformanceData()} options={pieChartOptions} />
                     </div>
                   </Card>
                 </Col>

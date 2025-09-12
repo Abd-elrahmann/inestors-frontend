@@ -7,13 +7,12 @@ const hexToRgb = (hex) => {
     parseInt(result[1], 16),
     parseInt(result[2], 16),
     parseInt(result[3], 16)
-  ] : [40, 167, 69]; // Default to #28a745 if invalid
+  ] : [40, 167, 69]; 
 };
 
 const headerColor = hexToRgb('#28a745');
 
-// Helper function to format transaction types
-const formatTransactionType = (type) => {
+const formatTransactionType = (type) => { 
   switch (type) {
     case 'DEPOSIT': return 'إيداع';
     case 'WITHDRAWAL': return 'سحب';
@@ -318,7 +317,7 @@ export const exportFinancialYearToPDF = async (data, settings) => {
     doc.addFont('/assets/fonts/Amiri-Bold.ttf', 'Amiri', 'bold');
     doc.setFont('Amiri');
 
-    // عنوان التقرير
+    
     doc.setFontSize(18);
     doc.text(`تقرير السنة المالية - ${data.periodName}`, doc.internal.pageSize.width / 2, 20, { align: 'center' });
     
@@ -326,7 +325,7 @@ export const exportFinancialYearToPDF = async (data, settings) => {
     
     const currentCurrency = settings?.defaultCurrency || 'USD';
     const currencySymbol = currentCurrency === 'USD' ? '$' : 'د.ع';
-    // Financial year information table
+    
     const statusMap = {
       'PENDING': 'في انتظار الموافقة',
       'DISTRIBUTED': 'موزع'
@@ -362,8 +361,46 @@ export const exportFinancialYearToPDF = async (data, settings) => {
         font: 'Amiri'
       }
     });
+
     
-    // Profit distributions table
+    if (data.transactions && data.transactions.length > 0) {
+      startY = doc.lastAutoTable.finalY + 20;
+      
+      doc.setFontSize(14);
+      doc.text('معاملات السنة المالية', 20, startY, { align: 'center' });
+      startY += 10;
+
+      const transHeaders = ['ت', 'نوع المعاملة', 'المبلغ', 'التاريخ'];
+      const transRows = data.transactions.map(transaction => [
+        transaction.id,
+        transaction.type === 'PROFIT' ? 'ربح' : transaction.type,
+        `${formatCurrency(transaction.amount || 0, 'USD', currentCurrency)} ${currencySymbol}`,
+        transaction.date?.split('T')[0] || '-'
+      ]);
+
+      autoTableModule.default(doc, {
+        head: [transHeaders],
+        body: transRows,
+        startY: startY,
+        theme: 'grid',
+        headStyles: {
+          fillColor: headerColor,
+          textColor: 255,
+          font: 'Amiri',
+          fontStyle: 'bold',
+          direction: 'rtl'
+        },
+        bodyStyles: {
+          font: 'Amiri'
+        },
+        styles: {
+          halign: 'right',
+          font: 'Amiri'
+        }
+      });
+    }
+    
+    
     if (data.profitDistributions && data.profitDistributions.length > 0) {
       startY = doc.lastAutoTable.finalY + 20;
       
@@ -426,7 +463,7 @@ export const exportToExcel = (data, reportType, settings) => {
   let filename = '';
   const currentCurrency = settings?.defaultCurrency || 'USD';
 
-  // دالة لتنسيق رؤوس الجداول في Excel
+  
   const createStyledHeader = (headers) => {
     return headers.map(header => ({
       v: header,
@@ -532,6 +569,15 @@ export const exportToExcel = (data, reportType, settings) => {
           data.endDate
         ],
         [],
+        createStyledHeader(['معاملات السنة المالية']),
+        createStyledHeader(['ت', 'نوع المعاملة', 'المبلغ', 'التاريخ']),
+        ...(data.transactions || []).map(transaction => [
+          transaction.id,
+          transaction.type === 'PROFIT' ? 'ربح' : transaction.type,
+          formatCurrency(transaction.amount || 0, 'USD', currentCurrency),
+          transaction.date?.split('T')[0] || '-'
+        ]),
+        [],
         createStyledHeader(['توزيعات الأرباح']),
         createStyledHeader(['ت', 'المستثمر', 'المجموع', 'ايام المستثمر', 'الربح اليومي', 'المجموع', 'تاريخ المساهمة', 'تاريخ الموافقة']),
         ...(data.profitDistributions || []).map(distribution => [
@@ -555,7 +601,7 @@ export const exportToExcel = (data, reportType, settings) => {
   const workbook = XLSX.utils.book_new();
   const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
   
-  // تعيين اتجاه النص إلى RTL للخلايا
+  
   if (!worksheet['!fullCells']) worksheet['!fullCells'] = [];
   for (const cell in worksheet) {
     if (cell[0] === '!') continue;

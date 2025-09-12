@@ -67,7 +67,7 @@ class GlobalCurrencyManager {
   }
 
 // Convert value from one currency to another
-convertAmount(amount, fromCurrency = 'IQD', toCurrency = null) {
+convertAmount(amount, fromCurrency = 'USD', toCurrency = null) {
   const targetCurrency = toCurrency || this.getCurrentDisplayCurrency();
 
   if (fromCurrency === targetCurrency) return amount;
@@ -87,7 +87,7 @@ convertAmount(amount, fromCurrency = 'IQD', toCurrency = null) {
 }
 
   // Format value to readable currency string
-  formatAmount(amount, originalCurrency = 'IQD', targetCurrency = null) {
+  formatAmount(amount, originalCurrency = 'USD', targetCurrency = null) {
     const displayCurrency = targetCurrency || this.getCurrentDisplayCurrency();
     const convertedAmount = this.convertAmount(amount, originalCurrency, displayCurrency);
 
@@ -193,7 +193,7 @@ export const useCurrencyManager = () => {
   return {
     currentCurrency: globalCurrencyManager.getCurrentDisplayCurrency(),
     settings: currencySettings,
-    formatAmount: (amount, originalCurrency = 'IQD') =>
+    formatAmount: (amount, originalCurrency = 'USD') =>
       globalCurrencyManager.formatAmount(amount, originalCurrency),
     convertAmount: (amount, fromCurrency, toCurrency) =>
       globalCurrencyManager.convertAmount(amount, fromCurrency, toCurrency),
@@ -204,7 +204,7 @@ export const useCurrencyManager = () => {
 };
 
 // Utility functions
-export const formatCurrency = (amount, originalCurrency = 'IQD') => {
+export const formatCurrency = (amount, originalCurrency = 'USD') => {
   return globalCurrencyManager.formatAmount(amount, originalCurrency);
 };
 

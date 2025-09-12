@@ -694,6 +694,47 @@ const Reports = () => {
             </TableContainer>
 
             <Divider orientation="left" dashed>
+              معاملات السنة المالية
+            </Divider>
+            <TableContainer component={Paper} sx={{ marginTop: 2, marginBottom: 4 }}>
+              <Table stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      ت
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      نوع المعاملة
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      المبلغ
+                    </StyledTableCell>
+                    <StyledTableCell align="center" sx={{ backgroundColor: '#28a745', color: 'white', fontWeight: 'bold' }}>
+                      التاريخ
+                    </StyledTableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(reportData.transactions || []).map((transaction) => (
+                    <StyledTableRow key={transaction.id}>
+                      <StyledTableCell align="center">{transaction.id}</StyledTableCell>
+                      <StyledTableCell align="center">
+                        {transaction.type === 'PROFIT' ? 'ربح' : transaction.type}
+                      </StyledTableCell>
+                      <StyledTableCell align="center">
+                        {convertCurrency(transaction.amount || 0, 'USD', settings?.defaultCurrency).toLocaleString('en-US', {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
+                      </StyledTableCell>
+                      <StyledTableCell align="center">{transaction.date?.split('T')[0]}</StyledTableCell>
+                    </StyledTableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <Divider orientation="left" dashed>
               توزيعات الأرباح
             </Divider>
             <TableContainer component={Paper} sx={{ marginTop: 2 }}>
@@ -875,7 +916,6 @@ const Reports = () => {
                 </Select>
               </Col>
               
-              {/* Add financial year dropdown for individual reports */}
               <Col xs={24} sm={12} md={6}>
                 <Text strong style={{ display: 'flex', marginBottom: 8 }}>
                   اختر سنة مالية (اختياري)
@@ -905,7 +945,6 @@ const Reports = () => {
             </>
           )}
   
-          {/* التصحيح هنا: إضافة أقواس حول الشرطين */}
           {(reportType === 'financial-year' || reportType === 'transactions') && (
             <Col xs={24} sm={12} md={6}>
               <Text strong style={{ display: 'flex', marginBottom: 8 }}>
@@ -957,7 +996,7 @@ const Reports = () => {
           )}
   
           <Col xs={24} sm={24} md={reportType === 'individual' ? 6 : (reportType === 'financial-year' ? 6 : 8)}>
-            <Space style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+            <Space style={{ display: 'flex', justifyContent: 'center', marginTop: 25 }}>
               <Button
                 type="primary"
                 icon={<EyeOutlined />}
@@ -1046,7 +1085,6 @@ const Reports = () => {
                 boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
               }}
             >
-              {/* Add ref for printing */}
               <div ref={printRef}>
                 {renderReportPreview()}
               </div>

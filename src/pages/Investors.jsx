@@ -678,10 +678,8 @@ const Investors = () => {
                         "USD",
                         settings?.defaultCurrency
                       ).toLocaleString("en-US", {
-                        minimumFractionDigits:
-                          settings?.defaultCurrency === "USD" ? 2 : 0,
-                        maximumFractionDigits:
-                          settings?.defaultCurrency === "USD" ? 2 : 0,
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
                       })}{" "}
                       {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
                     </StyledTableCell>

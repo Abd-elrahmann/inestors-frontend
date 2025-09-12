@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, TextField, Container, Autocomplete, Tabs, Tab } from '@mui/material';
+import { Box, Typography, TextField, Container, Autocomplete, Tabs, Tab, List, ListItem, ListItemText } from '@mui/material';
 import moment from 'moment-timezone';
 import Api from '../services/api';
 import { toast } from 'react-toastify';
 import { Helmet } from 'react-helmet-async';
 import { Spin } from "antd";
-import { SaveOutlined } from '@ant-design/icons';
+import { SaveOutlined, RetweetOutlined} from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import Button from '@mui/material/Button';
 import { useCurrencyManager } from '../utils/globalCurrencyManager';
@@ -37,6 +37,27 @@ const Settings = () => {
     gcTime: 30000,
     refetchOnWindowFocus: false,
     refetchOnMount: true
+  });
+
+  const { data: backupsData = { backups: [] }, isLoading: isLoadingBackups } = useQuery({
+    queryKey: ['backups'],
+    queryFn: async () => {
+      const response = await Api.get('/api/backup/list');
+      return response.data;
+    },
+    enabled: tabIndex === 2
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async (fileName) => {
+      return await Api.post('/api/backup/restore', { fileName });
+    },
+    onSuccess: () => {
+      toast.success('تم استعادة النسخة الاحتياطية بنجاح');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'حدث خطأ أثناء استعادة النسخة الاحتياطية');
+    }
   });
 
   useEffect(() => {
@@ -110,6 +131,7 @@ const Settings = () => {
         >
           <Tab label="إعدادات العملة" />
           <Tab label="إعدادات التوقيت" />
+          <Tab label="النسخ الاحتياطية" />
         </Tabs>
 
         {/* Currency Tab */}
@@ -207,23 +229,65 @@ const Settings = () => {
           </Box>
         )}
 
-        <Box display="flex" justifyContent="center" sx={{ mt: 3 }}>
-          <Button
-            variant="contained"
-            onClick={() => settingsMutation.mutate(settings)}
-            disabled={settingsMutation.isPending}
-            startIcon={<SaveOutlined style={{marginLeft: '8px'}} />}
-            sx={{ 
-              px: 4,
-              backgroundColor: '#28a745',
-              '&:hover': {
-                backgroundColor: '#218838'
-              }
-            }}
-          >
-            {settingsMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
-          </Button>
-        </Box>
+        {/* Backup Tab */}
+        {tabIndex === 2 && (
+          <Box sx={{ p: 2, width: '100%' }}>
+            {isLoadingBackups ? (
+              <Box display="flex" justifyContent="center">
+                <Spin size="large" />
+              </Box>
+            ) : (
+              <List>
+                {backupsData.backups.map((backup) => (
+                  <ListItem
+                    key={backup}
+                    secondaryAction={
+                      <Button
+                        variant="contained"
+                        onClick={() => restoreMutation.mutate(backup)}
+                        disabled={restoreMutation.isPending}
+                        startIcon={<RetweetOutlined style={{marginLeft: '8px'}} />}
+                        sx={{ 
+                          backgroundColor: '#28a745',
+                          '&:hover': {
+                            backgroundColor: '#218838'
+                          }
+                        }}
+                      >
+                        استعادة
+                      </Button>
+                    }
+                  >
+                    <ListItemText 
+                      primary={backup}
+                      secondary={moment(backup.replace('backup-', '').replace('.sql', '')).format('YYYY/MM/DD')}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Box>
+        )}
+
+        {tabIndex !== 2 && (
+          <Box display="flex" justifyContent="center" sx={{ mt: 3 }}>
+            <Button
+              variant="contained"
+              onClick={() => settingsMutation.mutate(settings)}
+              disabled={settingsMutation.isPending}
+              startIcon={<SaveOutlined style={{marginLeft: '8px'}} />}
+              sx={{ 
+                px: 4,
+                backgroundColor: '#28a745',
+                '&:hover': {
+                  backgroundColor: '#218838'
+                }
+              }}
+            >
+              {settingsMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+            </Button>
+          </Box>
+        )}
       </Container>
     </>
   );

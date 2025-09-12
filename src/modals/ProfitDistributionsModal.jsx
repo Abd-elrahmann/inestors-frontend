@@ -148,7 +148,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
     >
       <DialogTitle>
         <Box display="flex" alignItems="center" justifyContent="space-between" sx={{scrollbarWidth: 'none'}}>
-          <Typography variant="h6" component="div" fontWeight="bold">
+          <Typography variant="h6" component="div" fontWeight="bold" marginRight={'17px'}>
             توزيعات أرباح {financialYear.periodName || `السنة المالية`}
           </Typography>
           <IconButton onClick={handleClose} size="small">
@@ -158,18 +158,17 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
       </DialogTitle>
 
       <DialogContent sx={{scrollbarWidth: 'none'}}>
+        <Box sx={{mb: 2}}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Tabs value={tabValue} onChange={handleTabChange}>
             <Tab label="ملخص التوزيعات" />
             <Tab label="تفاصيل التوزيعات" />
           </Tabs>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" color="textSecondary">
-              تاريخ الموافقة: {displayData.summary.approvedAt || 'لم يتم الموافقة بعد'}
-            </Typography>
-
-            {tabValue === 1 && (
+          {tabValue === 1 && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="body2" color="textSecondary">
+                تاريخ الموافقة: {displayData.summary.approvedAt || 'لم يتم الموافقة بعد'}
+              </Typography>
               <InputBase
                 placeholder="بحث في التوزيعات..."
                 value={searchQuery}
@@ -177,16 +176,15 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                 size="small"
                 sx={{ width: '250px' }}
                 startAdornment={
-                  (
-                    <InputAdornment position="start" style={{marginLeft: '10px'}}>
-                      <SearchIcon />
-                    </InputAdornment>
-                  )}
-                />
-            )}
-          </Box>
+                  <InputAdornment position="start" style={{marginLeft: '10px'}}>
+                    <SearchIcon />
+                  </InputAdornment>
+                }
+              />
+            </Box>
+          )}
         </Box>
-
+        </Box>
         <TabPanel value={tabValue} index={0}>
           <Box sx={{ 
             color:'black',
@@ -255,7 +253,7 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ width: '220px', height: '110px' }}>
+              <Card sx={{ width: '280px', height: '110px' }}>
                 <CardContent>
                   <Box display="flex" alignItems="center" justifyContent="space-between">
                     <Box>
@@ -264,8 +262,8 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                       </Typography>
                       <Typography variant="h5" component="div">
                         {convertCurrency(displayData.summary.dailyProfit, displayData.summary.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                          minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
-                          maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
+                          minimumFractionDigits:0,
+                          maximumFractionDigits:0
                         })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
                       </Typography>
                     </Box>
@@ -352,18 +350,18 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                       <StyledTableCell align="center">{distribution.investor.id}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.investor.fullName}</StyledTableCell>
                       <StyledTableCell align="center">{convertCurrency(distribution.amount, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
-                        maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.percentage.toFixed(2)}%</StyledTableCell>
                       <StyledTableCell align="center">{distribution.daysSoFar}</StyledTableCell>
                       <StyledTableCell align="center">{convertCurrency(distribution.dailyProfit, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
-                        maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell> 
                       <StyledTableCell align="center">{convertCurrency(distribution.totalProfit, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0,
-                        maximumFractionDigits:settings?.defaultCurrency === 'USD' ? 2 : 0
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.investor.createdAt}</StyledTableCell>
                     </StyledTableRow>
