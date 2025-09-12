@@ -97,7 +97,7 @@ const Dashboard = () => {
   const [financialYearsData, setFinancialYearsData] = useState([]);
   const [topInvestorsData, setTopInvestorsData] = useState([]);
   
-  const [aggregatesPeriod, setAggregatesPeriod] = useState('week');
+  const [aggregatesPeriod, setAggregatesPeriod] = useState('all');
   const [dateRange, setDateRange] = useState([]);
   const [financialYearsCount, setFinancialYearsCount] = useState(1);
   
@@ -590,6 +590,7 @@ const Dashboard = () => {
                     <div ref={filterSectionRef}>
                       <Segmented 
                         options={[
+                          { label: 'الفترة الحالية', value: 'all' },
                           { label: 'أسبوع', value: 'week' },
                           { label: 'شهر', value: 'month' },
                           { label: 'سنة', value: 'year' }
