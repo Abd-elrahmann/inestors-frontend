@@ -7,6 +7,7 @@ const Login = lazy(() => import('./pages/Login'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Reports = lazy(() => import('./pages/Reports'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Backup = lazy(() => import('./pages/Backup'));
 const Transactions = lazy(() => import('./pages/Transactions'));
 
 const routes = [
@@ -43,6 +44,11 @@ const routes = [
   {
     path: '/settings',
     element: Settings,
+    protected: true,
+  },
+  {
+    path: '/backup',
+    element: Backup,
     protected: true,
   },
   {
