@@ -88,9 +88,13 @@ const Transactions = () => {
     async () => {
       const params = {
         limit: rowsPerPage,
-        ...(investorId ? { investorId } : isNaN(searchQuery) ? { search: searchQuery } : { investorId: searchQuery }),
+        search: searchQuery,
         ...advancedFilters,
       };
+
+      if (investorId) {
+        params.investorId = investorId;
+      }
 
       const response = await Api.get(`/api/transactions/${page}`, { params });
       return response.data;
@@ -212,7 +216,7 @@ const Transactions = () => {
   const debouncedSearch = useMemo(() => debounce((val) => {
     setSearchQuery(val);
     setPage(1);
-  }, 300), []);
+  }, 150, { leading: true }), []);
 
   const handleSearch = (event) => {
     debouncedSearch(event.target.value);
