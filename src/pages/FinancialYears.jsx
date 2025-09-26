@@ -16,7 +16,8 @@ import {
   Typography,
   useMediaQuery,
   Menu,
-  MenuItem
+  MenuItem,
+  TableSortLabel
 } from '@mui/material';
 import {
   PlusOutlined,
@@ -32,7 +33,9 @@ import {
   FilterOutlined,
   EditOutlined,
   ReloadOutlined,
-  RedoOutlined
+  RedoOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined
 } from '@ant-design/icons';
 import { Spin } from 'antd';
 import Api from '../services/api';
@@ -48,6 +51,7 @@ import dayjs from 'dayjs';
 import { useQuery, useQueryClient } from 'react-query';
 import debounce from 'lodash/debounce';
 import DeleteModal from '../modals/DeleteModal';
+
 const FinancialYear = () => {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(50);
@@ -64,6 +68,21 @@ const FinancialYear = () => {
   const { data: settings } = useSettings();
   const isMobile = useMediaQuery('(max-width: 480px)');
   const queryClient = useQueryClient();
+
+  // Sorting state
+  const [orderBy, setOrderBy] = useState('id');
+  const [order, setOrder] = useState('asc');
+
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
+  const createSortHandler = (property) => () => {
+    handleRequestSort(property);
+  };
+
   const convertCurrency = (amount, fromCurrency, toCurrency) => {
     if (fromCurrency === toCurrency) return amount;
     if (!settings?.USDtoIQD) return amount;
@@ -75,6 +94,7 @@ const FinancialYear = () => {
     }
     return amount;
   };
+
   const debouncedSearch = debounce((value) => {
     setSearchTerm(value);
   }, 500);
@@ -84,11 +104,13 @@ const FinancialYear = () => {
     isLoading,
     isFetching 
   } = useQuery(
-    ['financialYears', page, rowsPerPage, searchTerm, filters, settings?.USDtoIQD],
+    ['financialYears', page, rowsPerPage, searchTerm, filters, settings?.USDtoIQD, orderBy, order],
     () => Api.get(`/api/financial-years/all/${page}`, {
       params: {
         limit: rowsPerPage,
         search: searchTerm.trim(),
+        sortBy: orderBy,
+        sortOrder: order,
         ...filters
       }
     }).then(res => res.data),
@@ -123,11 +145,11 @@ const FinancialYear = () => {
     setFilters({});
   };
 
-
   const handleViewDistributions = (year) => {
     setSelectedYear(year);
     setDistributionModalOpen(true);
   };
+
   const handleApproveYear = async (year) => {
     try {
       setSelectedYear(year);
@@ -252,12 +274,60 @@ const FinancialYear = () => {
           <Table stickyHeader>
             <TableHead>
               <TableRow>
-                <StyledTableCell align="center">ت</StyledTableCell>
-                <StyledTableCell align="center">السنة</StyledTableCell>
-                <StyledTableCell align="center">اسم الفترة</StyledTableCell>
-                <StyledTableCell align="center" sx={{ width: '160px' }}>الفترة الزمنية</StyledTableCell>
-                <StyledTableCell align="center"> مبلغ التوزيع ({settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'})</StyledTableCell>
-                <StyledTableCell align="center" sx={{ width: '160px' }}>الحالة</StyledTableCell>
+                <StyledTableCell align="center">
+                  <TableSortLabel
+                    active={orderBy === 'id'}
+                    direction={orderBy === 'id' ? order : 'asc'}
+                    onClick={createSortHandler('id')}
+                  >
+                    ت
+                  </TableSortLabel>
+                </StyledTableCell>
+                <StyledTableCell align="center">
+                  <TableSortLabel
+                    active={orderBy === 'year'}
+                    direction={orderBy === 'year' ? order : 'asc'}
+                    onClick={createSortHandler('year')}
+                  >
+                    السنة
+                  </TableSortLabel>
+                </StyledTableCell>
+                <StyledTableCell align="center">
+                  <TableSortLabel
+                    active={orderBy === 'periodName'}
+                    direction={orderBy === 'periodName' ? order : 'asc'}
+                    onClick={createSortHandler('periodName')}
+                  >
+                    اسم الفترة
+                  </TableSortLabel>
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ width: '160px' }}>
+                  <TableSortLabel
+                    active={orderBy === 'startDate'}
+                    direction={orderBy === 'startDate' ? order : 'asc'}
+                    onClick={createSortHandler('startDate')}
+                  >
+                    الفترة الزمنية
+                  </TableSortLabel>
+                </StyledTableCell>
+                <StyledTableCell align="center">
+                  <TableSortLabel
+                    active={orderBy === 'totalProfit'}
+                    direction={orderBy === 'totalProfit' ? order : 'asc'}
+                    onClick={createSortHandler('totalProfit')}
+                  >
+                    مبلغ التوزيع ({settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'})
+                  </TableSortLabel>
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ width: '160px' }}>
+                  <TableSortLabel
+                    active={orderBy === 'status'}
+                    direction={orderBy === 'status' ? order : 'asc'}
+                    onClick={createSortHandler('status')}
+                  >
+                    الحالة
+                  </TableSortLabel>
+                </StyledTableCell>
                 <StyledTableCell align="center">الإجراءات</StyledTableCell>
               </TableRow>
             </TableHead>

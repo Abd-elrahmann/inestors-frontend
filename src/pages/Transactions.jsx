@@ -18,6 +18,7 @@ import {
   Typography,
   useMediaQuery,
   Checkbox,
+  TableSortLabel,
 } from "@mui/material";
 import { toast } from "react-toastify";
 import { Spin } from "antd";
@@ -40,7 +41,7 @@ import DeleteModal from "../modals/DeleteModal";
 import TransactionsSearchModal from "../modals/TransactionsSearchModal";
 import { useParams, useNavigate } from "react-router-dom";
 import { useUser } from "../utils/user";
-import { debounce } from 'lodash';
+import { debounce } from "lodash";
 import { useSettings } from "../hooks/useSettings";
 import CancelTransactionModal from "../modals/CancelTransactionModal";
 
@@ -67,16 +68,37 @@ const Transactions = () => {
   const convertCurrency = (amount, fromCurrency, toCurrency) => {
     if (fromCurrency === toCurrency) return amount;
     if (!settings?.USDtoIQD) return amount;
-    
-    if (fromCurrency === 'IQD' && toCurrency === 'USD') {
+
+    if (fromCurrency === "IQD" && toCurrency === "USD") {
       return amount / settings.USDtoIQD;
-    } else if (fromCurrency === 'USD' && toCurrency === 'IQD') {
+    } else if (fromCurrency === "USD" && toCurrency === "IQD") {
       return amount * settings.USDtoIQD;
     }
     return amount;
   };
 
-  const isMobile = useMediaQuery('(max-width: 480px)');
+  const isMobile = useMediaQuery("(max-width: 480px)");
+
+  // Sorting state with persistence
+
+  const [orderBy, setOrderBy] = useState(() => {
+    const saved = localStorage.getItem("transactions_sort_orderBy");
+    return saved || "id";
+  });
+  const [order, setOrder] = useState(() => {
+    const saved = localStorage.getItem("transactions_sort_order");
+    return saved || "asc";
+  });
+
+  // Persist sorting state to localStorage
+
+  useEffect(() => {
+    localStorage.setItem("transactions_sort_orderBy", orderBy);
+  }, [orderBy]);
+
+  useEffect(() => {
+    localStorage.setItem("transactions_sort_order", order);
+  }, [order]);
 
   // Fetch transactions query
   const {
@@ -84,12 +106,23 @@ const Transactions = () => {
     isLoading,
     isFetching,
   } = useQuery(
-    ["transactions", page, rowsPerPage, searchQuery, advancedFilters, investorId],
+    [
+      "transactions",
+      page,
+      rowsPerPage,
+      searchQuery,
+      advancedFilters,
+      investorId,
+      orderBy,
+      order,
+    ],
     async () => {
       const params = {
         limit: rowsPerPage,
         search: searchQuery,
         ...advancedFilters,
+        sortBy: orderBy,
+        sortOrder: order,
       };
 
       if (investorId) {
@@ -145,7 +178,7 @@ const Transactions = () => {
   );
 
   const deleteTransactionsMutation = useMutation(
-    (ids) => Api.delete('/api/transactions', { data: { ids } }),
+    (ids) => Api.delete("/api/transactions", { data: { ids } }),
     {
       onSuccess: () => {
         queryClient.invalidateQueries("transactions");
@@ -157,7 +190,7 @@ const Transactions = () => {
       onError: (error) => {
         console.error("Error deleting transactions:", error);
         toast.error("فشل في حذف العمليات");
-      }
+      },
     }
   );
 
@@ -213,10 +246,18 @@ const Transactions = () => {
     setPage(1);
   };
 
-  const debouncedSearch = useMemo(() => debounce((val) => {
-    setSearchQuery(val);
-    setPage(1);
-  }, 150, { leading: true }), []);
+  const debouncedSearch = useMemo(
+    () =>
+      debounce(
+        (val) => {
+          setSearchQuery(val);
+          setPage(1);
+        },
+        150,
+        { leading: true }
+      ),
+    []
+  );
 
   const handleSearch = (event) => {
     debouncedSearch(event.target.value);
@@ -230,7 +271,9 @@ const Transactions = () => {
 
   const handleSelectAll = (event) => {
     if (event.target.checked && transactionsData?.transactions) {
-      const newSelectedIds = transactionsData.transactions.map((transaction) => transaction.id);
+      const newSelectedIds = transactionsData.transactions.map(
+        (transaction) => transaction.id
+      );
       setSelectedIds(newSelectedIds);
     } else {
       setSelectedIds([]);
@@ -239,12 +282,23 @@ const Transactions = () => {
 
   const handleSelectOne = (event, id) => {
     if (!id) return;
-    
+
     if (event.target.checked) {
-      setSelectedIds(prev => [...prev, id]);
+      setSelectedIds((prev) => [...prev, id]);
     } else {
-      setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
+      setSelectedIds((prev) => prev.filter((selectedId) => selectedId !== id));
     }
+  };
+
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+    setPage(1); // Reset to first page when sorting changes
+  };
+
+  const createSortHandler = (property) => () => {
+    handleRequestSort(property);
   };
 
   const getTransactionTypeLabel = (type) => {
@@ -274,12 +328,12 @@ const Transactions = () => {
   };
 
   const transactions = transactionsData?.transactions || [];
-  const totalTransactions = transactionsData?.totalTransactions || 0; 
-  const totalPages = transactionsData?.totalPages || 0; 
+  const totalTransactions = transactionsData?.totalTransactions || 0;
+  const totalPages = transactionsData?.totalPages || 0;
   const investorDetails = transactions[0]?.investors;
-  const currency = settings?.defaultCurrency || 'USD';
+  const currency = settings?.defaultCurrency || "USD";
 
-  const isAdmin = profile?.role === 'ADMIN';  
+  const isAdmin = profile?.role === "ADMIN";
 
   return (
     <>
@@ -290,27 +344,43 @@ const Transactions = () => {
       <Box className="content-area">
         {investorId && (
           <Card sx={{ p: 2, mb: 3, mt: 2 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={2}
+            >
               <Typography variant="h6">
                 المساهم: {investorDetails?.fullName}
               </Typography>
               <Typography variant="h6">
-                إجمالي المبالغ: {convertCurrency(transactions.reduce((total, transaction) => {
-                  return transaction.status !== 'CANCELED' ? total + (transaction?.amount || 0) : total;
-                }, 0), currency, settings?.defaultCurrency).toLocaleString('en-US', {
+                إجمالي المبالغ:{" "}
+                {convertCurrency(
+                  transactions.reduce((total, transaction) => {
+                    if (transaction.status === "CANCELED") return total;
+                    if (transaction.type === "WITHDRAWAL") return total;
+                    return total + (transaction?.amount || 0);
+                  }, 0),
+                  currency,
+                  settings?.defaultCurrency
+                ).toLocaleString("en-US", {
                   minimumFractionDigits: 0,
-                  maximumFractionDigits: 0
-                })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
+                  maximumFractionDigits: 0,
+                })}{" "}
+                {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
               </Typography>
-              <Typography variant="h6">
-                العملة: {currency}
-              </Typography>
+              <Typography variant="h6">العملة: {currency}</Typography>
             </Stack>
-            <Stack direction="row" justifyContent="flex-start" alignItems="center" marginTop={2}>
+            <Stack
+              direction="row"
+              justifyContent="flex-start"
+              alignItems="center"
+              marginTop={2}
+            >
               <Fab
                 variant="extended"
                 color="primary"
-                onClick={() => navigate('/investors')}
+                onClick={() => navigate("/investors")}
                 sx={{
                   borderRadius: "8px",
                   fontWeight: "bold",
@@ -325,15 +395,15 @@ const Transactions = () => {
           </Card>
         )}
 
-          <Stack
-          direction={isMobile ? 'column' : 'row'}
+        <Stack
+          direction={isMobile ? "column" : "row"}
           justifyContent="space-between"
           alignItems="center"
           mb={1}
           mt={5}
           spacing={2}
         >
-          <Stack direction={isMobile ? 'column' : 'row'} spacing={1}>
+          <Stack direction={isMobile ? "column" : "row"} spacing={1}>
             {isAdmin && (
               <>
                 <Fab
@@ -345,7 +415,7 @@ const Transactions = () => {
                     fontWeight: "bold",
                     textTransform: "none",
                     height: "40px",
-                    width: isMobile ? '100%' : '180px',
+                    width: isMobile ? "100%" : "180px",
                   }}
                 >
                   <PlusOutlined style={{ marginLeft: 8 }} />
@@ -357,23 +427,23 @@ const Transactions = () => {
                     variant="extended"
                     onClick={() => setShowDeleteModal(true)}
                     sx={{
-                      width: isMobile ? '100%' : '100px',
-                      borderRadius: '8px',
-                      fontWeight: 'bold',
-                      height: '40px',
-                      fontSize: '14px',
-                      order: isMobile ? 1 : 0
+                      width: isMobile ? "100%" : "100px",
+                      borderRadius: "8px",
+                      fontWeight: "bold",
+                      height: "40px",
+                      fontSize: "14px",
+                      order: isMobile ? 1 : 0,
                     }}
                   >
-                    <DeleteOutlined style={{ marginLeft: 8 }} />
-                    ({selectedIds.length})
+                    <DeleteOutlined style={{ marginLeft: 8 }} />(
+                    {selectedIds.length})
                   </IconButton>
                 )}
               </>
             )}
           </Stack>
 
-          <Stack direction={isMobile ? 'column' : 'row'} spacing={1}>
+          <Stack direction={isMobile ? "column" : "row"} spacing={1}>
             {isAdmin && (
               <>
                 <InputBase
@@ -388,7 +458,7 @@ const Transactions = () => {
                     </InputAdornment>
                   }
                   sx={{
-                    width: isMobile ? '100%' : '250px',
+                    width: isMobile ? "100%" : "250px",
                     padding: "8px 15px",
                     marginLeft: "5px",
                     borderRadius: "4px",
@@ -398,7 +468,10 @@ const Transactions = () => {
 
                 <IconButton
                   onClick={() => setSearchModalOpen(true)}
-                  sx={{ border: isMobile ? 'none' : "1px solid", borderColor: isMobile ? 'none' : "divider" }}
+                  sx={{
+                    border: isMobile ? "none" : "1px solid",
+                    borderColor: isMobile ? "none" : "divider",
+                  }}
                 >
                   <FilterOutlined />
                 </IconButton>
@@ -408,8 +481,16 @@ const Transactions = () => {
                       setSearchQuery("");
                       setPage(1);
                       setAdvancedFilters({});
+                      setOrderBy("id");
+                      setOrder("asc");
+                      // Clear sorting state from localStorage
+                      localStorage.removeItem("transactions_sort_orderBy");
+                      localStorage.removeItem("transactions_sort_order");
                     }}
-                    sx={{ border: isMobile ? 'none' : "1px solid", borderColor: isMobile ? 'none' : "divider" }}
+                    sx={{
+                      border: isMobile ? "none" : "1px solid",
+                      borderColor: isMobile ? "none" : "divider",
+                    }}
                   >
                     <RestartAltOutlined style={{ color: "red" }} />
                   </IconButton>
@@ -418,144 +499,253 @@ const Transactions = () => {
             )}
           </Stack>
         </Stack>
-        <TableContainer component={Paper} sx={{ maxHeight: 650,scrollbarWidth: 'none' }}>
-  <Table stickyHeader>
-    <TableHead>
-      <TableRow>
-        <StyledTableCell padding="checkbox">
-          <Checkbox
-          style={{color: 'white'}}
-            checked={selectedIds.length === transactions.length && transactions.length > 0}
-            indeterminate={selectedIds.length > 0 && selectedIds.length < transactions.length}
-            onChange={handleSelectAll}
-          />
-        </StyledTableCell>
-        <StyledTableCell align="center"> ت</StyledTableCell>
-        <StyledTableCell align="center">اسم المساهم</StyledTableCell>
-        <StyledTableCell align="center">نوع المعاملة</StyledTableCell>
-        <StyledTableCell align="center">
-          المبلغ ({settings?.defaultCurrency})
-        </StyledTableCell>
-        <StyledTableCell align="center">العملة</StyledTableCell>
-        <StyledTableCell align="center">مصدر العملية</StyledTableCell>
-        <StyledTableCell align="center">السنة المالية</StyledTableCell>
-        <StyledTableCell align="center">تاريخ المعاملة</StyledTableCell>
-        <StyledTableCell align="center">الحالة</StyledTableCell>
-        <StyledTableCell align="center">الغاء العملية</StyledTableCell>
-        {isAdmin && <StyledTableCell align="center">حذف</StyledTableCell>}
-      </TableRow>
-    </TableHead>
-    <TableBody>
-      {isLoading || isFetching ? (
-        <StyledTableRow>
-          <StyledTableCell colSpan={isAdmin ? 11 : 10} align="center">
-            <Spin size="large" />
-          </StyledTableCell>
-        </StyledTableRow>
-      ) : transactions.length === 0 ? (
-        <StyledTableRow>
-          <StyledTableCell colSpan={isAdmin ? 11 : 10} align="center">
-            لا توجد معاملات
-          </StyledTableCell>
-        </StyledTableRow>
-      ) : (
-        transactions.map((transaction) => (
-          <StyledTableRow key={transaction.id}>
-            <StyledTableCell padding="checkbox">
-              <Checkbox
-                checked={selectedIds.includes(transaction.id)}
-                onChange={(event) => handleSelectOne(event, transaction.id)}
-              />
-            </StyledTableCell>
-            <StyledTableCell align="center">
-              {transaction.id || "غير محدد"}
-            </StyledTableCell>
-            <StyledTableCell align="center">
-              {transaction.investors?.fullName || "غير محدد"}
-            </StyledTableCell>
-            <StyledTableCell align="center">
-              <Chip
-                label={getTransactionTypeLabel(transaction.type)}
-                color={getTransactionTypeColor(transaction.type)}
-                variant="outlined"
-                sx={{
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                }}
-              />
-            </StyledTableCell>
-            <StyledTableCell align="center">
-              {convertCurrency(
-                transaction.amount,
-                transaction.currency || "USD",
-                settings?.defaultCurrency
-              ).toLocaleString('en-US', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-              })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}
-            </StyledTableCell>
-            <StyledTableCell align="center">
-              {transaction.currency || "USD"}
-            </StyledTableCell>
-            <StyledTableCell align="center">
-              {transaction.withdrawSource === "AMOUNT_ROLLOVER" ? " مبلغ الربح + رأس المال" : transaction.withdrawSource === "ROLLOVER" ? "مبلغ الربح" : "-"}
-            </StyledTableCell>
-            <StyledTableCell align="center">
-              {transaction.financialYear?.year || "-"} {transaction.financialYear?.periodName ? `- ${transaction.financialYear.periodName}` : ''}
-            </StyledTableCell>
-            <StyledTableCell align="center">
-              {transaction.date? transaction.date : "-"}
-            </StyledTableCell>
-            <StyledTableCell align="center">
-              {transaction.status === "CANCELED" ? (
-                <Chip
-                  label="ملغاة"
-                  color="error"
-                  variant="outlined"
-                  size="small"
-                />
-              ) : "-"}
-            </StyledTableCell>
-            <StyledTableCell align="center">
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => handleOpenCancelModal(transaction)}
-                disabled={transaction.status === "CANCELED"}
-              >
-                <CloseOutlined />
-              </IconButton>
-            </StyledTableCell>
-            {isAdmin && (
-              <StyledTableCell align="center">
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={() => handleOpenDeleteModal(transaction)}
-                >
-                  <DeleteOutlined />
-                </IconButton>
-              </StyledTableCell>
-            )}
-          </StyledTableRow>
-        ))
-      )}
-    </TableBody>
-  </Table>
-  {isAdmin && (
-    <TablePagination
-      component="div"
-      count={totalTransactions} 
-      totalPages={totalPages}
-      page={page - 1}
-      onPageChange={(e, newPage) => setPage(newPage + 1)}
-      rowsPerPage={rowsPerPage}
-      rowsPerPageOptions={[5, 10, 20]}
-      onRowsPerPageChange={handleChangeRowsPerPage}
-      labelRowsPerPage="عدد الصفوف في الصفحة"
-    />
-  )}
-</TableContainer>
+        <TableContainer
+          component={Paper}
+          sx={{ maxHeight: 650, scrollbarWidth: "none" }}
+        >
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow>
+                <StyledTableCell padding="checkbox">
+                  <Checkbox
+                    style={{ color: "white" }}
+                    checked={
+                      selectedIds.length === transactions.length &&
+                      transactions.length > 0
+                    }
+                    indeterminate={
+                      selectedIds.length > 0 &&
+                      selectedIds.length < transactions.length
+                    }
+                    onChange={handleSelectAll}
+                  />
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  <TableSortLabel
+                    active={orderBy === "id"}
+                    direction={orderBy === "id" ? order : "asc"}
+                    onClick={createSortHandler("id")}
+                    sx={{ color: "white !important" }}
+                  >
+                    ت
+                  </TableSortLabel>
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  <TableSortLabel
+                    active={orderBy === "investors.fullName"}
+                    direction={orderBy === "investors.fullName" ? order : "asc"}
+                    onClick={createSortHandler("investors.fullName")}
+                    sx={{ color: "white !important" }}
+                  >
+                    اسم المساهم
+                  </TableSortLabel>
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  <TableSortLabel
+                    active={orderBy === "type"}
+                    direction={orderBy === "type" ? order : "asc"}
+                    onClick={createSortHandler("type")}
+                    sx={{ color: "white !important" }}
+                  >
+                    نوع المعاملة
+                  </TableSortLabel>
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  <TableSortLabel
+                    active={orderBy === "amount"}
+                    direction={orderBy === "amount" ? order : "asc"}
+                    onClick={createSortHandler("amount")}
+                    sx={{ color: "white !important" }}
+                  >
+                    المبلغ ({settings?.defaultCurrency})
+                  </TableSortLabel>
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  <TableSortLabel
+                    active={orderBy === "currency"}
+                    direction={orderBy === "currency" ? order : "asc"}
+                    onClick={createSortHandler("currency")}
+                    sx={{ color: "white !important" }}
+                  >
+                    العملة
+                  </TableSortLabel>
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  <TableSortLabel
+                    active={orderBy === "withdrawSource"}
+                    direction={orderBy === "withdrawSource" ? order : "asc"}
+                    onClick={createSortHandler("withdrawSource")}
+                    sx={{ color: "white !important" }}
+                  >
+                    مصدر العملية
+                  </TableSortLabel>
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  <TableSortLabel
+                    active={orderBy === "financialYear.year"}
+                    direction={orderBy === "financialYear.year" ? order : "asc"}
+                    onClick={createSortHandler("financialYear.year")}
+                    sx={{ color: "white !important" }}
+                  >
+                    السنة المالية
+                  </TableSortLabel>
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  <TableSortLabel
+                    active={orderBy === "date"}
+                    direction={orderBy === "date" ? order : "asc"}
+                    onClick={createSortHandler("date")}
+                    sx={{ color: "white !important" }}
+                  >
+                    تاريخ المعاملة
+                  </TableSortLabel>
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  <TableSortLabel
+                    active={orderBy === "status"}
+                    direction={orderBy === "status" ? order : "asc"}
+                    onClick={createSortHandler("status")}
+                    sx={{ color: "white !important" }}
+                  >
+                    الحالة
+                  </TableSortLabel>
+                </StyledTableCell>
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                  الغاء العملية
+                </StyledTableCell>
+                {isAdmin && (
+                  <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
+                    حذف
+                  </StyledTableCell>
+                )}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {isLoading || isFetching ? (
+                <StyledTableRow>
+                  <StyledTableCell colSpan={isAdmin ? 11 : 10} align="center">
+                    <Spin size="large" />
+                  </StyledTableCell>
+                </StyledTableRow>
+              ) : transactions.length === 0 ? (
+                <StyledTableRow>
+                  <StyledTableCell colSpan={isAdmin ? 11 : 10} align="center">
+                    لا توجد معاملات
+                  </StyledTableCell>
+                </StyledTableRow>
+              ) : (
+                transactions.map((transaction) => (
+                  <StyledTableRow key={transaction.id}>
+                    <StyledTableCell padding="checkbox">
+                      <Checkbox
+                        checked={selectedIds.includes(transaction.id)}
+                        onChange={(event) =>
+                          handleSelectOne(event, transaction.id)
+                        }
+                      />
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {transaction.id || "غير محدد"}
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {transaction.investors?.fullName || "غير محدد"}
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      <Chip
+                        label={getTransactionTypeLabel(transaction.type)}
+                        color={getTransactionTypeColor(transaction.type)}
+                        variant="outlined"
+                        sx={{
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                        }}
+                      />
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {convertCurrency(
+                        transaction.amount,
+                        transaction.currency || "USD",
+                        settings?.defaultCurrency
+                      ).toLocaleString("en-US", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      })}{" "}
+                      {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {transaction.currency || "USD"}
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {transaction.withdrawSource === "AMOUNT_ROLLOVER"
+                        ? " مبلغ الربح + رأس المال"
+                        : transaction.withdrawSource === "ROLLOVER"
+                        ? "مبلغ الربح"
+                        : "-"}
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {transaction.financialYear?.year || "-"}{" "}
+                      {transaction.financialYear?.periodName
+                        ? `- ${transaction.financialYear.periodName}`
+                        : ""}
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {transaction.date ? transaction.date : "-"}
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      {transaction.status === "CANCELED" ? (
+                        <Chip
+                          label="ملغاة"
+                          color="error"
+                          variant="outlined"
+                          size="small"
+                        />
+                      ) : (
+                        "-"
+                      )}
+                    </StyledTableCell>
+                    <StyledTableCell align="center">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleOpenCancelModal(transaction)}
+                        disabled={transaction.status === "CANCELED"}
+                      >
+                        <CloseOutlined />
+                      </IconButton>
+                    </StyledTableCell>
+                    {isAdmin && (
+                      <StyledTableCell align="center">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleOpenDeleteModal(transaction)}
+                        >
+                          <DeleteOutlined />
+                        </IconButton>
+                      </StyledTableCell>
+                    )}
+                  </StyledTableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          {isAdmin && (
+            <TablePagination
+              component="div"
+              count={totalTransactions}
+              totalPages={totalPages}
+              page={page - 1}
+              onPageChange={(e, newPage) => setPage(newPage + 1)}
+              rowsPerPage={rowsPerPage}
+              rowsPerPageOptions={[5, 10, 20]}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="عدد الصفوف في الصفحة"
+              labelDisplayedRows={({ from, to, count }) =>
+                `${from}–${to} من ${count !== -1 ? count : `أكثر من ${to}`}`
+              }
+            />
+          )}
+        </TableContainer>
 
         <AddTransactionModal
           open={addModalOpen}
@@ -567,9 +757,18 @@ const Transactions = () => {
           open={showDeleteModal}
           onClose={handleCloseDeleteModal}
           onConfirm={() => handleDeleteTransaction(selectedTransaction)}
-          title={selectedIds.length > 0 ? "حذف العمليات المحددة" : "حذف العملية"}
-          message={selectedIds.length > 0 ? `هل أنت متأكد من حذف ${selectedIds.length} عمليات؟` : `هل أنت متأكد من حذف العملية؟`}
-          isLoading={deleteTransactionMutation.isLoading || deleteTransactionsMutation.isLoading}
+          title={
+            selectedIds.length > 0 ? "حذف العمليات المحددة" : "حذف العملية"
+          }
+          message={
+            selectedIds.length > 0
+              ? `هل أنت متأكد من حذف ${selectedIds.length} عمليات؟`
+              : `هل أنت متأكد من حذف العملية؟`
+          }
+          isLoading={
+            deleteTransactionMutation.isLoading ||
+            deleteTransactionsMutation.isLoading
+          }
           ButtonText="حذف"
         />
 
@@ -577,7 +776,7 @@ const Transactions = () => {
           open={searchModalOpen}
           onClose={() => setSearchModalOpen(false)}
           onSearch={handleAdvancedSearch}
-          transactions={transactions} 
+          transactions={transactions}
         />
 
         <CancelTransactionModal

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
   Table,
@@ -15,6 +15,7 @@ import {
   useMediaQuery,
   Tooltip,
   Checkbox,
+  TableSortLabel
 } from "@mui/material";
 import {
   EditOutlined,
@@ -55,6 +56,37 @@ const Investors = () => {
   const isMobile = useMediaQuery("(max-width: 480px)");
   const [selectedIds, setSelectedIds] = useState([]);
 
+  // Sorting state with persistence
+  const [orderBy, setOrderBy] = useState(() => {
+    const saved = localStorage.getItem('investors_sort_orderBy');
+    return saved || "id";
+  });
+  const [order, setOrder] = useState(() => {
+    const saved = localStorage.getItem('investors_sort_order');
+    return saved || "asc";
+  });
+
+  // Persist sorting state to localStorage
+  useEffect(() => {
+    localStorage.setItem('investors_sort_orderBy', orderBy);
+  }, [orderBy]);
+
+  useEffect(() => {
+    localStorage.setItem('investors_sort_order', order);
+  }, [order]);
+
+  // Handle sorting request
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+    setPage(1); // Reset to first page when sorting changes
+  };
+
+  const createSortHandler = (property) => () => {
+    handleRequestSort(property);
+  };
+
   const {
     data: investorsData,
     isLoading,
@@ -67,12 +99,15 @@ const Investors = () => {
       searchQuery,
       advancedFilters,
       settings?.USDtoIQD,
+      orderBy,
+      order,
     ],
     async () => {
       const params = {
         limit: rowsPerPage,
-        page: page,
         fullName: searchQuery?.trim() || undefined,
+        sortBy: orderBy,
+        sortOrder: order,
         ...advancedFilters,
       };
 
@@ -416,6 +451,11 @@ const Investors = () => {
                 fetchInvestorsQuery();
                 setPage(1);
                 setAdvancedFilters({});
+                setOrderBy("id");
+                setOrder("asc");
+                // Clear sorting state from localStorage
+                localStorage.removeItem('investors_sort_orderBy');
+                localStorage.removeItem('investors_sort_order');
               }}
               sx={{
                 border: isMobile ? "none" : "1px solid",
@@ -471,32 +511,84 @@ const Investors = () => {
                   />
                 </StyledTableCell>
                 <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
-                  {" "}
-                  ت
+                  <TableSortLabel
+                    active={orderBy === "id"}
+                    direction={orderBy === "id" ? order : "asc"}
+                    onClick={createSortHandler("id")}
+                    sx={{ color: "white !important" }}
+                  >
+                    ت
+                  </TableSortLabel>
                 </StyledTableCell>
                 <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
-                  اسم المستثمر
+                  <TableSortLabel
+                    active={orderBy === "fullName"}
+                    direction={orderBy === "fullName" ? order : "asc"}
+                    onClick={createSortHandler("fullName")}
+                    sx={{ color: "white !important" }}
+                  >
+                    اسم المستثمر
+                  </TableSortLabel>
                 </StyledTableCell>
-                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap",width: "70px" }}>
-                  {" "}
-                  الهاتف
+                <StyledTableCell align="center" sx={{ whiteSpace: "nowrap", width: "70px" }}>
+                  <TableSortLabel
+                    active={orderBy === "phone"}
+                    direction={orderBy === "phone" ? order : "asc"}
+                    onClick={createSortHandler("phone")}
+                    sx={{ color: "white !important" }}
+                  >
+                    الهاتف
+                  </TableSortLabel>
                 </StyledTableCell>
                 <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
-                  رأس المال ({settings?.defaultCurrency})
+                  <TableSortLabel
+                    active={orderBy === "amount"}
+                    direction={orderBy === "amount" ? order : "asc"}
+                    onClick={createSortHandler("amount")}
+                    sx={{ color: "white !important" }}
+                  >
+                    رأس المال ({settings?.defaultCurrency})
+                  </TableSortLabel>
                 </StyledTableCell>
                 <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
-                  {" "}
-                  مبلغ الربح ({settings?.defaultCurrency})
+                  <TableSortLabel
+                    active={orderBy === "rollover"}
+                    direction={orderBy === "rollover" ? order : "asc"}
+                    onClick={createSortHandler("rollover")}
+                    sx={{ color: "white !important" }}
+                  >
+                    مبلغ الربح ({settings?.defaultCurrency})
+                  </TableSortLabel>
                 </StyledTableCell>
                 <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
-                  {" "}
-                   المجموع ({settings?.defaultCurrency})
+                  <TableSortLabel
+                    active={orderBy === "totalAmount"}
+                    direction={orderBy === "totalAmount" ? order : "asc"}
+                    onClick={createSortHandler("totalAmount")}
+                    sx={{ color: "white !important" }}
+                  >
+                    المجموع ({settings?.defaultCurrency})
+                  </TableSortLabel>
                 </StyledTableCell>
                 <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
-                  نسبة المستثمر
+                  <TableSortLabel
+                    active={orderBy === "sharePercentage"}
+                    direction={orderBy === "sharePercentage" ? order : "asc"}
+                    onClick={createSortHandler("sharePercentage")}
+                    sx={{ color: "white !important" }}
+                  >
+                    نسبة المستثمر
+                  </TableSortLabel>
                 </StyledTableCell>
                 <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
-                  تاريخ الانضمام
+                  <TableSortLabel
+                    active={orderBy === "createdAt"}
+                    direction={orderBy === "createdAt" ? order : "asc"}
+                    onClick={createSortHandler("createdAt")}
+                    sx={{ color: "white !important" }}
+                  >
+                    تاريخ الانضمام
+                  </TableSortLabel>
                 </StyledTableCell>
                 <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
                   عرض المعاملات
@@ -548,7 +640,7 @@ const Investors = () => {
                       </StyledTableCell>
                       <StyledTableCell
                         align="center"
-                        sx={{ whiteSpace: "nowrap",width: "70px" }}
+                        sx={{ whiteSpace: "nowrap", width: "70px" }}
                       >
                         {investor.phone || "-"}
                       </StyledTableCell>
@@ -561,8 +653,8 @@ const Investors = () => {
                           "USD",
                           settings?.defaultCurrency
                         ).toLocaleString("en-US", {
-                          minimumFractionDigits:0,
-                          maximumFractionDigits:0,
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
                         })}{" "}
                         {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
                       </StyledTableCell>
@@ -591,8 +683,8 @@ const Investors = () => {
                           "USD",
                           settings?.defaultCurrency
                         ).toLocaleString("en-US", {
-                          minimumFractionDigits:0,
-                          maximumFractionDigits:0,
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
                         })}{" "}
                         {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
                       </StyledTableCell>
@@ -661,8 +753,8 @@ const Investors = () => {
                         "USD",
                         settings?.defaultCurrency
                       ).toLocaleString("en-US", {
-                        minimumFractionDigits:0,
-                        maximumFractionDigits:0,
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
                       })}{" "}
                       {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
                     </StyledTableCell>
@@ -690,8 +782,8 @@ const Investors = () => {
                         "USD",
                         settings?.defaultCurrency
                       ).toLocaleString("en-US", {
-                        minimumFractionDigits:0,
-                        maximumFractionDigits:0,
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
                       })}{" "}
                       {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
                     </StyledTableCell>
