@@ -159,6 +159,7 @@ const FinancialYear = () => {
       setSelectedYear(null);
       queryClient.invalidateQueries('financialYears');
       queryClient.invalidateQueries('transactions');
+      queryClient.invalidateQueries('investors')
     } catch (error) {
       console.error('Error approving financial year:', error);
       toast.error('فشل في الموافقة على السنة المالية');

@@ -226,7 +226,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess }) => {
 
       toast.success("تم إضافة العملية المالية بنجاح");
       queryClient.invalidateQueries("investors");
-
+      
       setFormData({
         investorId: null,
         type: "DEPOSIT",

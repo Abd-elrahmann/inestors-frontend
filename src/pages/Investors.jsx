@@ -552,9 +552,9 @@ const Investors = () => {
                 </StyledTableCell>
                 <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
                   <TableSortLabel
-                    active={orderBy === "rollover"}
-                    direction={orderBy === "rollover" ? order : "asc"}
-                    onClick={createSortHandler("rollover")}
+                    active={orderBy === "rollover_amount"}
+                    direction={orderBy === "rollover_amount" ? order : "asc"}
+                    onClick={createSortHandler("rollover_amount")}
                     sx={{ color: "white !important" }}
                   >
                     مبلغ الربح ({settings?.defaultCurrency})
@@ -562,9 +562,9 @@ const Investors = () => {
                 </StyledTableCell>
                 <StyledTableCell align="center" sx={{ whiteSpace: "nowrap" }}>
                   <TableSortLabel
-                    active={orderBy === "totalAmount"}
-                    direction={orderBy === "totalAmount" ? order : "asc"}
-                    onClick={createSortHandler("totalAmount")}
+                    active={orderBy === "total_amount"}
+                    direction={orderBy === "total_amount" ? order : "asc"}
+                    onClick={createSortHandler("total_amount")}
                     sx={{ color: "white !important" }}
                   >
                     المجموع ({settings?.defaultCurrency})

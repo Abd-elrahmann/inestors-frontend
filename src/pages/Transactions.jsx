@@ -358,17 +358,22 @@ const Transactions = () => {
                 {convertCurrency(
                   transactions.reduce((total, transaction) => {
                     if (transaction.status === "CANCELED") return total;
-                    if (transaction.type === "WITHDRAWAL") return total;
+
+                    if (transaction.type === "WITHDRAWAL") {
+                      return total - (transaction?.amount || 0);
+                    }
+
                     return total + (transaction?.amount || 0);
                   }, 0),
                   currency,
                   settings?.defaultCurrency
                 ).toLocaleString("en-US", {
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
+                  minimumFractionDigits:settings.defaultCurrency==='USD'?2: 0,
+                  maximumFractionDigits: settings.defaultCurrency==='USD'?2: 0,
                 })}{" "}
                 {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
               </Typography>
+
               <Typography variant="h6">العملة: {currency}</Typography>
             </Stack>
             <Stack
@@ -667,8 +672,10 @@ const Transactions = () => {
                         transaction.currency || "USD",
                         settings?.defaultCurrency
                       ).toLocaleString("en-US", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
+                        minimumFractionDigits:
+                          settings.defaultCurrency === "USD" ? 2 : 0,
+                        maximumFractionDigits:
+                          settings.defaultCurrency === "USD" ? 2 : 0,
                       })}{" "}
                       {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
                     </StyledTableCell>

@@ -356,12 +356,12 @@ const ProfitDistributionsModal = ({ open, onClose, financialYear, distributions 
                       <StyledTableCell align="center">{distribution.percentage.toFixed(2)}%</StyledTableCell>
                       <StyledTableCell align="center">{distribution.daysSoFar}</StyledTableCell>
                       <StyledTableCell align="center">{convertCurrency(distribution.dailyProfit, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
+                        minimumFractionDigits: settings.defaultCurrency==='USD'?2:0,
+                        maximumFractionDigits: settings.defaultCurrency==='USD'?2:0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell> 
                       <StyledTableCell align="center">{convertCurrency(distribution.totalProfit, displayData.currency||'USD', settings?.defaultCurrency).toLocaleString('en-US', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
+                         minimumFractionDigits: settings.defaultCurrency==='USD'?2:0,
+                         maximumFractionDigits: settings.defaultCurrency==='USD'?2:0
                       })} {settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'}</StyledTableCell>
                       <StyledTableCell align="center">{distribution.investor.createdAt}</StyledTableCell>
                     </StyledTableRow>
