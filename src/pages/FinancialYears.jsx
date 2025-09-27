@@ -280,6 +280,7 @@ const FinancialYear = () => {
                     active={orderBy === 'id'}
                     direction={orderBy === 'id' ? order : 'asc'}
                     onClick={createSortHandler('id')}
+                    sx={{ color: 'white !important' }}
                   >
                     ت
                   </TableSortLabel>
@@ -289,6 +290,7 @@ const FinancialYear = () => {
                     active={orderBy === 'year'}
                     direction={orderBy === 'year' ? order : 'asc'}
                     onClick={createSortHandler('year')}
+                    sx={{ color: 'white !important' }}
                   >
                     السنة
                   </TableSortLabel>
@@ -298,6 +300,7 @@ const FinancialYear = () => {
                     active={orderBy === 'periodName'}
                     direction={orderBy === 'periodName' ? order : 'asc'}
                     onClick={createSortHandler('periodName')}
+                    sx={{ color: 'white !important' }}
                   >
                     اسم الفترة
                   </TableSortLabel>
@@ -307,6 +310,7 @@ const FinancialYear = () => {
                     active={orderBy === 'startDate'}
                     direction={orderBy === 'startDate' ? order : 'asc'}
                     onClick={createSortHandler('startDate')}
+                    sx={{ color: 'white !important' }}
                   >
                     الفترة الزمنية
                   </TableSortLabel>
@@ -316,6 +320,7 @@ const FinancialYear = () => {
                     active={orderBy === 'totalProfit'}
                     direction={orderBy === 'totalProfit' ? order : 'asc'}
                     onClick={createSortHandler('totalProfit')}
+                    sx={{ color: 'white !important' }}
                   >
                     مبلغ التوزيع ({settings?.defaultCurrency === 'USD' ? '$' : 'د.ع'})
                   </TableSortLabel>
@@ -325,7 +330,8 @@ const FinancialYear = () => {
                     active={orderBy === 'status'}
                     direction={orderBy === 'status' ? order : 'asc'}
                     onClick={createSortHandler('status')}
-                  >
+                    sx={{ color: 'white !important' }}
+                    >
                     الحالة
                   </TableSortLabel>
                 </StyledTableCell>

@@ -368,8 +368,8 @@ const Transactions = () => {
                   currency,
                   settings?.defaultCurrency
                 ).toLocaleString("en-US", {
-                  minimumFractionDigits:settings.defaultCurrency==='USD'?2: 0,
-                  maximumFractionDigits: settings.defaultCurrency==='USD'?2: 0,
+                  minimumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
+                  maximumFractionDigits: settings?.defaultCurrency === 'USD' ? 2 : 0,
                 })}{" "}
                 {settings?.defaultCurrency === "USD" ? "$" : "د.ع"}
               </Typography>
