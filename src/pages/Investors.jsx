@@ -133,8 +133,8 @@ const Investors = () => {
       },
       onError: (error) => {
         console.error("Error deleting investors:", error);
-        toast.error("فشل في حذف المستثمرين");
-      },
+        toast.error(error.message || 'فشل في حذف المستثمرين');
+        },
     }
   );
 
@@ -147,7 +147,7 @@ const Investors = () => {
       },
       onError: (error) => {
         console.error("Error deleting investor:", error);
-        toast.error("فشل في حذف المستثمر");
+        toast.error(error.message || 'فشل في حذف المستثمر');
       },
     }
   );
@@ -293,7 +293,7 @@ const Investors = () => {
       console.error("Error importing investors:", error);
       const errorMessage =
         error.response?.data?.message ||
-        error.response?.data?.error ||
+        error.response?.data?.error ||  
         "فشل في استيراد الملف";
       toast.error(errorMessage);
     } finally {

@@ -152,7 +152,7 @@ const Transactions = () => {
       },
       onError: (error) => {
         console.error("Error canceling transaction:", error);
-        toast.error("فشل في الغاء العملية");
+        toast.error(error.message || 'فشل في الغاء العملية');
         setShowCancelModal(false);
         setSelectedTransaction(null);
       },
@@ -172,7 +172,7 @@ const Transactions = () => {
       },
       onError: (error) => {
         console.error("Error deleting transaction:", error);
-        toast.error("فشل في حذف العملية");
+        toast.error(error.message || 'فشل في حذف العملية');
       },
     }
   );
@@ -189,7 +189,7 @@ const Transactions = () => {
       },
       onError: (error) => {
         console.error("Error deleting transactions:", error);
-        toast.error("فشل في حذف العمليات");
+        toast.error(error.message || 'فشل في حذف العمليات');
       },
     }
   );
@@ -218,7 +218,7 @@ const Transactions = () => {
       await cancelTransactionMutation.mutateAsync(transactionId);
     } catch (error) {
       console.error("Error canceling transaction:", error);
-      toast.error("فشل في الغاء العملية");
+      toast.error(error.message || 'فشل في الغاء العملية');
       setShowCancelModal(false);
       setSelectedTransaction(null);
     }
@@ -232,6 +232,7 @@ const Transactions = () => {
         await deleteTransactionMutation.mutateAsync(transaction.id);
       }
     } catch (error) {
+      toast.error(error.message || 'فشل في حذف العملية');
       console.error("Error in delete operation:", error);
     }
   };

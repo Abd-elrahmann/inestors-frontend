@@ -381,18 +381,24 @@ const Dashboard = () => {
     },
     {
       title: `إجمالي رأس المال`,
-      value: convertAmount(overviewData.totalInvested, 'USD', currentCurrency),
+      value: (convertAmount(overviewData.totalInvested || 0, 'USD', currentCurrency) || 0).toLocaleString('en-US', {
+        minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
+        maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
+      }),
       icon: <DollarOutlined style={{ color: '#007bff', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.amount || 0,
       color: '#007bff',
       suffix: null
     },
     {
-      title: `الأرباح المحققة`,
-      value: Math.ceil(convertAmount(overviewData.totalRollover, 'USD', currentCurrency)),
+      title: `الأرباح المحققة`, 
+      value: (convertAmount(overviewData.totalRollover || 0, 'USD', currentCurrency) || 0).toLocaleString('en-US', {
+        minimumFractionDigits: currentCurrency === 'USD' ? 2 : 0,
+        maximumFractionDigits: currentCurrency === 'USD' ? 2 : 0
+      }),
       icon: <RiseOutlined style={{ color: '#ffc107', fontSize: '20px' }} />,
       trend: overviewData.weeklyIncreases?.profit || 0,
-      color: '#ffc107', 
+      color: '#ffc107',
       suffix: null
     },
     {
