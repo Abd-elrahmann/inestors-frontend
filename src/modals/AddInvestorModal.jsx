@@ -60,8 +60,8 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
     } else if (mode === 'edit' && investorData) {
       const convertedAmount = convertAmount(investorData.amount, 'USD', settings?.defaultCurrency);
       const formattedDate = investorData.createdAt
-      ? new Date(investorData.createdAt).toISOString().split('T')[0]
-      : '';
+        ? new Date(investorData.createdAt).toLocaleDateString('en-CA')
+        : '';
       setFormData({
         id: investorData.id || '',
         fullName: investorData.fullName || '',
@@ -322,6 +322,9 @@ const AddInvestorModal = ({ open, onClose, onSuccess, mode = 'normal', investorD
               error={!!errors.createdAt}
               helperText={errors.createdAt}
               disabled={loading}
+              InputLabelProps={{
+                shrink: true,
+              }}
             />
           </Box>
         </DialogContent>
