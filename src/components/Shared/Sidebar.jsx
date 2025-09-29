@@ -61,7 +61,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             case '/investors': return import('../../pages/Investors/Investors');
             case '/transactions': return import('../../pages/Transactions/Transactions');
             case '/financial-years': return import('../../pages/FinancialYears/FinancialYears');
-            case '/reports': return import('../../pages/Reports');
+            case '/reports': return import('../../pages/Reports/Reports');
             case '/settings': return import('../../pages/Settings');
             default: return null;
           }
