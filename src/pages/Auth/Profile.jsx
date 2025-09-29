@@ -33,10 +33,10 @@ import {
   LockOutlined,
   MoreOutlined,
 } from "@ant-design/icons";
-import Api from "../services/api";
+import Api from "../../services/api";
 import { Helmet } from "react-helmet-async";
 import { toast } from "react-toastify";
-import { useUser } from "../utils/user";
+import { useUser } from "../../utils/user";
 const { Title, Text } = Typography;
 const { Content } = Layout;
 const { useBreakpoint } = Grid;

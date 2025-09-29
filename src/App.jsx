@@ -7,8 +7,8 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import routes from './routes';
 
-const Navbar = React.lazy(() => import('./components/Navbar'));
-const Sidebar = React.lazy(() => import('./components/Sidebar'));
+const Navbar = React.lazy(() => import('./components/Shared/Navbar'));
+const Sidebar = React.lazy(() => import('./components/Shared/Sidebar'));
 
 const theme = createTheme({
   direction: 'rtl',

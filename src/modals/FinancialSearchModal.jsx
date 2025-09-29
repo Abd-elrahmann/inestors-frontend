@@ -112,7 +112,6 @@ const FinancialSearchModal = ({ open, onClose, onApplyFilters, initialFilters = 
               label="الحالة"
               onChange={(e) => handleFilterChange('status', e.target.value)}
             >
-              <MenuItem value="">جميع الحالات</MenuItem>
               {statusOptions.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
                   {option.label}

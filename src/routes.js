@@ -1,14 +1,14 @@
 import { lazy } from 'react';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-const FinancialYears = lazy(() => import('./pages/FinancialYears'));
-const Investors = lazy(() => import('./pages/Investors'));
-const Login = lazy(() => import('./pages/Login'));
-const Profile = lazy(() => import('./pages/Profile'));
-const Reports = lazy(() => import('./pages/Reports'));
+const FinancialYears = lazy(() => import('./pages/FinancialYears/FinancialYears'));
+const Investors = lazy(() => import('./pages/Investors/Investors'));
+const Login = lazy(() => import('./pages/Auth/Login'));
+const Profile = lazy(() => import('./pages/Auth/Profile'));
+const Reports = lazy(() => import('./pages/Reports/Reports'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Backup = lazy(() => import('./pages/Backup'));
-const Transactions = lazy(() => import('./pages/Transactions'));
+const Transactions = lazy(() => import('./pages/Transactions/Transactions'));
 
 const routes = [
   {

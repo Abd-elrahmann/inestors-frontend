@@ -16,8 +16,8 @@ import {
   MdExitToApp as ExitToApp,
 } from "react-icons/md";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useUser, updateUserProfile } from "../utils/user";
-import Logo from "../assets/images/logo.webp";
+import { useUser, updateUserProfile } from "../../utils/user";
+import Logo from "../../assets/images/logo.webp";
 
 const Navbar = ({ onMenuToggle, isSidebarOpen }) => {
   const navigate = useNavigate();

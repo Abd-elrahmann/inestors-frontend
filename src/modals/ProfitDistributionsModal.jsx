@@ -37,7 +37,7 @@ import {
   AccountBalance as AccountBalanceIcon,
   Search as SearchIcon
 } from '@mui/icons-material';
-import { StyledTableCell, StyledTableRow } from '../styles/TableLayout';
+  import { StyledTableCell, StyledTableRow } from '../styles/TableLayout';
 import dayjs from 'dayjs';
 import { useSettings } from '../hooks/useSettings';
 const TabPanel = (props) => {
